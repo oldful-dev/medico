@@ -1,10 +1,11 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-    Building2, Phone, Mail, Save, Bell, Briefcase
+    Building2, Phone, Mail, Save, Bell, Briefcase, Plus, Edit2, Trash2, X
 } from "lucide-react";
-import { uiConfigAPI } from "@/lib/api";
+import { uiConfigAPI, profilesAPI, cityAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
+import GCSUpload from "@/components/GCSUpload";
 
 // Contact Details and Notifications only — all public ayuxacare.com website
 // content (About, Blogs, Careers, Community, Reviews & Partners) moved to
@@ -48,12 +49,121 @@ export default function CompanySettingsPage() {
         show_reviews: true,
         partners_list: [],
         reviews_list: [],
-        team_list: [],
         notifications: {
             booking: { sms: '', whatsapp: '', email: '' },
             careers: { email: '' }
         }
     });
+
+    // ── Team Management State (synced with website /team via profilesAPI type=management) ──
+    const [teamMembers, setTeamMembers] = useState([]);
+    const [teamLoading, setTeamLoading] = useState(true);
+    const [cities, setCities] = useState([]);
+    const [showTeamModal, setShowTeamModal] = useState(false);
+    const [editingMember, setEditingMember] = useState(null);
+    const [teamFormData, setTeamFormData] = useState({});
+    const [isSavingMember, setIsSavingMember] = useState(false);
+
+    const loadTeamMembers = useCallback(async () => {
+        try {
+            setTeamLoading(true);
+            const res = await profilesAPI.getAll({ role: 'management', limit: 100 });
+            if (res.data.success) setTeamMembers(res.data.data);
+        } catch (e) {
+            showToast("Failed to fetch team members", "error");
+        } finally {
+            setTeamLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (activeSubTab === "team") {
+            loadTeamMembers();
+            cityAPI.getAll().then(res => {
+                if (res.data.success) setCities(res.data.data);
+            }).catch(() => {});
+        }
+    }, [activeSubTab, loadTeamMembers]);
+
+    const parseDocs = (documentsJson) => {
+        if (!documentsJson) return {};
+        try {
+            return typeof documentsJson === 'string' ? JSON.parse(documentsJson) : documentsJson;
+        } catch {
+            return {};
+        }
+    };
+
+    const openAddTeamModal = () => {
+        setEditingMember(null);
+        setTeamFormData({ cityId: cities[0]?.id || '' });
+        setShowTeamModal(true);
+    };
+
+    const openEditTeamModal = (member) => {
+        const docs = parseDocs(member.documentsJson);
+        setEditingMember(member);
+        setTeamFormData({
+            name: member.name,
+            email: member.email,
+            cityId: cities.find(c => c.name === member.city)?.id || '',
+            role: docs.title || member.role,
+            profileImageUrl: member.profileImageUrl,
+            documentsJson: {
+                title: docs.title || '',
+                linkedin: docs.linkedin || '',
+                fullBio: Array.isArray(docs.fullBio) ? docs.fullBio.join('\n\n') : (docs.fullBio || ''),
+            }
+        });
+        setShowTeamModal(true);
+    };
+
+    const handleTeamSave = async (e) => {
+        e.preventDefault();
+        setIsSavingMember(true);
+        try {
+            const docs = teamFormData.documentsJson || {};
+            const payload = {
+                ...teamFormData,
+                documentsJson: {
+                    title: docs.title || '',
+                    linkedin: docs.linkedin || '',
+                    fullBio: (docs.fullBio || '').split('\n\n').map(p => p.trim()).filter(Boolean),
+                }
+            };
+
+            if (editingMember) {
+                const res = await profilesAPI.update(editingMember.id, 'management', payload);
+                if (res.data.success) {
+                    showToast("Team member updated — live on website", "success");
+                }
+            } else {
+                const res = await profilesAPI.create('management', payload);
+                if (res.data.success) {
+                    showToast("Team member added — live on website", "success");
+                }
+            }
+            setShowTeamModal(false);
+            setEditingMember(null);
+            setTeamFormData({});
+            loadTeamMembers();
+        } catch (error) {
+            showToast(error.response?.data?.message || "Failed to save team member", "error");
+        } finally {
+            setIsSavingMember(false);
+        }
+    };
+
+    const handleTeamDelete = async (id) => {
+        if (!confirm("Remove this team member from the website? This cannot be undone.")) return;
+        try {
+            await profilesAPI.delete(id, 'management');
+            showToast("Team member removed", "success");
+            loadTeamMembers();
+        } catch (err) {
+            showToast("Delete failed", "error");
+        }
+    };
 
     useEffect(() => {
         const fetchConfig = async () => {
@@ -83,7 +193,6 @@ export default function CompanySettingsPage() {
                             show_reviews: parsedJson?.show_reviews !== undefined ? parsedJson.show_reviews : true,
                             partners_list: parsedJson?.partners_list || prev.partners_list,
                             reviews_list: parsedJson?.reviews_list || prev.reviews_list,
-                            team_list: parsedJson?.team_list || [],
                             notifications: {
                                 booking: {
                                     sms:      parsedJson?.notifications?.booking?.sms      || '',
@@ -465,89 +574,125 @@ export default function CompanySettingsPage() {
                             <Briefcase size={20} style={{ color: "var(--accent-primary)", flexShrink: 0, marginTop: 2 }} />
                             <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: "1.6" }}>
                                 <strong>Public-Facing Team</strong><br/>
-                                Manage the team members displayed on the website. Add team members who will be featured on the public ayuxacare.com website.
+                                Changes here go live immediately on <strong>ayuxacare.com/team</strong> — no separate publish step needed. This manages the same records shown under Management Profiles.
                             </div>
                         </div>
 
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            {formData.team_list && formData.team_list.length > 0 ? (
-                                formData.team_list.map((member, idx) => (
-                                    <div key={idx} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 12, alignItems: "center", padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)" }}>
-                                        <input
-                                            type="text"
-                                            placeholder="Name"
-                                            value={member.name || ''}
-                                            onChange={e => {
-                                                const updated = [...formData.team_list];
-                                                updated[idx].name = e.target.value;
-                                                setFormData({ ...formData, team_list: updated });
-                                            }}
-                                            style={{ padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", outline: "none" }}
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Position"
-                                            value={member.position || ''}
-                                            onChange={e => {
-                                                const updated = [...formData.team_list];
-                                                updated[idx].position = e.target.value;
-                                                setFormData({ ...formData, team_list: updated });
-                                            }}
-                                            style={{ padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", outline: "none" }}
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Bio or Description"
-                                            value={member.bio || ''}
-                                            onChange={e => {
-                                                const updated = [...formData.team_list];
-                                                updated[idx].bio = e.target.value;
-                                                setFormData({ ...formData, team_list: updated });
-                                            }}
-                                            style={{ padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", outline: "none" }}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const updated = formData.team_list.filter((_, i) => i !== idx);
-                                                setFormData({ ...formData, team_list: updated });
-                                            }}
-                                            style={{ padding: "6px 12px", background: "#ff4444", color: "white", border: "none", borderRadius: "var(--radius-sm)", cursor: "pointer", fontSize: 12 }}
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                ))
-                            ) : (
-                                <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>
-                                    No team members added yet
-                                </div>
-                            )}
+                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                            <button
+                                type="button"
+                                onClick={openAddTeamModal}
+                                style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", background: "var(--gradient-primary)", color: "white", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontWeight: 600 }}
+                            >
+                                <Plus size={18} /> Add Team Member
+                            </button>
                         </div>
 
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setFormData({
-                                    ...formData,
-                                    team_list: [...(formData.team_list || []), { name: '', position: '', bio: '' }]
-                                });
-                            }}
-                            style={{ padding: "10px 16px", background: "var(--gradient-primary)", color: "white", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontWeight: 600, alignSelf: "flex-start" }}
-                        >
-                            + Add Team Member
-                        </button>
-
-                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                            <button className="btn-primary" onClick={handleSave} disabled={isSaving}
-                                style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 24px", borderRadius: "var(--radius-md)", fontWeight: 600, border: "none", cursor: "pointer", background: "var(--gradient-primary)", color: "white", boxShadow: "var(--shadow-md)" }}>
-                                <Save size={16} /> {isSaving ? "Saving..." : "Save Team"}
-                            </button>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            {teamLoading ? (
+                                <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>Loading team members...</div>
+                            ) : teamMembers.length === 0 ? (
+                                <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+                                    No team members yet. Click "Add Team Member" to feature someone on the website.
+                                </div>
+                            ) : (
+                                teamMembers.map((member) => {
+                                    const docs = parseDocs(member.documentsJson);
+                                    return (
+                                        <div key={member.id} style={{ display: "flex", alignItems: "center", gap: 16, padding: 14, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)" }}>
+                                            <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "var(--bg-glass)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: "var(--accent-primary)" }}>
+                                                {member.profileImageUrl
+                                                    ? <img src={member.profileImageUrl} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                                    : member.name?.charAt(0)}
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{member.name}</div>
+                                                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{docs.title || member.role} · {member.city}</div>
+                                            </div>
+                                            <div style={{ display: "flex", gap: 8 }}>
+                                                <button type="button" onClick={() => openEditTeamModal(member)} style={{ padding: 8, background: "var(--bg-glass)", border: "none", borderRadius: "var(--radius-sm)", cursor: "pointer", color: "var(--accent-primary)" }}>
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button type="button" onClick={() => handleTeamDelete(member.id)} style={{ padding: 8, background: "rgba(255,68,68,0.1)", border: "none", borderRadius: "var(--radius-sm)", cursor: "pointer", color: "#ff4444" }}>
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
                 )}
 
             </div>
+
+            {/* TEAM MEMBER MODAL */}
+            {showTeamModal && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+                    <div style={{ background: "var(--bg-card)", borderRadius: "var(--radius-lg)", width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", padding: 24 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{editingMember ? "Edit Team Member" : "Add Team Member"}</h3>
+                            <button type="button" onClick={() => { setShowTeamModal(false); setEditingMember(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}>
+                                <X size={22} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleTeamSave} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                            <GCSUpload
+                                existingUrl={teamFormData.profileImageUrl}
+                                onUploadSuccess={(url) => setTeamFormData({ ...teamFormData, profileImageUrl: url })}
+                                label="Profile Photo"
+                            />
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Name *</label>
+                                <input required value={teamFormData.name || ''} onChange={e => setTeamFormData({ ...teamFormData, name: e.target.value })}
+                                    style={{ padding: 10, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }} />
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Email *</label>
+                                <input required type="email" value={teamFormData.email || ''} onChange={e => setTeamFormData({ ...teamFormData, email: e.target.value })}
+                                    style={{ padding: 10, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }} />
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>LinkedIn</label>
+                                <input placeholder="linkedin.com/in/username" value={teamFormData.documentsJson?.linkedin || ''}
+                                    onChange={e => setTeamFormData({ ...teamFormData, documentsJson: { ...teamFormData.documentsJson, linkedin: e.target.value } })}
+                                    style={{ padding: 10, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }} />
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>City *</label>
+                                <select required value={teamFormData.cityId || ''} onChange={e => setTeamFormData({ ...teamFormData, cityId: e.target.value })}
+                                    style={{ padding: 10, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}>
+                                    <option value="">Select City</option>
+                                    {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Position (shown on website) *</label>
+                                <input required placeholder="e.g. Chief Executive Officer" value={teamFormData.documentsJson?.title || ''}
+                                    onChange={e => setTeamFormData({ ...teamFormData, documentsJson: { ...teamFormData.documentsJson, title: e.target.value } })}
+                                    style={{ padding: 10, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }} />
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Full Bio</label>
+                                <textarea rows={5} value={teamFormData.documentsJson?.fullBio || ''}
+                                    onChange={e => setTeamFormData({ ...teamFormData, documentsJson: { ...teamFormData.documentsJson, fullBio: e.target.value } })}
+                                    style={{ padding: 10, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontFamily: "inherit", resize: "vertical" }} />
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+                                <button type="button" onClick={() => { setShowTeamModal(false); setEditingMember(null); }}
+                                    style={{ padding: "10px 20px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", cursor: "pointer", color: "var(--text-primary)", fontWeight: 600 }}>
+                                    Cancel
+                                </button>
+                                <button type="submit" disabled={isSavingMember}
+                                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", background: "var(--gradient-primary)", color: "white", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontWeight: 600 }}>
+                                    <Save size={16} /> {isSavingMember ? "Saving..." : (editingMember ? "Save Changes" : "Add to Website")}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

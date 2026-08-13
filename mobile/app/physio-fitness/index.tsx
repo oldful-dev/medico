@@ -59,7 +59,7 @@ export default function PhysioFitnessScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
+    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('fitness-wellness');
 
     // Sync selectedAddress with initial fetched address on mount or when fetched
     React.useEffect(() => {

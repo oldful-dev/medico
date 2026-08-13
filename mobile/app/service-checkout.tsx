@@ -612,6 +612,18 @@ export default function ServiceCheckoutScreen() {
         );
   const taxSavings = Math.max(0, (originalTaxes ?? 0) - (taxes ?? 0));
 
+  // Full standard-rate total (service fee + unwaived booking/platform fee +
+  // unwaived tax) — used when the user chooses to pay full price after
+  // exhausting their plan limit. `finalAmount` state is fed by an async
+  // effect keyed on isPaidBookingOverride/calculatedPrices, so it is still
+  // the stale (subscription-waived) figure at the exact moment the "Book at
+  // Standard Rate" button's onPress handler runs handlePay synchronously.
+  // This is derived from values already computed in the current render, so
+  // it carries no such lag.
+  const standardRateAmount = Math.round(
+    baseAmount + originalExtraFeesSum + originalTaxes,
+  );
+
   const totalFeeSavings =
     isUpgraded && savingsInfo
       ? savingsInfo.totalSavings
@@ -775,6 +787,13 @@ export default function ServiceCheckoutScreen() {
         return;
       }
 
+      // When the user explicitly chose "pay full price" after exhausting
+      // their plan limit, charge the standard-rate total computed fresh in
+      // this render rather than `finalAmount` state, which is still the
+      // subscription-waived figure until the next async re-render/refetch.
+      const isForcedPaid = isPaidBookingForce || isPaidBookingOverride;
+      const chargeAmount = isForcedPaid ? standardRateAmount : finalAmount;
+
       setPayLoading(true);
       try {
         setFlowState("creating_booking");
@@ -820,12 +839,12 @@ export default function ServiceCheckoutScreen() {
               ? 0
               : isUpgraded && savingsInfo
                 ? savingsInfo.bookingTotalWithUpgrade
-                : finalAmount,
+                : chargeAmount,
             paymentMethod: isZeroPayment ? "REQUEST" : selectedMethod,
             addressLine: fullAddressLine,
             latitude: lat,
             longitude: lng,
-            isPaidBooking: isPaidBookingForce || isPaidBookingOverride,
+            isPaidBooking: isForcedPaid,
             formDataJson: {
               ...(payload.formDataJson || {}),
               ...(isUpgraded
@@ -877,7 +896,7 @@ export default function ServiceCheckoutScreen() {
           triggerAlert(
             "Booking Received",
             "Your service has been scheduled. Please pay ₹" +
-              finalAmount +
+              chargeAmount +
               " in cash to our provider when they arrive.",
             "checkmark-circle-outline",
             "OK",
@@ -898,7 +917,7 @@ export default function ServiceCheckoutScreen() {
           ...(sessionBookingId.current &&
             !params.meetupId && { bookingId: sessionBookingId.current }),
           subscriptionId: params.subscriptionId,
-          amount: finalAmount,
+          amount: chargeAmount,
           paymentMethod: selectedMethod,
           couponCode: couponApplied ? couponCode : undefined,
           ...(isUpgraded &&
@@ -1090,7 +1109,7 @@ export default function ServiceCheckoutScreen() {
             pathname: "/payment/payment-success",
             params: {
               bookingId: sessionBookingId.current ?? "",
-              amount: String(finalAmount),
+              amount: String(chargeAmount),
               invoiceNumber: verifyRes.data?.invoice?.invoiceNumber ?? "",
               invoicePdfUrl: verifyRes.data?.invoice?.pdfUrl ?? "",
               isSubscription: params.subscriptionId ? "1" : "0",
@@ -1153,6 +1172,7 @@ export default function ServiceCheckoutScreen() {
     [
       payLoading,
       finalAmount,
+      standardRateAmount,
       selectedMethod,
       couponApplied,
       couponCode,
@@ -2084,7 +2104,7 @@ export default function ServiceCheckoutScreen() {
               </View>
               <Text style={styles.quotaTitle}>Free Quota Used Up</Text>
               <Text style={styles.quotaMessage}>
-                You've used all your free bookings for this service this month.{"\n\n"}
+                You&apos;ve used all your free bookings for this service this month.{"\n\n"}
                 You can still book — standard rates apply, or upgrade your plan for more free visits.
               </Text>
 
@@ -2094,10 +2114,17 @@ export default function ServiceCheckoutScreen() {
                 onPress={() => {
                   setQuotaExceededVisible(false);
                   setIsPaidBookingOverride(true);
+                  // Pass `true` directly rather than relying on the
+                  // isPaidBookingOverride state update above — that state
+                  // hasn't been applied to this render yet, so handlePay
+                  // computes its own standardRateAmount from the force flag
+                  // instead of reading stale (subscription-waived) totals.
                   handlePay(true);
                 }}
               >
-                <Text style={styles.quotaPrimaryBtnText}>Book at Standard Rate</Text>
+                <Text style={styles.quotaPrimaryBtnText}>
+                  Book at Standard Rate (₹{standardRateAmount.toLocaleString("en-IN")})
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.quotaOutlineBtn}

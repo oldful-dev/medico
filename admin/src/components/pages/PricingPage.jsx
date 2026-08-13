@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { DollarSign, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Settings, Eye, Sparkles } from "lucide-react";
+import { DollarSign, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Settings, Sparkles, AlertTriangle } from "lucide-react";
 import { planAPI, serviceAPI, serviceChargeAPI } from "@/lib/api";
 import { showToast, formatCurrency } from "@/lib/hooks";
 
@@ -191,6 +191,41 @@ export default function PricingPage() {
         return dynamicCat ? dynamicCat.label : val;
     }
 
+    // ── Unified Pricing Console helpers (Slice 1 — read-only) ──
+    function scopeLabel(scope) {
+        if (scope === 'CATEGORY') return 'Category default';
+        if (scope === 'SERVICE_TYPE') return 'Type default';
+        return 'Service override';
+    }
+    function scopeBadgeClass(scope) {
+        if (scope === 'CATEGORY') return 'badge-info';
+        if (scope === 'SERVICE_TYPE') return 'badge-default';
+        return 'badge-success';
+    }
+    function scopeTitle(scope) {
+        if (scope === 'CATEGORY') return 'Shared default applied to every service in this category — editing it affects all of them.';
+        if (scope === 'SERVICE_TYPE') return 'Shared default applied to every service of this type — editing it affects all of them.';
+        return 'Applies to exactly one service.';
+    }
+
+    // Mirrors calculateCheckout's real 3-tier fallback cascade (checkout.controller.js
+    // ~70-86): exact serviceCategory key → service.category → service.serviceType.
+    // A ServiceCharge row's `scope` is only backfill metadata about how it was
+    // classified — it does NOT limit which services checkout actually resolves it
+    // for. A row scoped SERVICE (matched to one slug) can still be the row checkout
+    // falls back to for a different service sharing the same category/serviceType
+    // string (e.g. BLOOD_TEST covers both "blood-test" and "scan-ecg"). Using
+    // scope to decide coverage — instead of the raw serviceCategory string — is
+    // what caused scan-ecg to wrongly show as "no charge rule" earlier.
+    const chargedServiceIds = new Set(serviceCharges.filter(c => c.serviceId).map(c => c.serviceId));
+    const chargedCategoriesAndTypes = new Set(serviceCharges.map(c => c.serviceCategory));
+    const unconfiguredServices = services.filter(s =>
+        !chargedServiceIds.has(s.id) &&
+        !chargedCategoriesAndTypes.has(s.category) &&
+        !chargedCategoriesAndTypes.has(s.serviceType)
+    );
+    const conflictCount = serviceCharges.filter(c => c.hasConflict).length;
+
     if (loading) return <div className="page-header"><h2>Loading Pricing Engine...</h2></div>;
 
     return (
@@ -215,13 +250,6 @@ export default function PricingPage() {
                     style={{ display: "flex", alignItems: "center", gap: 8 }}
                 >
                     <Settings size={16} /> AYUXA Service Charges
-                </button>
-                <button
-                    className={`btn ${activeTab === "reference" ? "btn-primary" : "btn-secondary"}`}
-                    onClick={() => setActiveTab("reference")}
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                >
-                    <Eye size={16} /> Service Price Reference
                 </button>
             </div>
 
@@ -260,7 +288,7 @@ export default function PricingPage() {
                 </div>
             )}
 
-            {/* TAB 2: AYUXA DYNAMIC SERVICE CHARGES */}
+            {/* TAB 2: AYUXA DYNAMIC SERVICE CHARGES — merged with the former Service Price Reference tab */}
             {activeTab === "charges" && (
                 <div>
                     <div className="filter-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -270,15 +298,26 @@ export default function PricingPage() {
                         </button>
                     </div>
 
+                    {conflictCount > 0 && (
+                        <div style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 16px", marginBottom: 16, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: "var(--radius-md)" }}>
+                            <AlertTriangle size={18} style={{ color: "#F59E0B", flexShrink: 0, marginTop: 1 }} />
+                            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                                <strong>{conflictCount} row{conflictCount === 1 ? '' : 's'}</strong> have a Vendor Service Fee that disagrees with this service&apos;s live Base Price (shown in the Base Price column below, flagged with ⚠). These are read-only for now — no number has been changed automatically. Resolving them is a future step.
+                            </div>
+                        </div>
+                    )}
+
                     <div className="card">
                         <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
                             <table className="data-table">
                                 <thead>
                                     <tr>
                                         <th>Service Category</th>
-                                        <th>Service Fee</th>
-                                        <th>Booking Fee</th>
-                                        <th>Platform Fee</th>
+                                        <th>Scope</th>
+                                        <th>Vendor Service Fee</th>
+                                        <th>Base Price <span className="text-sm text-muted">(read-only)</span></th>
+                                        <th>Ayuxa Booking Fee</th>
+                                        <th>Ayuxa Platform Fee</th>
                                         <th>Tax (GST)</th>
                                         <th>Subscription waiver</th>
                                         <th>Status</th>
@@ -288,17 +327,36 @@ export default function PricingPage() {
                                 <tbody>
                                     {serviceCharges.length === 0 ? (
                                         <tr>
-                                            <td colSpan="8" style={{ textAlign: "center", color: "var(--text-muted)", padding: 24 }}>
+                                            <td colSpan="10" style={{ textAlign: "center", color: "var(--text-muted)", padding: 24 }}>
                                                 No service charges configured yet. Click &quot;Set Service Charge&quot; to create one.
                                             </td>
                                         </tr>
                                     ) : (
                                         serviceCharges.map(charge => (
-                                            <tr key={charge.id}>
+                                            <tr key={charge.id} style={charge.hasConflict ? { background: "rgba(245,158,11,0.05)" } : undefined}>
                                                 <td style={{ fontWeight: 600, color: "var(--text-primary)" }}>
                                                     {getCategoryLabel(charge.serviceCategory)}
+                                                    {charge.matchedService && (
+                                                        <div className="text-sm text-muted" style={{ fontWeight: 400 }}>{charge.matchedService.name}</div>
+                                                    )}
+                                                    {charge.coveredServices?.length > 0 && (
+                                                        <div className="text-sm text-muted" style={{ fontWeight: 400 }} title={charge.coveredServices.map(s => s.name).join(', ')}>
+                                                            Covers {charge.coveredServices.length} service{charge.coveredServices.length === 1 ? '' : 's'}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <span className={`badge ${scopeBadgeClass(charge.scope)}`} title={scopeTitle(charge.scope)}>
+                                                        {scopeLabel(charge.scope)}
+                                                    </span>
                                                 </td>
                                                 <td>{formatCurrency(charge.serviceFee || 0)}</td>
+                                                <td>
+                                                    {charge.hasConflict && <span title="Disagrees with Vendor Service Fee — see banner above">⚠️ </span>}
+                                                    {charge.matchedService?.basePrice != null
+                                                        ? formatCurrency(charge.matchedService.basePrice)
+                                                        : <span className="text-muted">—</span>}
+                                                </td>
                                                 <td>{formatCurrency(charge.bookingFee)}</td>
                                                 <td>{formatCurrency(charge.platformFee)}</td>
                                                 <td><span className="badge badge-default">{charge.taxPercentage}%</span></td>
@@ -341,35 +399,37 @@ export default function PricingPage() {
                             </table>
                         </div>
                     </div>
-                </div>
-            )}
 
-            {/* TAB 3: SERVICE PRICING REFERENCE */}
-            {activeTab === "reference" && (
-                <div className="card">
-                    <div className="card-header"><h3>Service Pricing Reference</h3></div>
-                    <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Service</th>
-                                    <th>Type</th>
-                                    <th>Pricing Text</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {services.map(s => (
-                                    <tr key={s.id}>
-                                        <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{s.icon} {s.name}</td>
-                                        <td className="text-sm">{s.serviceType?.replace(/_/g, ' ')}</td>
-                                        <td><span className="badge badge-success">{s.pricingText || '—'}</span></td>
-                                        <td><span className={`badge ${s.isEnabled ? 'badge-success' : 'badge-default'}`}>{s.isEnabled ? 'Active' : 'Disabled'}</span></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    {/* Services with no ServiceCharge row at all — still relying on hardcoded checkout fallbacks (₹299/₹50/18%) */}
+                    {unconfiguredServices.length > 0 && (
+                        <div className="card" style={{ marginTop: 20 }}>
+                            <div className="card-header"><h3>Services With No Charge Rule <span className="text-sm text-muted">(using hardcoded fallback fees)</span></h3></div>
+                            <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Service</th>
+                                            <th>Type</th>
+                                            <th>Base Price</th>
+                                            <th>Pricing Text</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {unconfiguredServices.map(s => (
+                                            <tr key={s.id}>
+                                                <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{s.icon} {s.name}</td>
+                                                <td className="text-sm">{s.serviceType?.replace(/_/g, ' ')}</td>
+                                                <td>{s.basePrice != null ? formatCurrency(s.basePrice) : <span className="text-muted">—</span>}</td>
+                                                <td><span className="badge badge-success">{s.pricingText || '—'}</span></td>
+                                                <td><span className={`badge ${s.isEnabled ? 'badge-success' : 'badge-default'}`}>{s.isEnabled ? 'Active' : 'Disabled'}</span></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -400,7 +460,8 @@ export default function PricingPage() {
 
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label className="form-label">Service Fee / Base Price (₹) *</label>
+                                        <label className="form-label">Vendor Service Fee / Base Price (₹) *</label>
+                                        <p className="text-sm text-muted" style={{ marginTop: -2, marginBottom: 4 }}>Set by the vendor/provider — never waived by a subscription plan.</p>
                                         <input
                                             type="number"
                                             className="form-input"
@@ -412,7 +473,8 @@ export default function PricingPage() {
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label className="form-label">Booking Fee (₹) *</label>
+                                        <label className="form-label">Ayuxa Booking Fee (₹) *</label>
+                                        <p className="text-sm text-muted" style={{ marginTop: -2, marginBottom: 4 }}>Ayuxa&apos;s own charge — can drop to ₹0 via a plan&apos;s fee waiver.</p>
                                         <input
                                             type="number"
                                             className="form-input"
@@ -427,7 +489,8 @@ export default function PricingPage() {
 
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label className="form-label">Platform Fee (₹) *</label>
+                                        <label className="form-label">Ayuxa Platform Fee (₹) *</label>
+                                        <p className="text-sm text-muted" style={{ marginTop: -2, marginBottom: 4 }}>Ayuxa&apos;s own charge — can drop to ₹0 via a plan&apos;s fee waiver.</p>
                                         <input
                                             type="number"
                                             className="form-input"

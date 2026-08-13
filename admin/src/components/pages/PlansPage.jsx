@@ -49,10 +49,14 @@ const subStatusColors = {
 };
 
 // ─── Blank plan form ──────────────────────────────────────────────────────────
+// Fee-waiver defaults mirror the checkout engine's own defaults (backend/src/controllers/checkout.controller.js):
+// bookingFeeWaived/platformFeeWaived/gstOnFeeWaived all default to true when unset on a plan's metadata,
+// so a brand-new plan starts with the same "fully waived" behavior existing plans get if left unconfigured.
 const blankPlan = () => ({
     name: '', description: '', planType: 'CARE',
     quarterlyPrice: 0, biannualPrice: 0, yearlyPrice: 0,
     isVisible: true, sortOrder: 0, maxConcurrent: 4,
+    metadata: { bookingFeeWaived: true, platformFeeWaived: true, gstOnFeeWaived: true },
 });
 
 // ─── Blank benefit form ───────────────────────────────────────────────────────
@@ -296,6 +300,16 @@ function PlanCard({ plan, onEdit, onDelete, onToggleVisibility }) {
                             {plan.isVisible ? 'Visible' : 'Hidden'}
                         </span>
                         <span className="badge badge-default" style={{ fontSize: 11 }}>Order: {plan.sortOrder}</span>
+                        {(() => {
+                            const meta = (plan.metadata && typeof plan.metadata === 'object') ? plan.metadata : {};
+                            const bookingWaived = meta.bookingFeeWaived !== undefined ? !!meta.bookingFeeWaived : true;
+                            const platformWaived = meta.platformFeeWaived !== undefined ? !!meta.platformFeeWaived : true;
+                            const bothWaived = bookingWaived && platformWaived;
+                            const noneWaived = !bookingWaived && !platformWaived;
+                            const label = bothWaived ? 'Booking + Platform Fee → ₹0' : noneWaived ? 'No fee waiver' : 'Partial fee waiver';
+                            const cls = bothWaived ? 'badge-success' : noneWaived ? 'badge-danger' : 'badge-warning';
+                            return <span className={`badge ${cls}`} style={{ fontSize: 11 }} title="Ayuxa Booking/Platform Fee waiver for this plan's subscribers">{label}</span>;
+                        })()}
                     </div>
                     {plan.description && <p className="text-sm text-muted" style={{ marginTop: 4, marginBottom: 0 }}>{plan.description}</p>}
                 </div>
@@ -367,10 +381,16 @@ export default function PlansPage() {
 
     function openEdit(p) {
         setEditing(p);
+        const meta = (p.metadata && typeof p.metadata === 'object') ? p.metadata : {};
         setForm({
             name: p.name, description: p.description || '', planType: p.planType || 'CARE',
             quarterlyPrice: p.quarterlyPrice, biannualPrice: p.biannualPrice, yearlyPrice: p.yearlyPrice,
             isVisible: p.isVisible, sortOrder: p.sortOrder, maxConcurrent: p.maxConcurrent ?? 4,
+            metadata: {
+                bookingFeeWaived: meta.bookingFeeWaived !== undefined ? !!meta.bookingFeeWaived : true,
+                platformFeeWaived: meta.platformFeeWaived !== undefined ? !!meta.platformFeeWaived : true,
+                gstOnFeeWaived: meta.gstOnFeeWaived !== undefined ? !!meta.gstOnFeeWaived : true,
+            },
         });
         setShowModal(true);
     }
@@ -574,7 +594,29 @@ export default function PlansPage() {
                                         <input className="form-input" type="number" min={0} value={form.yearlyPrice} onChange={e => setForm({ ...form, yearlyPrice: parseFloat(e.target.value) || 0 })} />
                                     </div>
                                 </div>
+                                <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', marginTop: 16, marginBottom: 4 }}>
+                                    Ayuxa Fee Waiver
+                                </p>
+                                <p className="text-sm text-muted" style={{ marginBottom: 10 }}>
+                                    Controls which Ayuxa-side fees (Booking Fee, Platform Fee — never the vendor&apos;s Service Fee) drop to ₹0 for subscribers of this plan at checkout.
+                                </p>
                                 <div className="form-group flex items-center gap-2">
+                                    <input type="checkbox" id="bookingFeeWaived" checked={!!form.metadata?.bookingFeeWaived}
+                                        onChange={e => setForm({ ...form, metadata: { ...form.metadata, bookingFeeWaived: e.target.checked } })} />
+                                    <label htmlFor="bookingFeeWaived">Waive Ayuxa Booking Fee (→ ₹0)</label>
+                                </div>
+                                <div className="form-group flex items-center gap-2">
+                                    <input type="checkbox" id="platformFeeWaived" checked={!!form.metadata?.platformFeeWaived}
+                                        onChange={e => setForm({ ...form, metadata: { ...form.metadata, platformFeeWaived: e.target.checked } })} />
+                                    <label htmlFor="platformFeeWaived">Waive Ayuxa Platform Fee (→ ₹0)</label>
+                                </div>
+                                <div className="form-group flex items-center gap-2">
+                                    <input type="checkbox" id="gstOnFeeWaived" checked={!!form.metadata?.gstOnFeeWaived}
+                                        onChange={e => setForm({ ...form, metadata: { ...form.metadata, gstOnFeeWaived: e.target.checked } })} />
+                                    <label htmlFor="gstOnFeeWaived">Also waive GST on the waived fee amount</label>
+                                </div>
+
+                                <div className="form-group flex items-center gap-2" style={{ marginTop: 16 }}>
                                     <input type="checkbox" id="isVisible" checked={form.isVisible} onChange={e => setForm({ ...form, isVisible: e.target.checked })} />
                                     <label htmlFor="isVisible">Visible to users in mobile app</label>
                                 </div>

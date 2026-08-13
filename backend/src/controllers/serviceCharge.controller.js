@@ -11,7 +11,59 @@ const getServiceCharges = async (req, res, next) => {
         const charges = await prisma.serviceCharge.findMany({
             orderBy: { serviceCategory: 'asc' },
         });
-        sendResponse(res, 200, charges);
+
+        // ── Unified Pricing Console (read-only, Slice 1) ──
+        // Enrich each row with the live matched Service (for SERVICE-scope rows)
+        // and the services covered (for CATEGORY/SERVICE_TYPE-scope rows), plus a
+        // computed conflict flag. Purely additive — no write, no change to the
+        // raw fee fields calculateCheckout reads.
+        const serviceIds = charges.filter(c => c.serviceId).map(c => c.serviceId);
+        const matchedServices = serviceIds.length
+            ? await prisma.service.findMany({
+                where: { id: { in: serviceIds } },
+                select: { id: true, name: true, slug: true, category: true, serviceType: true, basePrice: true, pricingText: true },
+            })
+            : [];
+        const serviceById = new Map(matchedServices.map(s => [s.id, s]));
+
+        const allServices = await prisma.service.findMany({
+            select: { id: true, name: true, slug: true, category: true, serviceType: true, basePrice: true, pricingText: true },
+        });
+
+        const enriched = charges.map(charge => {
+            const scope = charge.scope || 'SERVICE';
+            let matchedService = null;
+            let coveredFull = [];
+
+            if (scope === 'SERVICE' && charge.serviceId) {
+                matchedService = serviceById.get(charge.serviceId) || null;
+            } else if (scope === 'CATEGORY') {
+                coveredFull = allServices.filter(s => s.category === charge.serviceCategory);
+            } else if (scope === 'SERVICE_TYPE') {
+                coveredFull = allServices.filter(s => s.serviceType === charge.serviceCategory);
+            }
+            const coveredServices = coveredFull.map(s => ({ id: s.id, name: s.name, slug: s.slug }));
+
+            // A CATEGORY/SERVICE_TYPE row can still resolve to exactly one real
+            // service today (e.g. a ServiceType only one live service uses) — that
+            // case is a genuine 1:1 price relationship wearing a "shared default"
+            // label, and must still be conflict-checked, not skipped just because
+            // its nominal scope isn't SERVICE.
+            const effectiveService = matchedService || (coveredFull.length === 1 ? coveredFull[0] : null);
+
+            const chargeFee = Number(charge.serviceFee) || 0;
+            const liveBasePrice = effectiveService ? (Number(effectiveService.basePrice) || 0) : (Number(charge.basePrice) || 0);
+            const hasConflict = chargeFee > 0 && liveBasePrice > 0 && chargeFee !== liveBasePrice;
+
+            return {
+                ...charge,
+                matchedService,
+                coveredServices,
+                hasConflict,
+            };
+        });
+
+        sendResponse(res, 200, enriched);
     } catch (error) {
         next(error);
     }

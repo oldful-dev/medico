@@ -4,6 +4,8 @@ const { sendPushToUser } = require('../utils/pushNotification.service');
 const { emitToAdmins } = require('../services/socket.service');
 const { logger } = require('../config/logger');
 const { getNotificationRecipients } = require('../services/companyConfig.service');
+const { assertCaregiverIsAssignable } = require('../utils/assignmentEligibility');
+const { computeStandardRateFloor } = require('../utils/standardRateFloor');
 
 // ─── Admin Booking Notification Helper ──────────────────────────────────────
 // Sends SMS, WhatsApp, and Email to dynamic admin recipients configured in
@@ -250,7 +252,10 @@ const getBookingById = async (req, res, next) => {
                 service: true,
                 city: true,
                 caregiver: true,
-                payments: true,
+                payments: {
+                    orderBy: { createdAt: 'desc' },
+                    include: { invoice: true },
+                },
             },
         });
         if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -383,7 +388,22 @@ const createBooking = async (req, res, next) => {
                                     hint: 'Pass isPaidBooking=true to proceed as a standard paid booking.',
                                 });
                             }
-                            // isPaidBooking=true: fall through, proceed as standard paid booking
+                            // isPaidBooking=true: proceed as a standard paid booking — but don't
+                            // trust the client-sent amount at face value. A stale mobile-side
+                            // total (still reflecting the now-exhausted subscription waiver) must
+                            // not silently pass here just because the flag was set. Require the
+                            // charge to actually cover the un-waived standard rate. Use the
+                            // service's own basePrice as the vendor-fee component — chargeAmount
+                            // is the client's grand TOTAL (service+booking+platform+tax combined),
+                            // not the vendor fee alone, so it must not be passed in as vendorFee.
+                            const standardRateFloor = await computeStandardRateFloor(service, service.basePrice || 0);
+                            if (chargeAmount < standardRateFloor * 0.95) {
+                                return res.status(400).json({
+                                    success: false,
+                                    code: 'AMOUNT_BELOW_STANDARD_RATE',
+                                    message: `Standard rate for this booking is ₹${Math.round(standardRateFloor)}. Please refresh and try again.`,
+                                });
+                            }
                         }
                         // Scenario A: NO_ACTIVE_SUBSCRIPTION / BENEFIT_NOT_IN_PLAN
                         // → No action needed — proceed with safeAmount as paid booking.
@@ -543,6 +563,8 @@ const createBooking = async (req, res, next) => {
 const assignCaregiver = async (req, res, next) => {
     try {
         const { caregiverId } = req.body;
+        await assertCaregiverIsAssignable(caregiverId);
+
         const booking = await prisma.booking.update({
             where: { id: req.params.id },
             data: { caregiverId, status: 'ASSIGNED' },
@@ -635,6 +657,8 @@ const assignCaregiver = async (req, res, next) => {
 const reassignCaregiver = async (req, res, next) => {
     try {
         const { caregiverId } = req.body;
+        await assertCaregiverIsAssignable(caregiverId);
+
         const booking = await prisma.booking.update({
             where: { id: req.params.id },
             data: { caregiverId },

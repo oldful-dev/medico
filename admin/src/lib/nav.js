@@ -16,6 +16,7 @@ export const NAV_SECTIONS = [
         title: "Staff & Users",
         items: [
             { id: "staff-management", href: "/staff-management", label: "Staff Management", icon: Shield, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
+            { id: "roles", href: "/roles", label: "Role & Access Management", icon: Shield, roles: ['SUPER_ADMIN'] },
         ],
     },
     {
@@ -29,7 +30,6 @@ export const NAV_SECTIONS = [
         title: "Operations",
         items: [
             { id: "services", href: "/services", label: "Service Management", icon: Settings, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
-            { id: "dynamic-services", href: "/services?type=dynamic", label: "Dynamic Services", icon: Sparkles, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "home-essentials", href: "/home-essentials", label: "Home Essential", icon: HeartPulse, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "bookings", href: "/bookings", label: "Booking Management", icon: CalendarCheck, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "server-ui", href: "/server-ui", label: "Server UI Configuration", icon: Sliders, roles: ['SUPER_ADMIN'] },
@@ -60,7 +60,6 @@ export const NAV_SECTIONS = [
         items: [
             { id: "support", href: "/support", label: "Support Tickets", icon: LifeBuoy, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'SUPPORT_AGENT'] },
             { id: "legal", href: "/legal", label: "Legal CMS", icon: FileText, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
-            { id: "roles", href: "/roles", label: "Roles & Access", icon: Shield, roles: ['SUPER_ADMIN'] },
             { id: "smart", href: "/smart", label: "Smart Features", icon: Brain, roles: ['SUPER_ADMIN'] },
             { id: "sessions", href: "/sessions", label: "Active Sessions", icon: Activity, roles: ['SUPER_ADMIN'] },
             { id: "user-activity", href: "/user-activity", label: "User Activity", icon: Activity, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },

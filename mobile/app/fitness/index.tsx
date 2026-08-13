@@ -31,7 +31,7 @@ export default function FitnessScreen() {
     const [landmark, setLandmark] = useState('');
     const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
 
-    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
+    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('fitness-wellness');
     const [isBooking, setIsBooking] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({

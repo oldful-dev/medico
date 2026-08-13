@@ -1,4 +1,5 @@
 import StaffManagementPage from "@/components/pages/StaffManagementPage";
+import AdminLayout from "@/components/AdminLayout";
 
 export const metadata = {
   title: "Staff Management | Ayuxa Admin",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <StaffManagementPage />;
+  return (
+    <AdminLayout>
+      <StaffManagementPage />
+    </AdminLayout>
+  );
 }

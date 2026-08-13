@@ -372,7 +372,8 @@ export default function CheckoutScreen() {
                         serviceCategory: category,
                         vendorFee: fee,
                         baseAyuxaFee: 0, // dynamic on backend now
-                        diagnosticFee: 0
+                        diagnosticFee: 0,
+                        isPaidBooking: isPaidBookingOverride,
                     });
                     if (res.success && res.data) {
                         setCalculatedPrices(res.data);
@@ -387,7 +388,7 @@ export default function CheckoutScreen() {
         } else {
             setCalculatedPrices(null);
         }
-    }, [params.bookingPayload, isBloodTest, bloodTestBaseAmount, isSubscription, label]);
+    }, [params.bookingPayload, isBloodTest, bloodTestBaseAmount, isSubscription, label, isPaidBookingOverride]);
 
     const benefitApplied = !!calculatedPrices?.benefitApplied;
     const bookingFee = isSubscription ? 0 : (calculatedPrices ? calculatedPrices.breakdown.bookingFee : 299);
@@ -464,6 +465,21 @@ export default function CheckoutScreen() {
     const displayTaxes = isUpgraded && savingsInfo
         ? Math.max(0, taxes - savingsInfo.gstWaived)
         : taxes;
+
+    // Full standard-rate total (service fee + un-waived booking/platform fee +
+    // un-waived tax) for the "pay full price after quota exhausted" override —
+    // uses breakdown.originalBookingFee/originalPlatformFee, which the backend
+    // always returns as the true unwaived config values regardless of whether
+    // a subscription benefit was actually applied to this response
+    // (checkout.controller.js ~214-215), so it isn't subject to this screen's
+    // benefitDiscount-derived `originalBookingFee`/`originalPlatformFee` above.
+    const standardRateVendorFee = isBloodTest ? bloodTestBaseAmount : baseAmount;
+    const standardRateBookingFee = (calculatedPrices?.breakdown as any)?.originalBookingFee ?? 299;
+    const standardRatePlatformFee = (calculatedPrices?.breakdown as any)?.originalPlatformFee ?? 50;
+    const standardRateExtraFees = standardRateBookingFee + standardRatePlatformFee + convenienceFee + emergencyFee + visitFee + nightCharge + surgeCharge;
+    const standardRateTaxable = isHomeEssentialService ? (Number(standardRateVendorFee || 0) + standardRateExtraFees) : standardRateExtraFees;
+    const standardRateTax = Math.round(standardRateTaxable * (taxRateDisplay / 100));
+    const standardRateAmount = Math.round(Number(standardRateVendorFee || 0) + standardRateExtraFees + standardRateTax);
 
     const [finalAmount,    setFinalAmount]    = useState(Math.round(amountWithTaxAndFee));
 
@@ -635,7 +651,16 @@ export default function CheckoutScreen() {
     };
 
     // ─── Core payment execution (called after confirmation for blood tests) ─
-    const executePayment = useCallback(async () => {
+    const executePayment = useCallback(async (isPaidBookingForce?: boolean) => {
+        // When forced (user chose "pay full price" after quota exhaustion),
+        // charge the standard-rate total computed fresh in this render rather
+        // than `finalAmount` state, which won't reflect a same-tick
+        // setIsPaidBookingOverride(true) until the next re-render — same fix
+        // as service-checkout.tsx. isPaidBookingOverride state covers the
+        // deferred blood-test confirm-modal call (executePayment() with no
+        // args, fired after the state has had time to commit).
+        const isForcedPaid = isPaidBookingForce || isPaidBookingOverride;
+        const chargeAmount = isForcedPaid ? standardRateAmount : finalAmount;
 
         // ─── Wellness/Product Validation ───────────────────────────────────────
         if (isWellness) {
@@ -768,11 +793,36 @@ export default function CheckoutScreen() {
             if (isLegacyService && !sessionBookingId.current && params.bookingPayload && !params.subscriptionId) {
                 // ─── Service/Product Booking ──────────────────────────────────
                 const payload = JSON.parse(params.bookingPayload as string);
-                const bookingRes = await bookingService.createBooking({
-                    ...payload,
-                    amount: finalAmount,
-                    paymentMethod: selectedMethod,
-                });
+                let bookingRes;
+                try {
+                    bookingRes = await bookingService.createBooking({
+                        ...payload,
+                        amount: chargeAmount,
+                        paymentMethod: selectedMethod,
+                        isPaidBooking: isForcedPaid,
+                    });
+                } catch (bookingErr: any) {
+                    // apiClient throws on non-2xx — a LIMIT_EXCEEDED quota block
+                    // surfaces here, not as a resolved {success:false} response.
+                    if (bookingErr?.details?.code === 'LIMIT_EXCEEDED') {
+                        setFlowState('failed');
+                        setActionModal({
+                            visible: true,
+                            title: 'Free Quota Used Up',
+                            message: `You've used all your free bookings for this service this month.\n\nYou can still book at the standard rate (₹${standardRateAmount.toLocaleString('en-IN')}), or wait until your quota resets.`,
+                            primaryText: `Book at Standard Rate (₹${standardRateAmount.toLocaleString('en-IN')})`,
+                            onPrimary: () => {
+                                closeActionModal();
+                                setIsPaidBookingOverride(true);
+                                handlePay(true);
+                            },
+                            secondaryText: 'Cancel',
+                            onSecondary: closeActionModal,
+                        });
+                        return;
+                    }
+                    throw bookingErr;
+                }
                 if (!bookingRes.success || !bookingRes.data) {
                     setFlowState('failed');
                     triggerAlert(t('checkout.booking_error'), bookingRes.message ?? t('checkout.booking_error'));
@@ -814,11 +864,11 @@ export default function CheckoutScreen() {
                 if (isBloodTest && isWellness) {
                     alertMsg = t('checkout.combined_confirmed_msg') || `Your blood test and wellness product orders have been confirmed successfully via Cash on Delivery.`;
                 } else if (isBloodTest) {
-                    alertMsg = t('checkout.blood_test_confirmed_msg', { amount: Math.round(finalAmount).toLocaleString('en-IN') });
+                    alertMsg = t('checkout.blood_test_confirmed_msg', { amount: Math.round(chargeAmount).toLocaleString('en-IN') });
                 } else if (isWellness) {
-                    alertMsg = t('checkout.booking_received_msg', { amount: Math.round(finalAmount).toLocaleString('en-IN') }) || `Your order of ₹${Math.round(finalAmount)} has been placed successfully via Cash on Delivery.`;
+                    alertMsg = t('checkout.booking_received_msg', { amount: Math.round(chargeAmount).toLocaleString('en-IN') }) || `Your order of ₹${Math.round(chargeAmount)} has been placed successfully via Cash on Delivery.`;
                 } else {
-                    alertMsg = t('checkout.booking_received_msg', { amount: Math.round(finalAmount) });
+                    alertMsg = t('checkout.booking_received_msg', { amount: Math.round(chargeAmount) });
                 }
 
                 setActionModal({
@@ -831,7 +881,7 @@ export default function CheckoutScreen() {
                         if (isBloodTest && !isWellness) {
                             router.replace({
                                 pathname: '/blood-test/success',
-                                params: { bookingId: lastBookingId!, amount: String(finalAmount), packageName: label, isCod: 'true' }
+                                params: { bookingId: lastBookingId!, amount: String(chargeAmount), packageName: label, isCod: 'true' }
                             });
                         } else if (isWellness || (isBloodTest && isWellness)) {
                             router.replace({
@@ -852,7 +902,7 @@ export default function CheckoutScreen() {
             // ─── STEP 3: Create Razorpay order on backend
             setFlowState('initiating_order');
             const initiatePayload: any = {
-                amount: finalAmount,
+                amount: chargeAmount,
                 paymentMethod: selectedMethod,
                 couponCode: couponApplied ? couponCode : undefined,
                 ...(isUpgraded && selectedUpgradePlan && {
@@ -996,7 +1046,7 @@ export default function CheckoutScreen() {
                         pathname: '/blood-test/success',
                         params: {
                             bookingId: lastBookingId ?? '',
-                            amount: String(finalAmount),
+                            amount: String(chargeAmount),
                             packageName: label,
                         },
                     });
@@ -1012,7 +1062,7 @@ export default function CheckoutScreen() {
                         pathname: '/payment/payment-success',
                         params: {
                             bookingId: sessionBookingId.current ?? '',
-                            amount: String(finalAmount),
+                            amount: String(chargeAmount),
                             invoiceNumber: verifyRes.data?.invoice?.invoiceNumber ?? '',
                             invoicePdfUrl: verifyRes.data?.invoice?.pdfUrl ?? '',
                             isSubscription: isSubscription ? '1' : '0',
@@ -1070,7 +1120,7 @@ export default function CheckoutScreen() {
         } finally {
             setPayLoading(false);
         }
-    }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router, collectionType, selectedDate, selectedTime, selectedAddress, serviceabilityStatus, phoneNumber, wellnessItems, shippingDetails]);
+    }, [payLoading, finalAmount, standardRateAmount, isPaidBookingOverride, selectedMethod, couponApplied, couponCode, params, label, router, collectionType, selectedDate, selectedTime, selectedAddress, serviceabilityStatus, phoneNumber, wellnessItems, shippingDetails]);
 
     // ─── Live form validity — gates the Pay button itself, mirroring the same
     // checks handlePay/executePayment already enforce at submit time. Deliberately
@@ -1094,7 +1144,13 @@ export default function CheckoutScreen() {
     }, [isBloodTest, isWellness, selectedDate, selectedTime, collectionType, selectedAddress, serviceabilityStatus, phoneNumber]);
 
     // ─── Open Razorpay native popup ─────────────────────────
-    const handlePay = useCallback(async () => {
+    // isPaidBookingForce is threaded through to executePayment (directly, and
+    // via pendingForcedPaid for the blood-test confirm-modal detour) rather
+    // than relying solely on isPaidBookingOverride state, because the "Book at
+    // Standard Rate" button calls setIsPaidBookingOverride(true) and this
+    // handler in the same synchronous event — the state update hasn't
+    // committed yet when execution reaches here.
+    const handlePay = useCallback(async (isPaidBookingForce?: boolean) => {
         if (payLoading) return;
 
         // ─── Blood Test Validation ────────────────────────────────────────────
@@ -1125,12 +1181,16 @@ export default function CheckoutScreen() {
                 triggerAlert(t('checkout.phone_required'), t('checkout.phone_required_msg'));
                 return;
             }
-            // Show summary confirmation before Razorpay
+            // Show summary confirmation before Razorpay. The confirm modal's
+            // own button calls executePayment() with no args, so persist the
+            // force flag in state for it to read since it fires later, after
+            // isPaidBookingOverride has had time to commit.
+            if (isPaidBookingForce) setIsPaidBookingOverride(true);
             setConfirmModalVisible(true);
             return;
         }
 
-        await executePayment();
+        await executePayment(isPaidBookingForce);
     }, [payLoading, isBloodTest, selectedDate, selectedTime, collectionType, selectedAddress, serviceabilityStatus, phoneNumber, executePayment]);
 
     // ─── UI ─────────────────────────────────────────────────
@@ -1734,7 +1794,7 @@ export default function CheckoutScreen() {
                         styles.payBtn,
                         (payLoading || !isFormValid || (isBloodTest && serviceabilityStatus === 'non-serviceable')) && styles.payBtnLoading
                     ]}
-                    onPress={handlePay}
+                    onPress={() => handlePay()}
                     disabled={payLoading || !isFormValid || (isBloodTest && serviceabilityStatus === 'non-serviceable')}
                     activeOpacity={0.85}
                 >
