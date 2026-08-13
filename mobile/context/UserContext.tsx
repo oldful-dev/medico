@@ -1,7 +1,8 @@
 // User Context - User profile and service catalog state
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
+import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserProfile, userService, serviceCatalogService } from '@/services/api';
+import { UserProfile, userService, serviceCatalogService, ApiError } from '@/services/api';
 import { ServiceItem } from '@/services/api/serviceCatalogService';
 import { useAuth } from './AuthContext';
 import i18n from '@/i18n/i18n';
@@ -27,7 +28,8 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-    const { isAuthenticated } = useAuth();
+    const router = useRouter();
+    const { isAuthenticated, logout } = useAuth();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [services, setServices] = useState<ServiceItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -62,9 +64,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 setServices(res.data);
             }
         } catch (error) {
-            console.error('Failed to load services catalog:', error);
+            // Session expired or token invalid — redirect to login
+            if (error instanceof ApiError && error.isSessionExpired) {
+                console.warn('Session expired while loading services, redirecting to login');
+                await logout();
+                router.replace('/(auth)/login');
+            } else {
+                console.error('Failed to load services catalog:', error);
+            }
         }
-    }, []);
+    }, [logout, router]);
 
     const loadData = useCallback(async (force = false) => {
         // Always load services catalog so layout is 100% dynamic
@@ -87,11 +96,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
             }
             lastLoadTimeRef.current = Date.now();
         } catch (error) {
-            console.error('Failed to load user profile data:', error);
+            // Session expired or token invalid — redirect to login
+            if (error instanceof ApiError && error.isSessionExpired) {
+                console.warn('Session expired, redirecting to login');
+                await logout();
+                router.replace('/(auth)/login');
+            } else {
+                console.error('Failed to load user profile data:', error);
+            }
         } finally {
             setIsLoading(false);
         }
-    }, [isAuthenticated, loadServices]);
+    }, [isAuthenticated, loadServices, logout, router]);
 
     useEffect(() => {
         loadServices();
