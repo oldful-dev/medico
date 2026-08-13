@@ -11,6 +11,9 @@ const nextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../'),
   assetPrefix: '/',
   basePath: '',
+  images: {
+    unoptimized: true,
+  },
   onDemandEntries: {
     maxInactiveAge: 0,
   },
