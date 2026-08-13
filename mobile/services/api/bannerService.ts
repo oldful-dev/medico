@@ -45,7 +45,8 @@ class BannerService {
     try {
       const response = await apiClient.get<Banner[]>('/banners/home');
       if (response.success && Array.isArray(response.data)) {
-        return this.cachedBanners;
+        this.cachedBanners = response.data.sort((a, b) => a.order - b.order);
+        this.lastFetchTime = now;
       }
       return this.cachedBanners;
     } catch (error) {
