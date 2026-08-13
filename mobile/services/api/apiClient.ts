@@ -218,12 +218,26 @@ class ApiClient {
 export class ApiError extends Error {
     statusCode: number;
     details: any;
+    isSessionExpired: boolean;
 
     constructor(statusCode: number, message: string, details?: any) {
         super(message);
         this.name = 'ApiError';
         this.statusCode = statusCode;
         this.details = details;
+        this.isSessionExpired = this.detectSessionExpired(statusCode, message);
+    }
+
+    private detectSessionExpired(statusCode: number, message: string): boolean {
+        if (statusCode === 401) return true;
+        const lowerMsg = message.toLowerCase();
+        return (
+            lowerMsg.includes('session') ||
+            lowerMsg.includes('expired') ||
+            lowerMsg.includes('unauthorized') ||
+            lowerMsg.includes('token') ||
+            lowerMsg.includes('login again')
+        );
     }
 }
 

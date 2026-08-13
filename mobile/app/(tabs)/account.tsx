@@ -16,11 +16,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
-import { userService } from '@/services/api/userService';
+import { userService, ApiError } from '@/services/api/userService';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { legalService, LegalDocument } from '@/services/api/legalService';
+import { useApiWithSessionRedirect } from '@/hooks/useApiWithSessionRedirect';
 
 const avatarImg = require('@/assets/images/65a7d95e579c06bade85c7970d17cfcc5d7b7c55.png');
 
@@ -78,6 +79,7 @@ export default function AccountScreen() {
     const { languages } = useAppConfig();
     const { t } = useTranslation();
     const { isDarkMode, toggleDarkMode } = useTheme();
+    const { handleApiError } = useApiWithSessionRedirect();
     const colors = useThemeColors();
     const styles = makeStyles(colors);
 
@@ -149,9 +151,12 @@ export default function AccountScreen() {
                 setProfile(oldProfile);
                 triggerAlert(t('common.error'), res.message || t('account.failed_update_pref'));
             }
-        } catch {
-            setProfile(oldProfile);
-            triggerAlert(t('common.error'), t('common.generic_error'));
+        } catch (error) {
+            const handled = await handleApiError(error);
+            if (!handled) {
+                setProfile(oldProfile);
+                triggerAlert(t('common.error'), t('common.generic_error'));
+            }
         }
     };
 
@@ -162,8 +167,11 @@ export default function AccountScreen() {
         try {
             await userService.updateProfile({ preferredLanguage: code });
             setPreferredLanguage(code);
-        } catch {
-            setPreferredLanguage(code);
+        } catch (error) {
+            const handled = await handleApiError(error);
+            if (!handled) {
+                setPreferredLanguage(code);
+            }
         } finally {
             setSavingLang(false);
             setLangModalVisible(false);
@@ -176,9 +184,11 @@ export default function AccountScreen() {
                 try {
                     const res = await userService.getProfile();
                     if (res.success && res.data) setProfile(res.data);
-                } catch { }
+                } catch (error) {
+                    await handleApiError(error);
+                }
             })();
-        }, [setProfile])
+        }, [setProfile, handleApiError])
     );
 
     const medicalCard = profile?.medicalCards?.[0];
@@ -236,7 +246,10 @@ export default function AccountScreen() {
                 triggerAlert(t('common.error'), res.message || t('account.upload_failed'));
             }
         } catch (err: any) {
-            triggerAlert(t('common.error'), err.message || t('account.upload_failed'));
+            const handled = await handleApiError(err);
+            if (!handled) {
+                triggerAlert(t('common.error'), err.message || t('account.upload_failed'));
+            }
         } finally {
             setUploadingAvatar(false);
         }
@@ -279,7 +292,10 @@ export default function AccountScreen() {
                         triggerAlert(t('common.error'), res.message || t('account.delete_failed'));
                     }
                 } catch (err: any) {
-                    triggerAlert(t('common.error'), err.message || t('account.delete_failed'));
+                    const handled = await handleApiError(err);
+                    if (!handled) {
+                        triggerAlert(t('common.error'), err.message || t('account.delete_failed'));
+                    }
                 }
             },
         });
