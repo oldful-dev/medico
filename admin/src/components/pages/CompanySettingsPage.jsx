@@ -48,6 +48,7 @@ export default function CompanySettingsPage() {
         show_reviews: true,
         partners_list: [],
         reviews_list: [],
+        team_list: [],
         notifications: {
             booking: { sms: '', whatsapp: '', email: '' },
             careers: { email: '' }
@@ -82,6 +83,7 @@ export default function CompanySettingsPage() {
                             show_reviews: parsedJson?.show_reviews !== undefined ? parsedJson.show_reviews : true,
                             partners_list: parsedJson?.partners_list || prev.partners_list,
                             reviews_list: parsedJson?.reviews_list || prev.reviews_list,
+                            team_list: parsedJson?.team_list || [],
                             notifications: {
                                 booking: {
                                     sms:      parsedJson?.notifications?.booking?.sms      || '',
@@ -189,6 +191,20 @@ export default function CompanySettingsPage() {
                 >
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <Bell size={16} /> Notifications
+                    </div>
+                </button>
+                <button
+                    onClick={() => setActiveSubTab("team")}
+                    style={{
+                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
+                        fontWeight: 700, fontSize: 14,
+                        background: activeSubTab === "team" ? "var(--bg-glass)" : "transparent",
+                        color: activeSubTab === "team" ? "var(--accent-primary)" : "var(--text-muted)",
+                        borderBottom: activeSubTab === "team" ? "2.5px solid var(--accent-primary)" : "none"
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Briefcase size={16} /> Team
                     </div>
                 </button>
             </div>
@@ -437,6 +453,95 @@ export default function CompanySettingsPage() {
                             <button className="btn-primary" onClick={handleSave} disabled={isSaving}
                                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 24px", borderRadius: "var(--radius-md)", fontWeight: 600, border: "none", cursor: "pointer", background: "var(--gradient-primary)", color: "white", boxShadow: "var(--shadow-md)" }}>
                                 <Save size={16} /> {isSaving ? "Saving..." : "Save Notification Settings"}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* TEAM TAB */}
+                {activeSubTab === "team" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                        <div style={{ display: "flex", gap: 12, padding: 16, background: "rgba(4,131,87,0.06)", border: "1px solid rgba(4,131,87,0.15)", borderRadius: "var(--radius-md)", alignItems: "flex-start" }}>
+                            <Briefcase size={20} style={{ color: "var(--accent-primary)", flexShrink: 0, marginTop: 2 }} />
+                            <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: "1.6" }}>
+                                <strong>Public-Facing Team</strong><br/>
+                                Manage the team members displayed on the website. Add team members who will be featured on the public ayuxacare.com website.
+                            </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            {formData.team_list && formData.team_list.length > 0 ? (
+                                formData.team_list.map((member, idx) => (
+                                    <div key={idx} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 12, alignItems: "center", padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)" }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Name"
+                                            value={member.name || ''}
+                                            onChange={e => {
+                                                const updated = [...formData.team_list];
+                                                updated[idx].name = e.target.value;
+                                                setFormData({ ...formData, team_list: updated });
+                                            }}
+                                            style={{ padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", outline: "none" }}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Position"
+                                            value={member.position || ''}
+                                            onChange={e => {
+                                                const updated = [...formData.team_list];
+                                                updated[idx].position = e.target.value;
+                                                setFormData({ ...formData, team_list: updated });
+                                            }}
+                                            style={{ padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", outline: "none" }}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Bio or Description"
+                                            value={member.bio || ''}
+                                            onChange={e => {
+                                                const updated = [...formData.team_list];
+                                                updated[idx].bio = e.target.value;
+                                                setFormData({ ...formData, team_list: updated });
+                                            }}
+                                            style={{ padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", outline: "none" }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const updated = formData.team_list.filter((_, i) => i !== idx);
+                                                setFormData({ ...formData, team_list: updated });
+                                            }}
+                                            style={{ padding: "6px 12px", background: "#ff4444", color: "white", border: "none", borderRadius: "var(--radius-sm)", cursor: "pointer", fontSize: 12 }}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>
+                                    No team members added yet
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setFormData({
+                                    ...formData,
+                                    team_list: [...(formData.team_list || []), { name: '', position: '', bio: '' }]
+                                });
+                            }}
+                            style={{ padding: "10px 16px", background: "var(--gradient-primary)", color: "white", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontWeight: 600, alignSelf: "flex-start" }}
+                        >
+                            + Add Team Member
+                        </button>
+
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                            <button className="btn-primary" onClick={handleSave} disabled={isSaving}
+                                style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 24px", borderRadius: "var(--radius-md)", fontWeight: 600, border: "none", cursor: "pointer", background: "var(--gradient-primary)", color: "white", boxShadow: "var(--shadow-md)" }}>
+                                <Save size={16} /> {isSaving ? "Saving..." : "Save Team"}
                             </button>
                         </div>
                     </div>

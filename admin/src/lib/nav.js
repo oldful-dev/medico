@@ -15,8 +15,7 @@ export const NAV_SECTIONS = [
     {
         title: "Staff & Users",
         items: [
-            { id: "profiles", href: "/profiles", label: "Staff Profile", icon: Shield, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
-            { id: "staff-config", href: "/settings/profiles", label: "Staff Configuration", icon: Sliders, roles: ['SUPER_ADMIN'] },
+            { id: "staff-management", href: "/staff-management", label: "Staff Management", icon: Shield, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
         ],
     },
     {
@@ -35,7 +34,7 @@ export const NAV_SECTIONS = [
             { id: "bookings", href: "/bookings", label: "Booking Management", icon: CalendarCheck, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "server-ui", href: "/server-ui", label: "Server UI Configuration", icon: Sliders, roles: ['SUPER_ADMIN'] },
             { id: "store", href: "/store", label: "Wellness Store", icon: ShoppingBag, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
-            { id: "company-settings", href: "/settings/company", label: "Company Settings", icon: Settings, roles: ['SUPER_ADMIN'] },
+            { id: "company-settings", href: "/settings/company", label: "Company Settings", icon: Settings, roles: ['SUPER_ADMIN'], subItems: ['contact', 'notifications', 'team'] },
             { id: "website-settings", href: "/website-settings", label: "All Website Settings", icon: Globe, roles: ['SUPER_ADMIN'] },
             { id: "sos", href: "/sos", label: "SOS & Emergency", icon: AlertTriangle, badge: "Live", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'SUPPORT_AGENT'] },
             { id: "cities", href: "/cities", label: "City Management", icon: MapPin, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },
