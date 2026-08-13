@@ -1,14 +1,13 @@
 // Doctor Home Visit - Booking Screen
 // PRD: Grid of symptoms, smart routing to GP or Physio, Time selection, Address confirmation
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Platform, useWindowDimensions, ActivityIndicator, TextInput, KeyboardAvoidingView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, useWindowDimensions, ActivityIndicator, TextInput, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import * as ImagePicker from 'expo-image-picker';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
@@ -16,7 +15,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { locationService } from '@/services/device/locationService';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { useUser } from '@/context/UserContext';
-import { mediaService } from '@/services/api/mediaService';
 import { bookingService, Booking } from '@/services/api/bookingService';
 import { userService } from '@/services/api/userService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -110,44 +108,6 @@ export default function DoctorVisitScreen() {
         if (addr.landmark) setLandmark(addr.landmark);
     };
 
-    const handlePickReport = async (source: 'camera' | 'gallery') => {
-        if (selectedImages.length >= 5) {
-            triggerAlert('Limit Reached', 'You can upload up to 5 files.');
-            return;
-        }
-        try {
-            if (source === 'camera') {
-                const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-                if (permissionResult.granted === false) {
-                    triggerAlert('Permission Required', 'Camera permission is required.');
-                    return;
-                }
-                const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-                if (!result.canceled && result.assets && result.assets.length > 0) {
-                    setSelectedImages(prev => [...prev, result.assets[0].uri]);
-                }
-            } else if (source === 'gallery') {
-                const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                if (permissionResult.granted === false) {
-                    triggerAlert('Permission Required', 'Gallery permission is required.');
-                    return;
-                }
-                const result = await ImagePicker.launchImageLibraryAsync({
-                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                    allowsMultipleSelection: true,
-                    selectionLimit: 5 - selectedImages.length,
-                    quality: 0.8,
-                });
-                if (!result.canceled && result.assets && result.assets.length > 0) {
-                    const newUris = result.assets.map(asset => asset.uri);
-                    setSelectedImages(prev => [...prev, ...newUris]);
-                }
-            }
-        } catch (error) {
-            console.error('Error picking report:', error);
-        }
-    };
-
     // ─── Auto-fill profile address only on mount when GPS address is not available ───
     const [addressInitialized, setAddressInitialized] = React.useState(false);
     React.useEffect(() => {
@@ -171,7 +131,6 @@ export default function DoctorVisitScreen() {
     const [lastPhysioBooking, setLastPhysioBooking] = React.useState<Booking | null>(null);
 
     // ─── API State ───
-    const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const [isBooking, setIsBooking] = React.useState(false);
 
     // ─── Smart Logic: Auto-select doctor type based on problem ───
@@ -370,12 +329,6 @@ export default function DoctorVisitScreen() {
         try {
             setIsBooking(true);
 
-            // Upload media first (safe to do before payment — no booking created yet)
-            let uploadedImageUrls: string[] = [];
-            if (selectedImages.length > 0) {
-                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'doctor-visits');
-            }
-
             const symptomsList = selectedProblems.map(p => p === 'Other' ? otherProblemText.trim() : p);
 
             // Sync address back to profile (non-blocking, non-fatal)
@@ -397,7 +350,6 @@ export default function DoctorVisitScreen() {
                 formDataJson: {
                     visitType,
                     urgency: 'Later',
-                    attachments: uploadedImageUrls,
                     landmark: landmark.trim() || undefined,
                 },
             });
@@ -563,43 +515,6 @@ export default function DoctorVisitScreen() {
                             value={scheduledDate}
                             onDateChange={setScheduledDate}
                         />
-                    </View>
-
-                    {/* ─── Compact Document Upload UI ─── */}
-                    <View style={[styles.sectionCardSmall, { paddingVertical: Spacing.md }]}>
-                        <View style={styles.compactUploadContainer}>
-                            <TouchableOpacity
-                                style={[styles.compactUploadButton, { borderColor: colors.primary }]}
-                                onPress={() => handlePickReport('camera')}
-                                activeOpacity={0.8}
-                            >
-                                <Ionicons name="camera-outline" size={16} color={colors.primary} />
-                                <Text style={[styles.compactUploadText, { color: colors.primary }]}>Take Photo</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.compactUploadButton, { borderColor: colors.primary }]}
-                                onPress={() => handlePickReport('gallery')}
-                                activeOpacity={0.8}
-                            >
-                                <Ionicons name="image-outline" size={16} color={colors.primary} />
-                                <Text style={[styles.compactUploadText, { color: colors.primary }]}>Choose from Gallery</Text>
-                            </TouchableOpacity>
-                            {selectedImages.length > 0 && (
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.compactThumbScroll}>
-                                    {selectedImages.map((uri, idx) => (
-                                        <View key={idx} style={styles.compactThumbWrapper}>
-                                            <Image source={{ uri }} style={styles.compactThumb} />
-                                            <TouchableOpacity
-                                                style={styles.compactRemoveBtn}
-                                                onPress={() => setSelectedImages(prev => prev.filter((_, i) => i !== idx))}
-                                            >
-                                                <Ionicons name="close-circle" size={18} color="#EF4444" />
-                                            </TouchableOpacity>
-                                        </View>
-                                    ))}
-                                </ScrollView>
-                            )}
-                        </View>
                     </View>
 
                     {/* ─── Confirm Address Card ─── */}
@@ -1021,46 +936,6 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         color: colors.textDark,
         backgroundColor: colors.bgCard,
         marginTop: 6,
-    },
-
-    compactUploadContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    compactUploadButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderRadius: Radius.sm,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        gap: 6,
-    },
-    compactUploadText: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.bodySmall,
-    },
-    compactThumbScroll: {
-        flexDirection: 'row',
-    },
-    compactThumbWrapper: {
-        position: 'relative',
-        marginRight: 8,
-    },
-    compactThumb: {
-        width: 36,
-        height: 36,
-        borderRadius: Radius.sm,
-        borderWidth: 1,
-        borderColor: '#DDD',
-    },
-    compactRemoveBtn: {
-        position: 'absolute',
-        top: -6,
-        right: -6,
     },
 
     /* ─── Fixed Bottom Bar ─── */

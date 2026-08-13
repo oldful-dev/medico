@@ -154,25 +154,42 @@ const getUserById = async (req, res, next) => {
                 bookings: {
                     take: 50,
                     orderBy: { createdAt: 'desc' },
-                    include: { service: { select: { name: true } } },
+                    include: {
+                        service: true,
+                        caregiver: true,
+                        city: true,
+                        payments: {
+                            orderBy: { createdAt: 'desc' },
+                            include: { invoice: true }
+                        },
+                        labOrders: { orderBy: { createdAt: 'desc' } },
+                    },
                 },
                 labOrders: {
                     take: 50,
-                    orderBy: { createdAt: 'desc' }
+                    orderBy: { createdAt: 'desc' },
+                    include: {
+                        payments: { orderBy: { createdAt: 'desc' }, include: { invoice: true } },
+                        booking: { select: { bookingCode: true } },
+                    },
                 },
                 productOrders: {
                     take: 50,
                     orderBy: { createdAt: 'desc' },
-                    include: { product: true }
+                    include: {
+                        product: true,
+                        payments: { orderBy: { createdAt: 'desc' }, include: { invoice: true } },
+                    }
                 },
                 sosAlerts: {
                     take: 50,
-                    orderBy: { createdAt: 'desc' }
+                    orderBy: { createdAt: 'desc' },
+                    include: { responder: true, city: true },
                 },
                 payments: {
                     take: 50,
                     orderBy: { createdAt: 'desc' },
-                    include: { invoice: { select: { invoiceNumber: true, pdfUrl: true } } }
+                    include: { invoice: true }
                 },
                 insuranceApps: {
                     take: 50,

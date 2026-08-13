@@ -100,6 +100,25 @@ const initiatePayment = async (req, res, next) => {
                     message: 'Payment amount does not match service price. Please refresh and try again.'
                 });
             }
+
+            // ─── Security: Payment must not undercut the booking's own validated amount ──
+            // The basePrice check above only catches an amount below the vendor/service
+            // fee alone — it does NOT catch a fully subscription-waived total (₹0
+            // booking/platform fee + ₹0 tax) sitting on top of a legitimate service
+            // fee, which still clears 90% of basePrice easily. Booking.amount was
+            // already validated at booking-creation time (including the standard-rate
+            // floor for the "pay full price after quota exhausted" path), so it is the
+            // authoritative ceiling here — a coupon may only bring the charge DOWN from
+            // it, never let a stale/incorrect client total sneak in below it unexplained.
+            if (linkedBooking && linkedBooking.amount > 0 && !isBloodTest) {
+                const maxReasonableDiscount = Math.max(linkedBooking.amount * 0.5, 500); // generous coupon allowance
+                if (finalAmount < linkedBooking.amount - maxReasonableDiscount) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Payment amount does not match the booking amount. Please refresh and try again.'
+                    });
+                }
+            }
         }
 
         // For blood tests, validate against labOrder (no price validation needed, skip it)

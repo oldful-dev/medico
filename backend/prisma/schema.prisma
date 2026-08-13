@@ -874,6 +874,16 @@ model ServiceCharge {
   createdAt              DateTime @default(now()) @map("created_at")
   updatedAt              DateTime @updatedAt @map("updated_at")
 
+  // ── Unified Pricing Console (read-only projection, Slice 1) ──
+  // Mirrors Service.basePrice/pricingText for the merged admin view.
+  // scope tells the UI whether this row is a single-service override
+  // or a shared CATEGORY/SERVICE_TYPE default covering many services —
+  // the actual cause of price drift between this table and Service.
+  basePrice              Float?   @map("base_price")
+  pricingText            String?  @map("pricing_text")
+  scope                  String   @default("SERVICE") @map("scope") // SERVICE | CATEGORY | SERVICE_TYPE
+  serviceId              String?  @map("service_id")
+
   @@map("service_charges")
 }
 

@@ -1,9 +1,308 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, Eye, Ban, UserCheck, RotateCcw, ChevronLeft, ChevronRight, Edit2, Trash, FileDown } from "lucide-react";
+import { Search, Filter, Eye, Ban, UserCheck, RotateCcw, ChevronLeft, ChevronRight, Edit2, Trash, FileDown, X, ExternalLink } from "lucide-react";
 import Cookies from "js-cookie";
 import { userAPI, cityAPI, bookingAPI } from "@/lib/api";
 import { formatDate, formatDateTime, showToast } from "@/lib/hooks";
+
+// ─── Record Viewer: generic "show every field" renderer ───────────────────────
+// Fields intentionally hidden from the raw dump because they're either huge blobs
+// already rendered specially elsewhere, or internal noise with no admin value.
+const RECORD_VIEWER_HIDDEN_KEYS = new Set(['passwordHash', 'refreshToken', 'otpCode', 'otpExpiresAt']);
+
+function tryParseJson(val) {
+    if (typeof val !== 'string') return val;
+    const trimmed = val.trim();
+    if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return val;
+    try { return JSON.parse(trimmed); } catch { return val; }
+}
+
+function humanizeKey(key) {
+    return key
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/^./, c => c.toUpperCase())
+        .trim();
+}
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+function looksLikeDateKey(key) {
+    if (key === 'shiftType' || key === 'scheduledTime') return false; // labels only, not real Date objects
+    return /(At|Date|Time|Deadline|Expiry|Expires)$/.test(key);
+}
+
+function InvoiceLink({ invoice, paymentAmount }) {
+    if (!invoice) {
+        // A genuinely missing invoice is a real, useful fact — not just an
+        // empty field. Zero-amount bookings (subscription-covered, INQUIRY-mode
+        // services) currently never get one generated on the backend.
+        const reason = Number(paymentAmount) === 0
+            ? 'No invoice generated (zero-amount payment)'
+            : 'No invoice generated';
+        return <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>{reason}</span>;
+    }
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 600 }}>{invoice.invoiceNumber}</span>
+                <span className="text-sm text-muted">₹{invoice.totalAmount} • {formatDate(invoice.invoiceDate)}</span>
+            </div>
+            {invoice.pdfUrl ? (
+                <a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600 }}>
+                    View / Download Invoice PDF <ExternalLink size={12} />
+                </a>
+            ) : (
+                <span className="text-sm text-muted" style={{ fontStyle: 'italic' }}>Invoice record exists but no PDF was generated</span>
+            )}
+        </div>
+    );
+}
+
+function RecordFieldValue({ fieldKey, value, siblingData }) {
+    const parsed = tryParseJson(value);
+
+    if (fieldKey === 'invoice') {
+        return <InvoiceLink invoice={parsed} paymentAmount={siblingData?.amount} />;
+    }
+
+    if (parsed === null || parsed === undefined || parsed === '') {
+        return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+    }
+    if (typeof parsed === 'boolean') {
+        return <span className={`badge ${parsed ? 'badge-success' : 'badge-default'}`} style={{ fontSize: 10 }}>{String(parsed)}</span>;
+    }
+    if (looksLikeDateKey(fieldKey) && typeof parsed === 'string' && ISO_DATE_RE.test(parsed)) {
+        return <span>{formatDateTime(parsed)}</span>;
+    }
+    if (Array.isArray(parsed)) {
+        if (parsed.length === 0) return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+        if (parsed.every(item => typeof item !== 'object' || item === null)) {
+            return <span>{parsed.join(', ')}</span>;
+        }
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                {parsed.map((item, idx) => (
+                    <div key={idx} style={{ padding: 8, background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 12 }}>
+                        {typeof item === 'object' && item !== null ? <RecordObjectFields obj={item} /> : String(item)}
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    if (typeof parsed === 'object') {
+        return (
+            <div style={{ padding: 8, background: 'var(--bg-tertiary)', borderRadius: 6, marginTop: 4 }}>
+                <RecordObjectFields obj={parsed} />
+            </div>
+        );
+    }
+    // Looks like a URL — offer an open link
+    if (typeof parsed === 'string' && /^https?:\/\//i.test(parsed)) {
+        return (
+            <a href={parsed} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: 4, wordBreak: 'break-all' }}>
+                {parsed} <ExternalLink size={12} />
+            </a>
+        );
+    }
+    return <span style={{ wordBreak: 'break-word' }}>{String(parsed)}</span>;
+}
+
+function RecordObjectFields({ obj }) {
+    if (!obj || typeof obj !== 'object') return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+    const entries = Object.entries(obj).filter(([k]) => !RECORD_VIEWER_HIDDEN_KEYS.has(k));
+    if (entries.length === 0) return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {entries.map(([k, v]) => (
+                <div key={k} style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 8, fontSize: 12 }}>
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{humanizeKey(k)}</span>
+                    <RecordFieldValue fieldKey={k} value={v} siblingData={obj} />
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// Fields grouped into named sections per record type. A field left out of every
+// group here still isn't lost — anything not claimed by a group falls into an
+// auto-generated "Other Fields" section at the end, so nothing is silently dropped.
+const RECORD_SECTIONS = {
+    booking: [
+        { title: 'Booking', keys: ['status', 'paymentStatus', 'amount', 'scheduledDate', 'scheduledTime', 'addressLine', 'adminNotes', 'isEscalated', 'isSLABreached', 'slaDeadline'] },
+        { title: 'Service', keys: ['service'] },
+        { title: 'Assigned Staff', keys: ['caregiver', 'servicePersonName', 'servicePersonPhone', 'servicePersonNotes', 'staffType', 'shiftDuration', 'startDate', 'endDate'] },
+        { title: 'Location', keys: ['city', 'latitude', 'longitude', 'pickupAddress', 'dropAddress', 'vehicleType'] },
+        { title: 'Clinical / Form Details', keys: ['symptoms', 'doctorType', 'prescriptionUrl', 'requirements', 'formDataJson'] },
+        { title: 'Payments', keys: ['payments'] },
+        { title: 'Linked Lab Orders', keys: ['labOrders'] },
+        { title: 'Timestamps', keys: ['createdAt', 'updatedAt'] },
+    ],
+    labOrder: [
+        { title: 'Order', keys: ['status', 'bookingType', 'trackingLink', 'reportUrl', 'rescheduleReason', 'rescheduledAt', 'rescheduledBy', 'rescheduledDate', 'rescheduledTime'] },
+        { title: 'Patient', keys: ['patient', 'additionalMembers'] },
+        { title: 'Packages & Slot', keys: ['packages', 'slot', 'assignedStaff'] },
+        { title: 'Address', keys: ['address'] },
+        { title: 'Payment', keys: ['paymentDetails', 'payments'] },
+        { title: 'Linked Booking', keys: ['booking'] },
+        { title: 'Timestamps', keys: ['createdAt', 'updatedAt', 'holdExpiresAt'] },
+    ],
+    productOrder: [
+        { title: 'Order', keys: ['status', 'shippingStatus', 'items', 'product'] },
+        { title: 'Pricing', keys: ['amount', 'subtotal', 'tax', 'discount', 'shippingCharge'] },
+        { title: 'Shipping', keys: ['address', 'courierName', 'awbCode', 'trackingUrl', 'trackingStatus', 'trackingData'] },
+        { title: 'Payments', keys: ['payments'] },
+        { title: 'Timestamps', keys: ['createdAt', 'updatedAt'] },
+    ],
+};
+
+// ─── Summary strip: the handful of facts an admin actually scans for first ────
+function buildRecordSummary(type, data) {
+    const items = [];
+    const warnings = [];
+
+    if (type === 'booking') {
+        items.push({ label: 'Status', value: data.status, tone: data.status === 'CANCELLED' ? 'danger' : data.status === 'COMPLETED' ? 'success' : 'info' });
+        items.push({ label: 'Payment', value: data.paymentStatus, tone: data.paymentStatus === 'SUCCESS' ? 'success' : data.paymentStatus === 'FAILED' ? 'danger' : 'warning' });
+        items.push({ label: 'Amount', value: `₹${data.amount ?? 0}` });
+        if (data.service?.name) items.push({ label: 'Service', value: data.service.name });
+        if (data.caregiver?.name) items.push({ label: 'Staff', value: data.caregiver.name });
+        else if (data.servicePersonName) items.push({ label: 'Staff', value: data.servicePersonName });
+        if (data.isSLABreached) warnings.push('SLA breached');
+        if (data.isEscalated) warnings.push('Escalated');
+    } else if (type === 'labOrder') {
+        items.push({ label: 'Status', value: data.status, tone: data.status === 'CANCELLED' ? 'danger' : data.status === 'COMPLETED' ? 'success' : 'info' });
+        items.push({ label: 'Type', value: data.bookingType });
+        const patient = data.patient?.name || data.patient?.fullName;
+        if (patient) items.push({ label: 'Patient', value: patient });
+    } else if (type === 'productOrder') {
+        items.push({ label: 'Status', value: data.status, tone: data.status === 'CANCELLED' ? 'danger' : data.status === 'DELIVERED' ? 'success' : 'info' });
+        items.push({ label: 'Shipping', value: data.shippingStatus });
+        items.push({ label: 'Amount', value: `₹${data.amount ?? 0}` });
+    }
+
+    // Duplicate / anomalous payment detection — the single most useful cross-check
+    // an admin can't easily see by scanning a flat field dump.
+    const payments = Array.isArray(data.payments) ? data.payments : [];
+    if (payments.length > 1) {
+        const successPayments = payments.filter(p => p.status === 'SUCCESS');
+        const totalPaid = successPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+        const invoiceCount = payments.filter(p => p.invoice).length;
+        items.push({ label: 'Payments', value: `${payments.length} records (${successPayments.length} successful)` });
+        items.push({ label: 'Total Paid', value: `₹${totalPaid}` });
+        items.push({ label: 'Invoices', value: `${invoiceCount} of ${payments.length}`, tone: invoiceCount < successPayments.length ? 'warning' : undefined });
+        if (successPayments.length > 1) {
+            warnings.push(`${successPayments.length} successful payments linked to this record — verify this isn't a duplicate charge`);
+        }
+    } else if (payments.length === 1) {
+        items.push({ label: 'Payment Method', value: payments[0].paymentMethod || '—' });
+        items.push({ label: 'Invoice', value: payments[0].invoice ? payments[0].invoice.invoiceNumber : 'Not generated', tone: payments[0].invoice ? undefined : 'warning' });
+    }
+
+    return { items, warnings };
+}
+
+function RecordSummaryStrip({ type, data }) {
+    const { items, warnings } = buildRecordSummary(type, data);
+    const toneColor = { success: 'var(--accent-success, #22c55e)', danger: 'var(--accent-danger, #ef4444)', warning: 'var(--accent-warning, #f59e0b)', info: 'var(--accent-primary)' };
+
+    return (
+        <div style={{ padding: 16, background: 'var(--bg-secondary)', borderRadius: 10, marginBottom: 16 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20 }}>
+                {items.map((it, i) => (
+                    <div key={i}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.4 }}>{it.label}</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: it.tone ? toneColor[it.tone] : 'var(--text-primary)' }}>{it.value ?? '—'}</div>
+                    </div>
+                ))}
+            </div>
+            {warnings.length > 0 && (
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {warnings.map((w, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: 'var(--accent-danger, #ef4444)' }}>
+                            ⚠️ {w}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function RecordSection({ title, keys, data, defaultOpen }) {
+    const [open, setOpen] = useState(!!defaultOpen);
+    const presentKeys = keys.filter(k => data[k] !== undefined);
+    if (presentKeys.length === 0) return null;
+
+    return (
+        <div style={{ border: '1px solid var(--border-color)', borderRadius: 8, overflow: 'hidden' }}>
+            <button
+                onClick={() => setOpen(o => !o)}
+                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-tertiary)', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}
+            >
+                {title}
+                <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{open ? '▲ Collapse' : '▼ Expand'}</span>
+            </button>
+            {open && (
+                <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {presentKeys.map(key => (
+                        <div key={key} style={{ paddingBottom: 10, borderBottom: '1px solid var(--border-color)' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>
+                                {humanizeKey(key)}
+                            </div>
+                            <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+                                <RecordFieldValue fieldKey={key} value={data[key]} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function RecordDetailModal({ recordViewer, onClose }) {
+    if (!recordViewer) return null;
+    const { type, data } = recordViewer;
+
+    const sections = RECORD_SECTIONS[type] || [];
+    const claimedKeys = new Set(sections.flatMap(s => s.keys));
+    const allKeys = Object.keys(data).filter(k => !RECORD_VIEWER_HIDDEN_KEYS.has(k));
+    const leftoverKeys = allKeys.filter(k => !claimedKeys.has(k));
+
+    const titleMap = { booking: 'Booking Details', labOrder: 'Lab Order Details', productOrder: 'Product Order Details' };
+    const subtitleMap = {
+        booking: data.bookingCode,
+        labOrder: data.clientRefId || data.id,
+        productOrder: data.orderCode || data.id,
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
+            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 760, maxHeight: '90vh', overflowY: 'auto' }}>
+                <div className="modal-header" style={{ position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 1 }}>
+                    <div>
+                        <h3 style={{ margin: 0 }}>{titleMap[type] || 'Record Details'}</h3>
+                        <div className="text-sm text-muted">{subtitleMap[type]}</div>
+                    </div>
+                    <button onClick={onClose} className="btn btn-sm btn-secondary"><X size={16} /></button>
+                </div>
+                <div style={{ padding: 20 }}>
+                    <RecordSummaryStrip type={type} data={data} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {sections.map((s, i) => (
+                            <RecordSection key={s.title} title={s.title} keys={s.keys} data={data} defaultOpen={i === 0} />
+                        ))}
+                        {leftoverKeys.length > 0 && (
+                            <RecordSection title="Other Fields" keys={leftoverKeys} data={data} defaultOpen={false} />
+                        )}
+                    </div>
+                </div>
+                <div className="modal-footer" style={{ position: 'sticky', bottom: 0, background: 'var(--bg-card)' }}>
+                    <button onClick={onClose} className="btn btn-secondary">Close</button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function UsersPage() {
     const [users, setUsers] = useState([]);
@@ -16,6 +315,7 @@ export default function UsersPage() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [detailTab, setDetailTab] = useState('personal');
     const [imageViewer, setImageViewer] = useState(null);
+    const [recordViewer, setRecordViewer] = useState(null); // { type: 'booking'|'labOrder'|'productOrder', data: {...} }
     const limit = 20;
     const [editingUser, setEditingUser] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -407,13 +707,20 @@ export default function UsersPage() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                             {(!selectedUser.bookings || selectedUser.bookings.length === 0) ? <div className="text-muted text-sm">No bookings found</div> :
                                                 selectedUser.bookings.map((booking, i) => (
-                                                    <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                    <div
+                                                        key={i}
+                                                        onClick={() => setRecordViewer({ type: 'booking', data: booking })}
+                                                        style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: '1px solid transparent', transition: 'border-color 0.15s' }}
+                                                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                                                        onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
+                                                    >
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                                                             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{booking.bookingCode} - {booking.service?.name}</span>
                                                             <span className="badge badge-info" style={{ fontSize: 10 }}>{booking.status}</span>
                                                         </div>
-                                                        <div>Price: ₹{booking.totalPrice} • Created: {formatDate(booking.createdAt)}</div>
+                                                        <div>Price: ₹{booking.totalPrice ?? booking.amount} • Created: {formatDate(booking.createdAt)}</div>
                                                         <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Scheduled: {formatDate(booking.scheduledDate)} {booking.scheduledTime || ''}</div>
+                                                        <div style={{ color: 'var(--accent-primary)', fontSize: 11, marginTop: 4 }}>Click to view full details →</div>
                                                     </div>
                                                 ))
                                             }
@@ -425,7 +732,13 @@ export default function UsersPage() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                             {(!selectedUser.labOrders || selectedUser.labOrders.length === 0) ? <div className="text-muted text-sm">No lab orders found</div> :
                                                 selectedUser.labOrders.map((lo, i) => (
-                                                    <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                    <div
+                                                        key={i}
+                                                        onClick={() => setRecordViewer({ type: 'labOrder', data: lo })}
+                                                        style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: '1px solid transparent', transition: 'border-color 0.15s' }}
+                                                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                                                        onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
+                                                    >
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                                                             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Ref: {lo.clientRefId || lo.id}</span>
                                                             <span className="badge badge-warning" style={{ fontSize: 10 }}>{lo.status}</span>
@@ -445,6 +758,7 @@ export default function UsersPage() {
                                                             }
                                                         </div>
                                                         <div>Total Price: ₹{lo.totalPrice || lo.amount} • Created: {formatDate(lo.createdAt)}</div>
+                                                        <div style={{ color: 'var(--accent-primary)', fontSize: 11, marginTop: 4 }}>Click to view full details →</div>
                                                     </div>
                                                 ))
                                             }
@@ -456,7 +770,13 @@ export default function UsersPage() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                             {(!selectedUser.productOrders || selectedUser.productOrders.length === 0) ? <div className="text-muted text-sm">No product orders found</div> :
                                                 selectedUser.productOrders.map((po, i) => (
-                                                    <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                    <div
+                                                        key={i}
+                                                        onClick={() => setRecordViewer({ type: 'productOrder', data: po })}
+                                                        style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: '1px solid transparent', transition: 'border-color 0.15s' }}
+                                                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                                                        onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
+                                                    >
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                                                             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Order: #{po.orderCode || po.id}</span>
                                                             <span className="badge badge-success" style={{ fontSize: 10 }}>{po.status}</span>
@@ -476,6 +796,7 @@ export default function UsersPage() {
                                                             }
                                                         </div>
                                                         <div>Amount: ₹{po.amount || po.totalAmount} • Date: {formatDate(po.createdAt)}</div>
+                                                        <div style={{ color: 'var(--accent-primary)', fontSize: 11, marginTop: 4 }}>Click to view full details →</div>
                                                     </div>
                                                 ))
                                             }
@@ -687,6 +1008,8 @@ export default function UsersPage() {
                     </div>
                 </div>
             )}
+
+            <RecordDetailModal recordViewer={recordViewer} onClose={() => setRecordViewer(null)} />
 
             {editingUser && (
                 <div className="modal-overlay" onClick={() => setEditingUser(null)}>

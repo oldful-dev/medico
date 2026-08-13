@@ -4,6 +4,7 @@ import { Search, Eye, UserPlus, AlertTriangle, ChevronLeft, ChevronRight, Edit2,
 import { bookingAPI, caregiverAPI, cityAPI, labAPI, activityAPI } from "@/lib/api";
 import { formatDate, formatDateTime, formatCurrency, showToast } from "@/lib/hooks";
 import { getSocket } from "@/lib/socket";
+import PaymentsPanel, { PaymentsSummaryWarning } from "@/components/common/PaymentsPanel";
 
 const statusColors = { PENDING: 'badge-warning', CONFIRMED: 'badge-info', ASSIGNED: 'badge-info', IN_PROGRESS: 'badge-purple', COMPLETED: 'badge-success', CANCELLED: 'badge-default', SLA_BREACH: 'badge-danger', PAYMENT_FAILED: 'badge-danger' };
 const paymentStatusColors = { PENDING: 'badge-warning', INITIATED: 'badge-info', SUCCESS: 'badge-success', FAILED: 'badge-danger', REFUNDED: 'badge-secondary', REFUND_INITIATED: 'badge-purple', PAYMENT_FAILED: 'badge-danger' };
@@ -527,6 +528,8 @@ export default function BookingsPage() {
                                     </div>
                                 </div>
 
+                                <PaymentsSummaryWarning payments={selected.payments} />
+
                                 {/* Staff Assignment */}
                                 <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -546,6 +549,15 @@ export default function BookingsPage() {
                                     {selected.servicePersonName
                                         ? <div style={{ background: 'var(--bg-glass)', padding: 12, borderRadius: 8 }}><strong>{selected.servicePersonName}</strong><div className="text-sm">{selected.servicePersonPhone}</div>{selected.servicePersonNotes && <div className="text-sm text-muted">{selected.servicePersonNotes}</div>}</div>
                                         : <div className="text-sm text-muted">None added</div>}
+                                </div>
+
+                                {/* Payment Records — every payment row linked to this booking, not just
+                                    the latest one. A duplicate SUCCESS payment is flagged above; this
+                                    section shows the actual records (method, refund state, invoice) so an
+                                    admin can verify without leaving the modal. */}
+                                <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                    <h4 style={{ marginBottom: 12, fontWeight: 600 }}>Payment Records</h4>
+                                    <PaymentsPanel payments={selected.payments} />
                                 </div>
 
                                 {/* Dynamic Booking Form Data Json Details (Rendered if formDataJson exists) */}

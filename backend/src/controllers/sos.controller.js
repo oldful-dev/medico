@@ -9,6 +9,7 @@ const emailService = require('../services/email');
 const wa = require('../services/whatsapp');
 const { sendSMS } = require('../services/sms');
 const { reverseGeocode } = require('../utils/geocoding.service');
+const { assertCaregiverIsAssignable } = require('../utils/assignmentEligibility');
 
 // City-centre coords used when device GPS is unavailable (emulator / permission denied)
 const CITY_COORDS = {
@@ -402,6 +403,15 @@ const assignResponder = async (req, res) => {
     try {
         const { id } = req.params;
         const { responderId } = req.body;
+
+        try {
+            await assertCaregiverIsAssignable(responderId);
+        } catch (eligibilityErr) {
+            return res.status(eligibilityErr.statusCode || 400).json({
+                success: false,
+                message: eligibilityErr.message,
+            });
+        }
 
         const alert = await prisma.sOSAlert.update({
             where: { id },
