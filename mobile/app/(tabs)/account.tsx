@@ -63,6 +63,30 @@ const getDocStyle = (type: string, isDarkMode: boolean) => {
                 bg: isDarkMode ? '#2D0A1A' : '#FCE4EC',
                 color: '#C2185B',
             };
+        case 'DISCLAIMER':
+            return {
+                icon: 'warning-outline' as const,
+                bg: isDarkMode ? '#2D1A0A' : '#FFF3E0',
+                color: '#EF6C00',
+            };
+        case 'SERVICE_POLICY':
+            return {
+                icon: 'clipboard-outline' as const,
+                bg: isDarkMode ? '#1A0A2D' : '#EDE7F6',
+                color: '#6A1B9A',
+            };
+        case 'STATUTORY_DISCLOSURES':
+            return {
+                icon: 'business-outline' as const,
+                bg: isDarkMode ? '#0A1F2D' : '#E1F5FE',
+                color: '#00838F',
+            };
+        case 'COOKIE_POLICY':
+            return {
+                icon: 'cafe-outline' as const,
+                bg: isDarkMode ? '#2D2410' : '#FFF8E1',
+                color: '#8D6E63',
+            };
         default:
             return {
                 icon: 'document-text-outline' as const,
@@ -680,6 +704,7 @@ export default function AccountScreen() {
                             else if (doc.type === 'DISCLAIMER') displayTitle = t('legal.disclaimer');
                             else if (doc.type === 'SERVICE_POLICY') displayTitle = t('legal.service_policy');
                             else if (doc.type === 'STATUTORY_DISCLOSURES') displayTitle = t('legal.statutory_disclosures');
+                            else if (doc.type === 'COOKIE_POLICY') displayTitle = t('legal.cookie_policy');
 
                             return (
                                 <MenuRow

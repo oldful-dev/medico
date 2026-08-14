@@ -13,6 +13,7 @@ router.get('/:id', authenticateAdmin, ctrl.getLegalDocumentById);
 router.post('/', authenticateAdmin, ctrl.createLegalDocument);
 router.put('/:id', authenticateAdmin, ctrl.updateLegalDocument);
 router.put('/:id/publish', authenticateAdmin, ctrl.publishLegalDocument);
+router.put('/:id/archive', authenticateAdmin, ctrl.archiveLegalDocument);
 router.delete('/:id', authenticateAdmin, ctrl.deleteLegalDocument);
 
 module.exports = router;

@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "LegalDocStatus" ADD VALUE IF NOT EXISTS 'ARCHIVED';

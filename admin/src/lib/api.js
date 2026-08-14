@@ -219,6 +219,7 @@ export const legalAPI = {
     create: (data) => api.post('/legal', data),
     update: (id, data) => api.put(`/legal/${id}`, data),
     publish: (id) => api.put(`/legal/${id}/publish`),
+    archive: (id) => api.put(`/legal/${id}/archive`),
     delete: (id) => api.delete(`/legal/${id}`),
 };
 

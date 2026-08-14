@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FileText, Edit2, Eye, Upload, Plus, Trash2, Globe, Clock, ChevronLeft, AlertCircle, Check } from "lucide-react";
+import { FileText, Edit2, Eye, Upload, Plus, Trash2, Globe, Clock, ChevronLeft, AlertCircle, Check, ScrollText, ShieldCheck, Banknote, AlertTriangle, ClipboardList, Landmark, Cookie, Archive } from "lucide-react";
 import { legalAPI } from "@/lib/api";
 import { showToast, formatDateTime } from "@/lib/hooks";
 
@@ -11,6 +11,17 @@ const DOC_TYPES = {
     DISCLAIMER: 'Disclaimer',
     SERVICE_POLICY: 'Service Scope & Operational Policy',
     STATUTORY_DISCLOSURES: 'Statutory Disclosures',
+    COOKIE_POLICY: 'Cookie Policy',
+};
+
+const DOC_ICONS = {
+    TERMS_AND_CONDITIONS: ScrollText,
+    PRIVACY_POLICY: ShieldCheck,
+    REFUND_POLICY: Banknote,
+    DISCLAIMER: AlertTriangle,
+    SERVICE_POLICY: ClipboardList,
+    STATUTORY_DISCLOSURES: Landmark,
+    COOKIE_POLICY: Cookie,
 };
 
 const STATUS_BADGE = {
@@ -151,13 +162,24 @@ export default function LegalPage() {
     }
 
     async function handleDelete(id, title) {
-        if (!confirm(`Delete draft "${title}"? This cannot be undone.`)) return;
+        if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
         try {
             await legalAPI.delete(id);
-            showToast('Draft deleted');
+            showToast('Document deleted');
             loadDocs();
         } catch (e) {
             showToast(e.response?.data?.message || 'Delete failed', 'error');
+        }
+    }
+
+    async function handleArchive(id, title) {
+        if (!confirm(`Archive "${title}"? It will be pulled from the live website/app immediately.`)) return;
+        try {
+            await legalAPI.archive(id);
+            showToast('Document archived', 'success');
+            loadDocs();
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Archive failed', 'error');
         }
     }
 
@@ -186,9 +208,14 @@ export default function LegalPage() {
                     <div className="flex gap-2">
                         <button className="btn btn-secondary" onClick={() => setView('list')}><ChevronLeft size={16} /> Back</button>
                         <button className="btn btn-primary" onClick={() => openEdit(previewDoc)}><Edit2 size={14} /> Edit</button>
-                        {previewDoc.status !== 'PUBLISHED' && (
+                        {previewDoc.status === 'DRAFT' && (
                             <button className="btn btn-success" onClick={() => handlePublish(previewDoc.id)} disabled={!!publishing}>
                                 <Globe size={14} /> Publish
+                            </button>
+                        )}
+                        {previewDoc.status === 'PUBLISHED' && (
+                            <button className="btn btn-warning" onClick={() => handleArchive(previewDoc.id, previewDoc.title)}>
+                                <Archive size={14} /> Archive
                             </button>
                         )}
                     </div>
@@ -358,12 +385,13 @@ export default function LegalPage() {
                     {Object.entries(allDocTypes).map(([type, label]) => {
                         const versions = grouped[type] || [];
                         const published = versions.find(d => d.status === 'PUBLISHED');
+                        const DocIcon = DOC_ICONS[type] || FileText;
 
                         return (
                             <div key={type} className="card">
                                 <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <FileText size={16} style={{ color: 'var(--primary)' }} />
+                                        <DocIcon size={16} style={{ color: 'var(--primary)' }} />
                                         <h3 style={{ margin: 0, fontSize: 14 }}>{label}</h3>
                                     </div>
                                     {published
@@ -400,15 +428,20 @@ export default function LegalPage() {
                                                         <button className="btn btn-sm btn-primary" onClick={() => openEdit(doc)} title="Edit">
                                                             <Edit2 size={12} />
                                                         </button>
+                                                        {doc.status === 'PUBLISHED' && (
+                                                            <button className="btn btn-sm btn-warning" onClick={() => handleArchive(doc.id, doc.title)} title="Archive — pull from live site">
+                                                                <Archive size={12} />
+                                                            </button>
+                                                        )}
+                                                        {doc.status === 'DRAFT' && (
+                                                            <button className="btn btn-sm btn-success" onClick={() => handlePublish(doc.id)} disabled={publishing === doc.id} title="Publish">
+                                                                <Globe size={12} />
+                                                            </button>
+                                                        )}
                                                         {doc.status !== 'PUBLISHED' && (
-                                                            <>
-                                                                <button className="btn btn-sm btn-success" onClick={() => handlePublish(doc.id)} disabled={publishing === doc.id} title="Publish">
-                                                                    <Globe size={12} />
-                                                                </button>
-                                                                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(doc.id, doc.title)} title="Delete draft">
-                                                                    <Trash2 size={12} />
-                                                                </button>
-                                                            </>
+                                                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(doc.id, doc.title)} title="Delete">
+                                                                <Trash2 size={12} />
+                                                            </button>
                                                         )}
                                                     </div>
                                                 </div>

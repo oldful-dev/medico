@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { uiConfigService } from '@/services/api/uiConfigService';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 
 const FALLBACK_HTML = `<section>
   <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">About Ayuxa</h1>
@@ -60,6 +61,16 @@ const FALLBACK_HTML = `<section>
   </p>
 </section>`;
 
+// Splits an admin-authored HTML blob into top-level <section>...</section>
+// chunks (falling back to the whole string as one chunk if none are found),
+// so each section can get its own staggered whileInView reveal — matching
+// the per-card animation on the Community page instead of one flat fade.
+function splitIntoSections(html: string): string[] {
+  const matches = html.match(/<section[\s\S]*?<\/section>/gi);
+  if (matches && matches.length > 0) return matches;
+  return html.trim() ? [html] : [];
+}
+
 export default function AboutPage() {
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -91,12 +102,30 @@ export default function AboutPage() {
     );
   }
 
+  const sections = splitIntoSections(htmlContent);
+
   return (
     <div className="bg-[#FFFCF6] min-h-screen pt-12 md:pt-16 pb-16 px-6 md:px-12 lg:px-24 font-[var(--font-poppins)]">
-      <div 
-        className="max-w-4xl mx-auto flex flex-col gap-12"
-        dangerouslySetInnerHTML={{ __html: htmlContent }}
-      />
+      <div className="max-w-4xl mx-auto flex flex-col gap-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-full text-emerald-700 text-xs font-bold uppercase tracking-widest w-fit"
+        >
+          <Sparkles className="w-3.5 h-3.5" /> Who We Are
+        </motion.div>
+
+        {sections.map((section, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: index === 0 ? 0.1 : index * 0.1 }}
+            dangerouslySetInnerHTML={{ __html: section }}
+          />
+        ))}
+      </div>
     </div>
   );
 }

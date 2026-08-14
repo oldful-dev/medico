@@ -15,7 +15,7 @@ export interface LegalDocument {
     title: string;
     content: string;          // HTML or Markdown
     version: number;
-    status: 'DRAFT' | 'PUBLISHED';
+    status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
     publishedAt?: string;
     createdAt: string;
     updatedAt: string;
@@ -50,5 +50,21 @@ export const legalService = {
 
     getRefundPolicy: async (): Promise<ApiResponse<LegalDocument>> => {
         return legalService.getPublishedDocument('REFUND_POLICY');
+    },
+
+    getDisclaimer: async (): Promise<ApiResponse<LegalDocument>> => {
+        return legalService.getPublishedDocument('DISCLAIMER');
+    },
+
+    getServicePolicy: async (): Promise<ApiResponse<LegalDocument>> => {
+        return legalService.getPublishedDocument('SERVICE_POLICY');
+    },
+
+    getStatutoryDisclosures: async (): Promise<ApiResponse<LegalDocument>> => {
+        return legalService.getPublishedDocument('STATUTORY_DISCLOSURES');
+    },
+
+    getCookiePolicy: async (): Promise<ApiResponse<LegalDocument>> => {
+        return legalService.getPublishedDocument('COOKIE_POLICY');
     },
 };
