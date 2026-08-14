@@ -12,6 +12,7 @@ import '@/i18n/i18n';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/context/AuthContext';
 import { UserProvider } from '@/context/UserContext';
+import { AddressProvider } from '@/context/AddressContext';
 import { BookingProvider } from '@/context/BookingContext';
 import { CartProvider } from '@/context/CartContext';
 import { AppConfigProvider } from '@/context/AppConfigContext';
@@ -90,15 +91,17 @@ export default function RootLayout() {
     <AppConfigProvider>
       <AuthProvider>
         <UserProvider>
-          <ThemeProvider>
-            <BookingProvider>
-              <CartProvider>
-                <ToastProvider>
-                  <RootLayoutContent />
-                </ToastProvider>
-              </CartProvider>
-            </BookingProvider>
-          </ThemeProvider>
+          <AddressProvider>
+            <ThemeProvider>
+              <BookingProvider>
+                <CartProvider>
+                  <ToastProvider>
+                    <RootLayoutContent />
+                  </ToastProvider>
+                </CartProvider>
+              </BookingProvider>
+            </ThemeProvider>
+          </AddressProvider>
         </UserProvider>
       </AuthProvider>
     </AppConfigProvider>

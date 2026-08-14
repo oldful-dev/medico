@@ -4,6 +4,7 @@ import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useUser } from '@/context/UserContext';
+import { useAddress } from '@/context/AddressContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { useThemeColors } from '@/hooks/use-theme-colors';
@@ -14,7 +15,6 @@ import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { type AddressData } from '@/components/AddressPickerSection';
-import { userService } from '@/services/api/userService';
 
 // Map icons manually to match assets
 const acRepairIcon = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
@@ -106,7 +106,8 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   const colors = useThemeColors();
   const { isDarkMode } = useTheme();
   
-  const { getServiceBySlug, profile, refreshData } = useUser();
+  const { getServiceBySlug, refreshData } = useUser();
+  const { activeAddress } = useAddress();
   const dbService = getServiceBySlug(slug);
 
   // Fallback metadata
@@ -122,8 +123,6 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
     serviceId,
     serviceName,
     servicePrice,
-    address,
-    setAddress,
     isLoading: isLoadingInit
   } = useServiceInitialization(slug);
 
@@ -134,7 +133,22 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   const [comments, setComments] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<'online' | 'home_visit'>('online');
   const [isBooking, setIsBooking] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+  // selectedAddress now seeds from — and stays in sync with — the
+  // centralized Active Service Location.
+  const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
+    activeAddress ? {
+      id: activeAddress.id,
+      line1: activeAddress.line1,
+      line2: activeAddress.line2,
+      cityName: activeAddress.cityName,
+      pincode: activeAddress.pincode,
+      landmark: activeAddress.landmark,
+      latitude: activeAddress.latitude,
+      longitude: activeAddress.longitude,
+      state: activeAddress.state,
+    } : null
+  );
+  const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
   // Native Alert.alert is globally muted app-wide (see app/_layout.tsx)
   const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
@@ -160,23 +174,35 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
     refreshData();
   }, []);
 
-  // Sync selectedAddress with initial fetched address on mount or when fetched
+  // Follow the centralized active address whenever it changes elsewhere
+  // in the app, unless the user has already made their own pick here.
   useEffect(() => {
-    if (address && address !== 'Fetching address...' && !selectedAddress) {
-      setSelectedAddress({
-        line1: address,
-        cityName: '',
-        pincode: '',
-        latitude: 28.7041,
-        longitude: 77.1025,
-      });
+    if (!activeAddress) return;
+    setSelectedAddress(prev => {
+      if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+      return {
+        id: activeAddress.id,
+        line1: activeAddress.line1,
+        line2: activeAddress.line2,
+        cityName: activeAddress.cityName,
+        pincode: activeAddress.pincode,
+        landmark: activeAddress.landmark,
+        latitude: activeAddress.latitude,
+        longitude: activeAddress.longitude,
+        state: activeAddress.state,
+      };
+    });
+    if (!landmarkInitialized && activeAddress.landmark) {
+      setLandmark(activeAddress.landmark);
+      setLandmarkInitialized(true);
     }
-  }, [address]);
+  }, [activeAddress, landmarkInitialized]);
 
   const handleAddressChange = (addr: AddressData) => {
     setSelectedAddress(addr);
-    setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
     if (addr.landmark) setLandmark(addr.landmark);
+    setLandmarkInitialized(true);
+    // AddressPickerSection already calls selectActiveAddress internally.
   };
 
   // Determine field visibility based on checkout group
@@ -184,48 +210,6 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   const hideLocationCard = false;
   const showPhotoUpload = checkoutGroup === 'A' || checkoutGroup === 'B' || (checkoutGroup === 'D' && slug !== 'driving-cab' && slug !== 'anything-else');
   const isZeroPayment = checkoutGroup === 'D';
-
-  // Address initialization fallback
-  const [addressInitialized, setAddressInitialized] = useState(false);
-  useEffect(() => {
-    if (addressInitialized) return;
-    const addressEmpty = !address || address === 'Fetching address...' || address === '';
-    if (addressEmpty && profile?.addresses?.length) {
-      const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
-      if (defaultAddr) {
-        const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName].filter(Boolean);
-        setAddress(parts.join(', '));
-        if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
-        setAddressInitialized(true);
-      }
-    } else if (!addressEmpty) {
-      setAddressInitialized(true);
-    }
-  }, [profile, address]);
-
-  const syncAddressToProfile = async (addressText: string, landmarkText: string) => {
-    if (!profile?.id || !addressText.trim()) return;
-    try {
-      const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
-      const payload = {
-        label: existing?.label || 'Home',
-        line1: addressText.trim(),
-        cityName: existing?.cityName || '',
-        state: existing?.state || '',
-        pincode: existing?.pincode || '',
-        landmark: landmarkText.trim() || undefined,
-        isDefault: true,
-      };
-      if (existing?.id) {
-        await userService.updateAddress(profile.id, existing.id, payload);
-      } else {
-        await userService.addAddress(profile.id, payload);
-      }
-      await refreshData();
-    } catch {
-      // non-fatal
-    }
-  };
 
   // Set base charge dynamically for pricing card
   const getPricingLabel = () => {
@@ -259,11 +243,11 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
 
   const isFormValid = React.useMemo(() => {
     if (!comments.trim()) return false;
-    if (!hideLocationCard && !(address && address.trim().length >= 5 && address !== 'Fetching address...')) return false;
+    if (!hideLocationCard && !(selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5)) return false;
     if (showDatePicker && !scheduledDate) return false;
     if (checkoutGroup === 'B' && selectedImages.length === 0) return false;
     return true;
-  }, [comments, hideLocationCard, address, showDatePicker, scheduledDate, checkoutGroup, selectedImages]);
+  }, [comments, hideLocationCard, selectedAddress, showDatePicker, scheduledDate, checkoutGroup, selectedImages]);
 
   const handleBook = async () => {
     // 1. Validate comments field
@@ -273,7 +257,7 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
     }
 
     // 2. Validate location if required
-    if (!hideLocationCard && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+    if (!hideLocationCard && (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5)) {
       triggerAlert(t('common.required', 'Required'), t('service_detail.address_required', 'Please provide a valid address.'));
       return;
     }
@@ -303,20 +287,23 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
     try {
       setIsBooking(true);
 
-      // Sync address to profile (non-blocking, non-fatal)
-      syncAddressToProfile(address, landmark);
-
       // Upload photos first
       let uploadedImageUrls: string[] = [];
       if (showPhotoUpload && selectedImages.length > 0) {
         uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, slug);
       }
 
+      // Booking location comes from the address the user actually
+      // confirmed on screen — never a fresh device GPS read.
+      const addressLine = selectedAddress?.line1
+        ? [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ')
+        : undefined;
+
       const bookingPayloadObj = {
         serviceId,
         cityId,
         scheduledDate: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
-        addressLine: hideLocationCard ? undefined : address,
+        addressLine: hideLocationCard ? undefined : addressLine,
         landmark: landmark.trim() || undefined,
         latitude: selectedAddress?.latitude,
         longitude: selectedAddress?.longitude,
@@ -389,7 +376,7 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       pricingLabel={getPricingLabel()}
       pricingNote={checkoutGroup === 'D' ? undefined : t('service_detail.pricing_disclaimer', '*Pricing is subject to actual work assessment.')}
       bulletItems={bulletItems}
-      address={address}
+      address={selectedAddress?.line1 || ''}
       landmark={landmark}
       onLandmarkChange={setLandmark}
       onBook={handleBook}

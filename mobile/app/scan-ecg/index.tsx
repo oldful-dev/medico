@@ -9,6 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import * as ImagePicker from 'expo-image-picker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { useAddress } from '@/context/AddressContext';
 import { mediaService } from '@/services/api/mediaService';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
@@ -27,13 +28,29 @@ export default function ScanEcgScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
+    const { activeAddress } = useAddress();
+
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
     const [pickupDropAddon, setPickupDropAddon] = useState(false);
     const [assistanceAddon, setAssistanceAddon] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [comments, setComments] = useState('');
     const [isBooking, setIsBooking] = useState(false);
-    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+    // selectedAddress now seeds from — and stays in sync with — the
+    // centralized Active Service Location.
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
+        activeAddress ? {
+            id: activeAddress.id,
+            line1: activeAddress.line1,
+            line2: activeAddress.line2,
+            cityName: activeAddress.cityName,
+            pincode: activeAddress.pincode,
+            landmark: activeAddress.landmark,
+            latitude: activeAddress.latitude,
+            longitude: activeAddress.longitude,
+            state: activeAddress.state,
+        } : null
+    );
     const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
     const scrollViewRef = React.useRef<any>(null);
     const sectionPositions = React.useRef<Record<string, number>>({});
@@ -45,20 +62,27 @@ export default function ScanEcgScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('scan-ecg');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('scan-ecg');
 
-    // Sync selectedAddress with initial fetched address
+    // Follow the centralized active address whenever it changes elsewhere
+    // in the app, unless the user has already made their own pick here.
     React.useEffect(() => {
-        if (address && address !== 'Fetching address...' && !selectedAddress) {
-            setSelectedAddress({
-                line1: address,
-                cityName: '',
-                pincode: '',
-                latitude: 28.7041,
-                longitude: 77.1025,
-            });
-        }
-    }, [address]);
+        if (!activeAddress) return;
+        setSelectedAddress(prev => {
+            if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+            return {
+                id: activeAddress.id,
+                line1: activeAddress.line1,
+                line2: activeAddress.line2,
+                cityName: activeAddress.cityName,
+                pincode: activeAddress.pincode,
+                landmark: activeAddress.landmark,
+                latitude: activeAddress.latitude,
+                longitude: activeAddress.longitude,
+                state: activeAddress.state,
+            };
+        });
+    }, [activeAddress]);
 
     const openCamera = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -110,9 +134,9 @@ export default function ScanEcgScreen() {
     const isFormValid = React.useMemo(() => {
         return !!(
             selectedDate &&
-            (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'))
+            selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5
         );
-    }, [selectedDate, address, selectedAddress]);
+    }, [selectedDate, selectedAddress]);
 
     const handleBookService = async () => {
         const errs: Record<string, string> = {};
@@ -121,7 +145,7 @@ export default function ScanEcgScreen() {
             errs.date = t('scan_ecg.alert_datetime_required', 'Please select a date and time slot.');
         }
 
-        if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+        if (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5) {
             errs.address = t('scan_ecg.alert_address_required', 'Please confirm a valid service address.');
         }
 
@@ -147,11 +171,17 @@ export default function ScanEcgScreen() {
                 uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'prescriptions');
             }
 
+            // Booking location comes from the address the user actually
+            // confirmed on screen — never a fresh device GPS read.
+            const addressLine = [selectedAddress!.line1, selectedAddress!.line2].filter(Boolean).join(', ');
+
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: selectedDate!.toISOString(),
-                addressLine: address || undefined,
+                addressLine: addressLine || undefined,
+                latitude: selectedAddress!.latitude,
+                longitude: selectedAddress!.longitude,
                 formDataJson: {
                     serviceName: 'Scan & ECG',
                     attachments: uploadedImageUrls,
@@ -315,7 +345,7 @@ export default function ScanEcgScreen() {
                             selectedAddress={selectedAddress}
                             onAddressChange={(addr) => {
                                 setSelectedAddress(addr);
-                                setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+                                // AddressPickerSection already calls selectActiveAddress internally.
                             }}
                             title={t('scan_ecg.appointment_location')}
                             showPhoneField={false}

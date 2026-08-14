@@ -1,11 +1,10 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator,
     TextInput, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useUser } from '@/context/UserContext';
-import { locationService } from '@/services/device/locationService';
+import { useAddress } from '@/context/AddressContext';
 import { LocationPickerModal } from './LocationPickerModal';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
@@ -51,6 +50,12 @@ export interface AddressPickerSectionProps {
     allowManualEntry?: boolean;
     initialLat?: number;
     initialLng?: number;
+
+    // When true (default), a selection made here also updates the
+    // centralized AddressContext (selectActiveAddress), so it's remembered
+    // as the app's active location beyond just this screen's local state.
+    // Set false for genuinely one-off, non-persisted address entry.
+    syncToContext?: boolean;
 }
 
 export const AddressPickerSection = ({
@@ -70,10 +75,11 @@ export const AddressPickerSection = ({
     allowManualEntry = true,
     initialLat = 28.7041,
     initialLng = 77.1025,
+    syncToContext = true,
 }: AddressPickerSectionProps) => {
     const { t } = useTranslation();
     const resolvedTitle = title ?? t('location_picker.delivery_address');
-    const { profile } = useUser();
+    const { defaultAddress, savedAddresses, selectActiveAddress, detectCurrentLocationSnapshot } = useAddress();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const [detectingLocation, setDetectingLocation] = useState(false);
@@ -89,16 +95,20 @@ export const AddressPickerSection = ({
 
     const styles = makeStyles(isDarkMode, colors, primaryGreen, textDark, textMuted, cardBorder, lightGreenBg);
 
-    // Auto-fill from profile address (primary option)
+    // Auto-fill from the centralized default address (primary option) —
+    // reads from AddressContext instead of independently re-deriving
+    // "default" from profile.addresses here, which was previously
+    // duplicated in 14+ places across the app.
     const handleAutoFillAddress = useCallback(() => {
-        if (!profile?.addresses?.length) {
+        if (!savedAddresses.length) {
             Alert.alert(t('location_picker.no_saved_addresses_title'), t('location_picker.no_saved_addresses_message'));
             return;
         }
 
-        const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
+        const defaultAddr = defaultAddress || savedAddresses[0];
         if (defaultAddr) {
             const addressData: AddressData = {
+                id: defaultAddr.id,
                 line1: defaultAddr.line1 || '',
                 line2: defaultAddr.line2,
                 cityName: defaultAddr.cityName || '',
@@ -106,9 +116,13 @@ export const AddressPickerSection = ({
                 landmark: defaultAddr.landmark,
                 latitude: defaultAddr.latitude || initialLat,
                 longitude: defaultAddr.longitude || initialLng,
+                state: defaultAddr.state,
             };
             onAddressChange(addressData);
             setManualPincodeInput(defaultAddr.pincode || '');
+            if (syncToContext) {
+                selectActiveAddress(defaultAddr);
+            }
 
             // Check serviceability if enabled
             if (showServiceabilityCheck && onServiceabilityChange && checkServiceabilityFn) {
@@ -116,37 +130,40 @@ export const AddressPickerSection = ({
                 checkServiceabilityFn(String(addressData.latitude), String(addressData.longitude));
             }
         }
-    }, [profile, onAddressChange, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn, initialLat, initialLng, t]);
+    }, [savedAddresses, defaultAddress, onAddressChange, syncToContext, selectActiveAddress, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn, initialLat, initialLng, t]);
 
-    // GPS location detection (secondary option)
+    // GPS location detection (secondary option) — routed through
+    // AddressContext.detectCurrentLocationSnapshot so this uses the same
+    // GPS + reverse-geocode funnel as every other GPS trigger in the app,
+    // instead of its own independent copy of that sequence.
     const handleDetectLocation = useCallback(async () => {
         setDetectingLocation(true);
         try {
-            const coords = await locationService.getCurrentLocation();
-            const address = await locationService.getAddressFromCoordinates(coords);
-            const pincode = await locationService.getPincodeFromAddress(coords, address);
-
-            // Parse address to extract components
-            const parts = address.split(',').map(p => p.trim());
-            const cityName = parts[parts.length - 2] || '';
-            const line1 = parts.slice(0, -2).join(', ') || address;
+            const snapshot = await detectCurrentLocationSnapshot();
+            if (!snapshot) {
+                throw new Error(t('location_picker.unable_to_detect'));
+            }
 
             const addressData: AddressData = {
-                line1,
-                cityName,
-                pincode: pincode || '',
+                line1: snapshot.line1,
+                cityName: snapshot.cityName,
+                pincode: snapshot.pincode || '',
                 landmark: '',
-                latitude: coords.latitude,
-                longitude: coords.longitude,
+                latitude: snapshot.latitude,
+                longitude: snapshot.longitude,
+                state: snapshot.state,
             };
 
             onAddressChange(addressData);
-            setManualPincodeInput(pincode || '');
+            setManualPincodeInput(snapshot.pincode || '');
+            if (syncToContext) {
+                selectActiveAddress({ ...snapshot, isTemporary: true });
+            }
 
             // Check serviceability if enabled
             if (showServiceabilityCheck && onServiceabilityChange && checkServiceabilityFn) {
                 onServiceabilityChange('checking');
-                await checkServiceabilityFn(String(coords.latitude), String(coords.longitude));
+                await checkServiceabilityFn(String(snapshot.latitude), String(snapshot.longitude));
             }
 
             Alert.alert(t('location_picker.success_title'), t('location_picker.location_detected'));
@@ -156,7 +173,7 @@ export const AddressPickerSection = ({
         } finally {
             setDetectingLocation(false);
         }
-    }, [onAddressChange, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn, t]);
+    }, [detectCurrentLocationSnapshot, onAddressChange, syncToContext, selectActiveAddress, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn, t]);
 
     // Google Maps location picker (tertiary option)
     const handleLocationConfirmed = useCallback((location: any) => {
@@ -180,6 +197,9 @@ export const AddressPickerSection = ({
 
         onAddressChange(addressData);
         setManualPincodeInput(pincode);
+        if (syncToContext) {
+            selectActiveAddress({ ...addressData, isTemporary: true, state: addressData.state || '' });
+        }
 
         // Check serviceability if enabled
         if (showServiceabilityCheck && onServiceabilityChange && checkServiceabilityFn) {
@@ -188,7 +208,7 @@ export const AddressPickerSection = ({
         }
 
         setLocationPickerVisible(false);
-    }, [onAddressChange, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn]);
+    }, [onAddressChange, syncToContext, selectActiveAddress, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn]);
 
     // Handle manual pincode change
     const handlePincodeChange = useCallback((pincode: string) => {
@@ -200,14 +220,6 @@ export const AddressPickerSection = ({
             });
         }
     }, [selectedAddress, onAddressChange]);
-
-    const savedAddressOptions = useMemo(() => {
-        return profile?.addresses?.map((addr: any) => ({
-            id: addr.id,
-            label: `${addr.line1}, ${addr.cityName}`,
-            data: addr,
-        })) || [];
-    }, [profile]);
 
     const getServiceabilityColor = () => {
         switch (serviceabilityStatus) {
@@ -241,7 +253,7 @@ export const AddressPickerSection = ({
 
             {/* Option Buttons Row */}
             <View style={styles.optionsRow}>
-                {savedAddressOptions.length > 0 && (
+                {savedAddresses.length > 0 && (
                     <TouchableOpacity
                         style={styles.optionBtn}
                         onPress={handleAutoFillAddress}

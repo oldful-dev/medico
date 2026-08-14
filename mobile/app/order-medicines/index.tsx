@@ -10,6 +10,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import * as ImagePicker from 'expo-image-picker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { useAddress } from '@/context/AddressContext';
 import { mediaService } from '@/services/api/mediaService';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +29,8 @@ export default function OrderMedicinesScreen() {
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { activeAddress } = useAddress();
+
     const [duration, setDuration] = useState('1 Month');
     const [autoRefill, setAutoRefill] = useState(true);
     const [isManualEntry, setIsManualEntry] = useState(false);
@@ -35,7 +38,22 @@ export default function OrderMedicinesScreen() {
     const [landmark, setLandmark] = useState('');
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
     const [isBooking, setIsBooking] = useState(false);
-    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+    // selectedAddress now seeds from — and stays in sync with — the
+    // centralized Active Service Location.
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
+        activeAddress ? {
+            id: activeAddress.id,
+            line1: activeAddress.line1,
+            line2: activeAddress.line2,
+            cityName: activeAddress.cityName,
+            pincode: activeAddress.pincode,
+            landmark: activeAddress.landmark,
+            latitude: activeAddress.latitude,
+            longitude: activeAddress.longitude,
+            state: activeAddress.state,
+        } : null
+    );
+    const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
         visible: false, title: '', message: '', iconName: 'warning-outline',
@@ -44,20 +62,31 @@ export default function OrderMedicinesScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('medicines');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('medicines');
 
-    // Sync selectedAddress with initial fetched address on mount or when fetched
+    // Follow the centralized active address whenever it changes elsewhere
+    // in the app, unless the user has already made their own pick here.
     React.useEffect(() => {
-        if (address && address !== 'Fetching address...' && !selectedAddress) {
-            setSelectedAddress({
-                line1: address,
-                cityName: '',
-                pincode: '',
-                latitude: 28.7041,
-                longitude: 77.1025,
-            });
+        if (!activeAddress) return;
+        setSelectedAddress(prev => {
+            if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+            return {
+                id: activeAddress.id,
+                line1: activeAddress.line1,
+                line2: activeAddress.line2,
+                cityName: activeAddress.cityName,
+                pincode: activeAddress.pincode,
+                landmark: activeAddress.landmark,
+                latitude: activeAddress.latitude,
+                longitude: activeAddress.longitude,
+                state: activeAddress.state,
+            };
+        });
+        if (!landmarkInitialized && activeAddress.landmark) {
+            setLandmark(activeAddress.landmark);
+            setLandmarkInitialized(true);
         }
-    }, [address]);
+    }, [activeAddress, landmarkInitialized]);
 
     const openCamera = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -109,9 +138,9 @@ export default function OrderMedicinesScreen() {
     const isFormValid = React.useMemo(() => {
         return !!(
             ((isManualEntry && manualText.trim()) || (!isManualEntry && selectedImages.length > 0)) &&
-            (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'))
+            selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5
         );
-    }, [isManualEntry, manualText, selectedImages, address, selectedAddress]);
+    }, [isManualEntry, manualText, selectedImages, selectedAddress]);
 
     const handleBookService = async () => {
         if (!isManualEntry && selectedImages.length === 0) {
@@ -122,7 +151,7 @@ export default function OrderMedicinesScreen() {
             triggerAlert(t('common.required') || 'Required', t('order_medicines.alert_manual_empty_msg') || 'Please enter medicine names or notes.');
             return;
         }
-        if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+        if (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5) {
             triggerAlert(t('common.required') || 'Required', t('errors.address_required') || 'Please confirm your delivery address.');
             return;
         }
@@ -139,13 +168,19 @@ export default function OrderMedicinesScreen() {
                 uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'prescriptions');
             }
 
+            // Booking location comes from the address the user actually
+            // confirmed on screen — never a fresh device GPS read.
+            const addressLine = [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ');
+
             // Navigate to checkout — booking created inside checkout after payment succeeds
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: new Date().toISOString(),
-                addressLine: address || undefined,
+                addressLine: addressLine || undefined,
                 landmark: landmark || undefined,
+                latitude: selectedAddress.latitude,
+                longitude: selectedAddress.longitude,
                 formDataJson: {
                     entryType: isManualEntry ? 'Manual Entry' : 'Prescription Upload',
                     manualText: isManualEntry ? manualText : undefined,
@@ -282,8 +317,9 @@ export default function OrderMedicinesScreen() {
                             selectedAddress={selectedAddress}
                             onAddressChange={(addr) => {
                                 setSelectedAddress(addr);
-                                setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
                                 if (addr.landmark) setLandmark(addr.landmark);
+                                setLandmarkInitialized(true);
+                                // AddressPickerSection already calls selectActiveAddress internally.
                             }}
                             title={t('order_medicines.address_label')}
                             showPhoneField={false}

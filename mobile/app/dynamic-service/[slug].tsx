@@ -4,6 +4,7 @@ import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useUser } from '@/context/UserContext';
+import { useAddress } from '@/context/AddressContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { useThemeColors } from '@/hooks/use-theme-colors';
@@ -32,7 +33,8 @@ export default function DynamicServiceScreen() {
   const { isDarkMode } = useTheme();
   const styles = makeStyles(isDarkMode, colors);
 
-  const { getServiceBySlug, profile, refreshData } = useUser();
+  const { getServiceBySlug, refreshData } = useUser();
+  const { activeAddress } = useAddress();
 
   useEffect(() => {
     refreshData();
@@ -44,8 +46,6 @@ export default function DynamicServiceScreen() {
     serviceId,
     serviceName,
     servicePrice,
-    address,
-    setAddress,
     isLoading: isLoadingInit
   } = useServiceInitialization(slug);
 
@@ -97,47 +97,59 @@ export default function DynamicServiceScreen() {
   };
 
   const scrollViewRef = useRef<any>(null);
-  const [addressInitialized, setAddressInitialized] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+  // selectedAddress now seeds from — and stays in sync with — the
+  // centralized Active Service Location, instead of a GPS-only string plus
+  // an independent profile.addresses default-lookup (this screen previously
+  // ran both patterns at once — the hybrid case called out in the migration
+  // plan for this route specifically).
+  const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
+    activeAddress ? {
+      id: activeAddress.id,
+      line1: activeAddress.line1,
+      line2: activeAddress.line2,
+      cityName: activeAddress.cityName,
+      pincode: activeAddress.pincode,
+      landmark: activeAddress.landmark,
+      latitude: activeAddress.latitude,
+      longitude: activeAddress.longitude,
+      state: activeAddress.state,
+    } : null
+  );
+  const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
-  // Sync selectedAddress with initial fetched address on mount or when fetched
+  // Follow the centralized active address whenever it changes elsewhere in
+  // the app, unless the user has already made their own pick here.
   useEffect(() => {
-    if (address && address !== 'Fetching address...' && !selectedAddress) {
-      setSelectedAddress({
-        line1: address,
-        cityName: '',
-        pincode: '',
-        latitude: 28.7041,
-        longitude: 77.1025,
-      });
+    if (!activeAddress) return;
+    setSelectedAddress(prev => {
+      if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+      return {
+        id: activeAddress.id,
+        line1: activeAddress.line1,
+        line2: activeAddress.line2,
+        cityName: activeAddress.cityName,
+        pincode: activeAddress.pincode,
+        landmark: activeAddress.landmark,
+        latitude: activeAddress.latitude,
+        longitude: activeAddress.longitude,
+        state: activeAddress.state,
+      };
+    });
+    if (!landmarkInitialized && activeAddress.landmark) {
+      setLandmark(activeAddress.landmark);
+      setLandmarkInitialized(true);
     }
-  }, [address]);
+  }, [activeAddress, landmarkInitialized]);
 
   const handleAddressChange = (addr: AddressData) => {
     setSelectedAddress(addr);
-    setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
     if (addr.landmark) setLandmark(addr.landmark);
+    setLandmarkInitialized(true);
+    // AddressPickerSection already calls selectActiveAddress internally.
   };
 
   // Parse form schema fields
   const dynamicFields = dbService?.formFieldsJson?.sections?.[0]?.fields || [];
-
-  // Address initialization
-  useEffect(() => {
-    if (addressInitialized) return;
-    const addressEmpty = !address || address === 'Fetching address...' || address === '';
-    if (addressEmpty && profile?.addresses?.length) {
-      const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
-      if (defaultAddr) {
-        const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName].filter(Boolean);
-        setAddress(parts.join(', '));
-        if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
-        setAddressInitialized(true);
-      }
-    } else if (!addressEmpty) {
-      setAddressInitialized(true);
-    }
-  }, [profile, address]);
 
   // Determine standard configurations
   const hasConfiguredFields = dynamicFields.length > 0;
@@ -157,7 +169,7 @@ export default function DynamicServiceScreen() {
   };
 
   const isFormValid = React.useMemo(() => {
-    const hasValidAddress = !!(selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'));
+    const hasValidAddress = !!(selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5);
 
     if (hasConfiguredFields) {
       for (const field of dynamicFields) {
@@ -192,7 +204,7 @@ export default function DynamicServiceScreen() {
     if (checkoutGroup === 'B' && selectedImages.length === 0 && !isDiagnosticsDynamic) return false;
 
     return true;
-  }, [hasConfiguredFields, dynamicFields, selectedAddress, address, scheduledDate, comments, formAnswers, hideLocationCard, showDatePicker, checkoutGroup, selectedImages, isDiagnosticsDynamic]);
+  }, [hasConfiguredFields, dynamicFields, selectedAddress, scheduledDate, comments, formAnswers, hideLocationCard, showDatePicker, checkoutGroup, selectedImages, isDiagnosticsDynamic]);
 
   const handleBook = async () => {
     const errs: string[] = [];
@@ -200,7 +212,7 @@ export default function DynamicServiceScreen() {
     if (hasConfiguredFields) {
       for (const field of dynamicFields) {
         if (field.type === 'address_picker') {
-          if (field.required && (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...'))) {
+          if (field.required && (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5)) {
             errs.push(t('service_detail.address_required', 'Please provide a valid address.'));
           }
         } else if (field.type === 'datetime') {
@@ -240,7 +252,7 @@ export default function DynamicServiceScreen() {
         errs.push(t('service_detail.comments_required', 'Please enter comments or details of your request.'));
       }
 
-      if (!hideLocationCard && (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...'))) {
+      if (!hideLocationCard && (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5)) {
         errs.push(t('service_detail.address_required', 'Please provide a valid address.'));
       }
 
@@ -283,11 +295,19 @@ export default function DynamicServiceScreen() {
         uploadedBaseImageUrls = await mediaService.uploadMultipleMedia(selectedImages, slug);
       }
 
+      // Booking location comes from the address the user actually
+      // confirmed on screen — never a fresh device GPS read.
+      const addressLine = selectedAddress?.line1
+        ? [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ')
+        : undefined;
+
       const bookingPayloadObj = {
         serviceId,
         cityId,
         scheduledDate: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
-        addressLine: hideLocationCard ? undefined : address,
+        addressLine: hideLocationCard ? undefined : addressLine,
+        latitude: hideLocationCard ? undefined : selectedAddress?.latitude,
+        longitude: hideLocationCard ? undefined : selectedAddress?.longitude,
         landmark: landmark.trim() || undefined,
         formDataJson: {
           comments: comments.trim(),
@@ -368,7 +388,7 @@ export default function DynamicServiceScreen() {
       pricingLabel={isZeroPayment ? '' : `₹${getAmount()}`}
       pricingNote={isDiagnosticsDynamic ? dbService.pricingText || undefined : undefined}
       bulletItems={finalBulletItems}
-      address={address}
+      address={selectedAddress?.line1 || ''}
       landmark={landmark}
       onLandmarkChange={setLandmark}
       onBook={handleBook}

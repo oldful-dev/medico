@@ -20,9 +20,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useThemeColors } from "@/hooks/use-theme-colors";
 import CustomDateTimePicker from "@/components/common/CustomDateTimePicker";
 import { useServiceInitialization } from "@/hooks/useServiceInitialization";
-import { useUser } from "@/context/UserContext";
-import { locationService } from "@/services/device/locationService";
-import { userService } from "@/services/api/userService";
+import { useAddress } from "@/context/AddressContext";
 import {
   AddressPickerSection,
   type AddressData,
@@ -50,7 +48,7 @@ export default function HospitalTripScreen() {
   const { isDarkMode } = useTheme();
   const colors = useThemeColors();
 
-  const { profile, refreshData } = useUser();
+  const { activeAddress } = useAddress();
   const [selectedSpecialist, setSelectedSpecialist] = useState<string | null>(
     null,
   );
@@ -67,9 +65,23 @@ export default function HospitalTripScreen() {
   const [transportAddon, setTransportAddon] = useState(false);
   const [supportAddon, setSupportAddon] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  // selectedAddress (pickup) now seeds from — and stays in sync with — the
+  // centralized Active Service Location. Destination (hospitalPreference/
+  // hospitalQuery above) remains entirely separate, untouched.
   const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
-    null,
+    activeAddress ? {
+      id: activeAddress.id,
+      line1: activeAddress.line1,
+      line2: activeAddress.line2,
+      cityName: activeAddress.cityName,
+      pincode: activeAddress.pincode,
+      landmark: activeAddress.landmark,
+      latitude: activeAddress.latitude,
+      longitude: activeAddress.longitude,
+      state: activeAddress.state,
+    } : null
   );
+  const [landmarkInitialized, setLandmarkInitialized] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
   const sectionPositions = React.useRef<Record<string, number>>({});
 
@@ -79,9 +91,6 @@ export default function HospitalTripScreen() {
     serviceId,
     serviceName,
     servicePrice,
-    address,
-    setAddress,
-    locationDenied,
     isLoading: isLoadingInit,
     isReady,
   } = useServiceInitialization("hospital-trip");
@@ -95,18 +104,29 @@ export default function HospitalTripScreen() {
     setAlertConfig({ visible: true, title, message, iconName });
   };
 
-  // Sync selectedAddress with initial fetched address on mount or when fetched
+  // Follow the centralized active address (pickup) whenever it changes
+  // elsewhere in the app, unless the user already made their own pick here.
   React.useEffect(() => {
-    if (address && address !== "Fetching address..." && !selectedAddress) {
-      setSelectedAddress({
-        line1: address,
-        cityName: "",
-        pincode: "",
-        latitude: 28.7041,
-        longitude: 77.1025,
-      });
+    if (!activeAddress) return;
+    setSelectedAddress(prev => {
+      if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+      return {
+        id: activeAddress.id,
+        line1: activeAddress.line1,
+        line2: activeAddress.line2,
+        cityName: activeAddress.cityName,
+        pincode: activeAddress.pincode,
+        landmark: activeAddress.landmark,
+        latitude: activeAddress.latitude,
+        longitude: activeAddress.longitude,
+        state: activeAddress.state,
+      };
+    });
+    if (!landmarkInitialized && activeAddress.landmark) {
+      setLandmark(activeAddress.landmark);
+      setLandmarkInitialized(true);
     }
-  }, [address]);
+  }, [activeAddress, landmarkInitialized]);
 
   const SPECIALISTS = [
     {
@@ -156,36 +176,6 @@ export default function HospitalTripScreen() {
     },
   ];
 
-  // Silently upsert the address back to profile when user books
-  const syncAddressToProfile = async (
-    addressText: string,
-    landmarkText: string,
-  ) => {
-    if (!profile?.id || !addressText.trim()) return;
-    try {
-      const existing =
-        profile.addresses?.find((a: any) => a.isDefault) ||
-        profile.addresses?.[0];
-      const payload = {
-        label: existing?.label || "Home",
-        line1: addressText.trim(),
-        cityName: existing?.cityName || "",
-        state: existing?.state || "",
-        pincode: existing?.pincode || "",
-        landmark: landmarkText.trim() || undefined,
-        isDefault: true,
-      };
-      if (existing?.id) {
-        await userService.updateAddress(profile.id, existing.id, payload);
-      } else {
-        await userService.addAddress(profile.id, payload);
-      }
-      await refreshData();
-    } catch {
-      // non-fatal — booking still proceeds
-    }
-  };
-
   const isFormValid = React.useMemo(() => {
     return !!(
       selectedSpecialist &&
@@ -194,9 +184,9 @@ export default function HospitalTripScreen() {
       (hospitalPreference !== "preferred" || hospitalQuery.trim()) &&
       (selectedDoctorType !== "preferred" || preferredDoctor.trim()) &&
       selectedDate &&
-      (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== "Fetching address..."))
+      selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5
     );
-  }, [selectedSpecialist, otherSpecialistText, hospitalPreference, hospitalQuery, selectedDoctorType, preferredDoctor, selectedDate, address, selectedAddress]);
+  }, [selectedSpecialist, otherSpecialistText, hospitalPreference, hospitalQuery, selectedDoctorType, preferredDoctor, selectedDate, selectedAddress]);
 
   const handleBookService = async () => {
     if (!selectedSpecialist) {
@@ -223,7 +213,7 @@ export default function HospitalTripScreen() {
       triggerAlert(t("common.required") || "Required", t("hospital_trip.alert_date_required", "Please select a date and time slot."));
       return;
     }
-    if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === "Fetching address...")) {
+    if (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5) {
       triggerAlert(t("common.required") || "Required", t("hospital_trip.alert_address_required", "Please confirm a valid service address."));
       return;
     }
@@ -234,20 +224,17 @@ export default function HospitalTripScreen() {
     try {
       setIsBooking(true);
 
-      // Sync address to profile (non-blocking, non-fatal)
-      syncAddressToProfile(address, landmark);
-
-      const gps = await locationService.getCurrentLocation().catch(() => null);
+      const addressLine = [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ');
 
       // Navigate to checkout
       const bookingPayload = JSON.stringify({
         serviceId,
         cityId,
         scheduledDate: selectedDate!.toISOString(),
-        addressLine: address || undefined,
+        addressLine: addressLine || undefined,
         landmark: landmark || undefined,
-        latitude: gps?.latitude,
-        longitude: gps?.longitude,
+        latitude: selectedAddress.latitude,
+        longitude: selectedAddress.longitude,
         formDataJson: {
           specialist:
             selectedSpecialist === "other"
@@ -612,11 +599,10 @@ export default function HospitalTripScreen() {
                 selectedAddress={selectedAddress}
                 onAddressChange={(addr) => {
                   setSelectedAddress(addr);
-                  setAddress(
-                    `${addr.line1}${addr.line2 ? ", " + addr.line2 : ""}`,
-                  );
                   if (addr.landmark) setLandmark(addr.landmark);
+                  setLandmarkInitialized(true);
                   setFormErrors(prev => ({ ...prev, address: undefined }));
+                  // AddressPickerSection already calls selectActiveAddress internally.
                 }}
                 title={t("hospital_trip.confirm_pickup")}
                 showPhoneField={false}

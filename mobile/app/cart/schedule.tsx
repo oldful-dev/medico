@@ -17,7 +17,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { labService, type LabSlot } from "@/services/api/labService";
 import { locationService } from "@/services/device/locationService";
 import { useUser } from "@/context/UserContext";
-import { userService } from "@/services/api/userService";
+import { useAddress } from "@/context/AddressContext";
 import { LocationPickerModal } from "@/components/LocationPickerModal";
 import { useCart } from "@/context/CartContext";
 import { useThemeColors } from "@/hooks/use-theme-colors";
@@ -33,7 +33,8 @@ const LIGHT_GREEN_BG = "#F0FDF4";
 export default function CartScheduleScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { profile, setProfile } = useUser();
+  const { profile } = useUser();
+  const { activeAddress, savedAddresses, selectActiveAddress, addAddress: addAddressToContext } = useAddress();
   const params = useLocalSearchParams<{
     category?: string;
     selectedItemIds?: string;
@@ -132,27 +133,26 @@ export default function CartScheduleScreen() {
     setSelectedDate(today);
   }, [cartItems.length]);
 
+  // selectedAddress (free-text) seeds from — and stays in sync with — the
+  // centralized AddressContext.activeAddress, matching the Batch F pattern.
   useEffect(() => {
-    if (
-      step === 2 &&
-      collectionType === "HOME" &&
-      !selectedAddress &&
-      profile?.addresses?.length
-    ) {
-      const defaultAddr =
-        profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
-      if (defaultAddr) {
-        const parts = [
-          defaultAddr.line1,
-          defaultAddr.line2,
-          defaultAddr.cityName,
-        ].filter(Boolean);
-        setSelectedAddress(parts.join(", "));
-        if (defaultAddr.pincode) setPincode(defaultAddr.pincode);
-        if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
-      }
+    if (!activeAddress) return;
+    const parts = [
+      activeAddress.line1,
+      activeAddress.line2,
+      activeAddress.cityName,
+    ].filter(Boolean);
+    const addrText = parts.join(", ");
+    setSelectedAddress(prev => (prev === addrText ? prev : addrText));
+    if (activeAddress.pincode) setPincode(activeAddress.pincode);
+    if (activeAddress.landmark) setLandmark(activeAddress.landmark);
+    if (activeAddress.latitude && activeAddress.longitude) {
+      setCoords({
+        lat: String(activeAddress.latitude),
+        long: String(activeAddress.longitude),
+      });
     }
-  }, [step, collectionType]);
+  }, [activeAddress]);
 
   useEffect(() => {
     if (!selectedDate || cartItems.length === 0) return;
@@ -249,23 +249,14 @@ export default function CartScheduleScreen() {
         cityName: "",
         state: "",
         pincode: newAddrPincode,
+        latitude: newAddrCoords.lat ? parseFloat(newAddrCoords.lat) : 0,
+        longitude: newAddrCoords.long ? parseFloat(newAddrCoords.long) : 0,
         ...(newAddrLandmark.trim() ? { landmark: newAddrLandmark.trim() } : {}),
-        isDefault: (profile.addresses?.length ?? 0) === 0,
+        isDefault: savedAddresses.length === 0,
       };
-      const res = await userService.addAddress(profile.id, payload);
-      const savedAddr =
-        res.success && res.data
-          ? res.data
-          : { ...payload, id: String(Date.now()) };
-      setProfile({
-        ...profile,
-        addresses: [...(profile.addresses || []), savedAddr],
-      });
-      setSelectedAddress(newAddrText.trim());
-      setPincode(newAddrPincode);
-      setLandmark(newAddrLandmark.trim());
+      const savedAddr = await addAddressToContext(payload as any);
+      if (savedAddr) selectActiveAddress(savedAddr);
       if (newAddrCoords.lat) {
-        setCoords(newAddrCoords);
         checkServiceability(newAddrCoords.lat, newAddrCoords.long);
       }
       setNewAddrText("");
@@ -346,25 +337,11 @@ export default function CartScheduleScreen() {
         },
       };
 
-      if (collectionType === "HOME" && profile?.id && selectedAddress.trim()) {
-        const existing =
-          profile.addresses?.find((a: any) => a.isDefault) ||
-          profile.addresses?.[0];
-        const addrPayload = {
-          label: existing?.label || "Home",
-          line1: selectedAddress.trim(),
-          cityName: existing?.cityName || "",
-          state: existing?.state || "",
-          pincode: pincode || existing?.pincode || "",
-          ...(landmark.trim() ? { landmark: landmark.trim() } : {}),
-          isDefault: true,
-        };
-        if (existing?.id) {
-          await userService.updateAddress(profile.id, existing.id, addrPayload).catch(() => {});
-        } else {
-          await userService.addAddress(profile.id, addrPayload).catch(() => {});
-        }
-      }
+      // Address persistence now happens at selection time (saved-address
+      // chip tap or inline "Save & Use") via AddressContext — never here.
+      // Silently upserting the default address on every booking confirm
+      // would overwrite the user's saved default with whatever text is in
+      // the form (the same bug fixed in blood-test/schedule.tsx, Phase 5).
 
       router.push({
         pathname: "/cart/order-summary",
@@ -528,7 +505,7 @@ export default function CartScheduleScreen() {
               showsHorizontalScrollIndicator={false}
               style={{ marginBottom: 10 }}
             >
-              {(profile?.addresses || []).map((addr: any, idx: number) => {
+              {savedAddresses.map((addr: any, idx: number) => {
                 const addrText = [addr.line1, addr.line2, addr.cityName]
                   .filter(Boolean)
                   .join(", ");
@@ -541,10 +518,8 @@ export default function CartScheduleScreen() {
                       isSelected && styles.savedAddrChipActive,
                     ]}
                     onPress={() => {
-                      setSelectedAddress(addrText);
-                      if (addr.pincode) setPincode(addr.pincode);
-                      if (addr.landmark) setLandmark(addr.landmark);
-                      checkServiceability(coords.lat, coords.long);
+                      selectActiveAddress(addr);
+                      checkServiceability(String(addr.latitude), String(addr.longitude));
                       setAddingNewAddr(false);
                     }}
                     activeOpacity={0.75}

@@ -1,18 +1,20 @@
 // ──────────────────────────────────────────────────────────────────────────────
 //  useServiceInitialization
 //
-//  What changed (performance fix):
-//   • isLoading now ONLY reflects the service-catalog fetch, NOT location.
-//     The booking button becomes available as soon as the catalog is ready
-//     (typically < 2 s on a good connection, instant when cached).
-//   • Location is fetched in the background in parallel. The address field
-//     updates itself once GPS resolves (or times out via locationService).
-//   • cityId falls back to profile.cityId immediately — no extra API round-trip.
+//  Resolves cityId/serviceId/serviceName/servicePrice for a given service
+//  slug. Location/address resolution no longer lives here — it moved to
+//  AddressContext (mobile/context/AddressContext.tsx), which is the single
+//  place GPS is triggered from (an explicit user action, or a guarded
+//  one-time bootstrap for brand-new users with zero saved addresses).
+//  Screens read `activeAddress` from useAddress() directly instead of this
+//  hook's old address/setAddress fields — removing this hook's independent
+//  GPS effect is what stops every one of its consumers from silently
+//  re-resolving location on every mount, regardless of an already-selected
+//  active address.
 // ──────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
-import { locationService } from '@/services/device/locationService';
 import { apiClient } from '@/services/api/apiClient';
 
 const resolvePrice = (svc: any): number => {
@@ -32,51 +34,8 @@ export function useServiceInitialization(slug: string) {
     const [serviceId, setServiceId] = useState('');
     const [serviceName, setServiceName] = useState('');
     const [servicePrice, setServicePrice] = useState(0);
-    const [address, setAddress] = useState('Fetching address...');
-    const [isManualAddress, setIsManualAddress] = useState(false);
 
-    // ── 1. Location fetch — runs in the background, does NOT block isLoading ──
-    useEffect(() => {
-        let cancelled = false;
-
-        (async () => {
-            try {
-                const hasPermission = await locationService.requestPermission();
-                if (!hasPermission) {
-                    if (!cancelled) {
-                        setIsManualAddress(true);
-                        setAddress('');
-                    }
-                    return;
-                }
-
-                const coords = await locationService.getCurrentLocation();
-                if (cancelled) return;
-
-                // Kick off reverse-geocode — also non-blocking for the button
-                locationService
-                    .getAddressFromCoordinates(coords)
-                    .then(fetchedAddress => {
-                        if (!cancelled) setAddress(fetchedAddress);
-                    })
-                    .catch(() => {
-                        if (!cancelled) {
-                            setIsManualAddress(true);
-                            setAddress('');
-                        }
-                    });
-            } catch {
-                if (!cancelled) {
-                    setIsManualAddress(true);
-                    setAddress('');
-                }
-            }
-        })();
-
-        return () => { cancelled = true; };
-    }, []);
-
-    // ── 2. Service & city resolution — drives isLoading ───────────────────────
+    // ── Service & city resolution — drives isLoading ───────────────────────
     useEffect(() => {
         // City is available immediately from profile or context selection
         if (profile?.cityId) {
@@ -119,12 +78,6 @@ export function useServiceInitialization(slug: string) {
         serviceId,
         serviceName,
         servicePrice,
-        address,
-        setAddress,
-        locationDenied: isManualAddress,
-        setIsManualAddress,
-        // isLoading is now ONLY the catalog loading state.
-        // Location runs in the background and never blocks the button.
         isLoading: isCatalogLoading,
         isReady,
         dbService: getServiceBySlug(slug),

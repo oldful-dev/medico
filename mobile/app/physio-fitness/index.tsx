@@ -9,6 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { useAddress } from '@/context/AddressContext';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
@@ -42,6 +43,8 @@ export default function PhysioFitnessScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
+    const { activeAddress } = useAddress();
+
     // State
     const [selectedService, setSelectedService] = useState<'pain' | 'fitness'>('pain');
     const [selectedBodyPart, setSelectedBodyPart] = useState<string>('Back');
@@ -49,7 +52,22 @@ export default function PhysioFitnessScreen() {
     const [fitnessType, setFitnessType] = useState<'HOME' | 'CLASS'>('HOME');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [landmark, setLandmark] = useState('');
-    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+    // selectedAddress now seeds from — and stays in sync with — the
+    // centralized Active Service Location.
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
+        activeAddress ? {
+            id: activeAddress.id,
+            line1: activeAddress.line1,
+            line2: activeAddress.line2,
+            cityName: activeAddress.cityName,
+            pincode: activeAddress.pincode,
+            landmark: activeAddress.landmark,
+            latitude: activeAddress.latitude,
+            longitude: activeAddress.longitude,
+            state: activeAddress.state,
+        } : null
+    );
+    const [landmarkInitialized, setLandmarkInitialized] = useState(false);
     const [isBooking, setIsBooking] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
@@ -59,54 +77,67 @@ export default function PhysioFitnessScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('fitness-wellness');
+    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('fitness-wellness');
 
-    // Sync selectedAddress with initial fetched address on mount or when fetched
+    // Follow the centralized active address whenever it changes elsewhere
+    // in the app, unless the user has already made their own pick here.
     React.useEffect(() => {
-        if (address && address !== 'Fetching address...' && !selectedAddress) {
-            setSelectedAddress({
-                line1: address,
-                cityName: '',
-                pincode: '',
-                latitude: 28.7041,
-                longitude: 77.1025,
-            });
+        if (!activeAddress) return;
+        setSelectedAddress(prev => {
+            if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+            return {
+                id: activeAddress.id,
+                line1: activeAddress.line1,
+                line2: activeAddress.line2,
+                cityName: activeAddress.cityName,
+                pincode: activeAddress.pincode,
+                landmark: activeAddress.landmark,
+                latitude: activeAddress.latitude,
+                longitude: activeAddress.longitude,
+                state: activeAddress.state,
+            };
+        });
+        if (!landmarkInitialized && activeAddress.landmark) {
+            setLandmark(activeAddress.landmark);
+            setLandmarkInitialized(true);
         }
-    }, [address]);
+    }, [activeAddress, landmarkInitialized]);
 
     const isFormValid = React.useMemo(() => {
         if (!selectedDate) return false;
+        const hasValidAddress = !!(selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5);
 
         if (selectedService === 'pain') {
             return !!(
                 (selectedBodyPart !== 'Other Parts' || otherIssue.trim()) &&
-                (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'))
+                hasValidAddress
             );
         } else {
             // fitness service
             if (fitnessType === 'HOME') {
-                return !!(selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'));
+                return hasValidAddress;
             }
             return true; // No address required for ONLINE fitness
         }
-    }, [selectedDate, selectedService, selectedBodyPart, otherIssue, address, selectedAddress, fitnessType]);
+    }, [selectedDate, selectedService, selectedBodyPart, otherIssue, selectedAddress, fitnessType]);
 
     const handleBookService = async () => {
         if (!selectedDate) {
             triggerAlert(t('common.required') || 'Required', t('physio_fitness.date_required') || 'Please select date and time.');
             return;
         }
+        const hasValidAddress = !!(selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5);
         if (selectedService === 'pain') {
             if (selectedBodyPart === 'Other Parts' && !otherIssue.trim()) {
                 triggerAlert(t('common.required') || 'Required', 'Please describe your affected body parts.');
                 return;
             }
-            if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+            if (!hasValidAddress) {
                 triggerAlert(t('common.required') || 'Required', t('errors.address_required') || 'Please confirm your service address.');
                 return;
             }
         } else {
-            if (fitnessType === 'HOME' && (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...'))) {
+            if (fitnessType === 'HOME' && !hasValidAddress) {
                 triggerAlert(t('common.required') || 'Required', t('errors.address_required') || 'Please confirm your service address.');
                 return;
             }
@@ -118,13 +149,21 @@ export default function PhysioFitnessScreen() {
         try {
             setIsBooking(true);
 
+            // Booking location comes from the address the user actually
+            // confirmed on screen — never a fresh device GPS read.
+            const addressLine = selectedAddress?.line1
+                ? [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ')
+                : undefined;
+
             // Construct payload based on service type
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
-                addressLine: selectedService === 'pain' ? address : (fitnessType === 'HOME' ? address : 'Join the Class (No Location)'),
+                addressLine: selectedService === 'pain' ? addressLine : (fitnessType === 'HOME' ? addressLine : 'Join the Class (No Location)'),
                 landmark: (selectedService === 'pain' || fitnessType === 'HOME') ? (landmark || undefined) : undefined,
+                latitude: (selectedService === 'pain' || fitnessType === 'HOME') ? selectedAddress?.latitude : undefined,
+                longitude: (selectedService === 'pain' || fitnessType === 'HOME') ? selectedAddress?.longitude : undefined,
                 formDataJson: {
                     service: selectedService === 'pain' ? 'Pain Relief' : 'Senior Fitness',
                     fitnessType: selectedService === 'fitness' ? (fitnessType === 'HOME' ? 'Yoga Teacher at Home' : 'Join the Class') : undefined,
@@ -301,8 +340,9 @@ export default function PhysioFitnessScreen() {
                                     selectedAddress={selectedAddress}
                                     onAddressChange={(addr) => {
                                         setSelectedAddress(addr);
-                                        setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
                                         if (addr.landmark) setLandmark(addr.landmark);
+                                        setLandmarkInitialized(true);
+                                        // AddressPickerSection already calls selectActiveAddress internally.
                                     }}
                                     title={t('order_medicines.address_label') || 'Address'}
                                     showPhoneField={false}

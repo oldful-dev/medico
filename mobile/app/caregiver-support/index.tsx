@@ -10,14 +10,13 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
-import { locationService } from '@/services/device/locationService';
 import FormInput from '@/components/common/FormInput';
 import * as ImagePicker from 'expo-image-picker';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { familyMemberService, FamilyMember } from '@/services/api/familyMemberService';
 import { useUser } from '@/context/UserContext';
+import { useAddress } from '@/context/AddressContext';
 import { Spacing } from '@/constants/theme';
-import { userService } from '@/services/api/userService';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
@@ -34,7 +33,8 @@ export default function BookCaregiverSupportScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
-    const { profile, refreshData } = useUser();
+    const { profile } = useUser();
+    const { activeAddress } = useAddress();
 
     // Local UI state for radio buttons/selections
     const [selectedWho, setSelectedWho] = useState('Self');
@@ -138,15 +138,27 @@ export default function BookCaregiverSupportScreen() {
         serviceId,
         serviceName,
         servicePrice,
-        address,
-        setAddress,
-        locationDenied,
         isLoading: isLoadingInit,
         isReady
     } = useServiceInitialization('caregiver-support');
 
-    const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(null);
-    const [addressInitialized, setAddressInitialized] = React.useState(false);
+    // selectedAddress now seeds from — and stays in sync with — the
+    // centralized Active Service Location instead of an independent
+    // GPS-only string plus a local default-address lookup.
+    const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(
+        activeAddress ? {
+            id: activeAddress.id,
+            line1: activeAddress.line1,
+            line2: activeAddress.line2,
+            cityName: activeAddress.cityName,
+            pincode: activeAddress.pincode,
+            landmark: activeAddress.landmark,
+            latitude: activeAddress.latitude,
+            longitude: activeAddress.longitude,
+            state: activeAddress.state,
+        } : null
+    );
+    const [landmarkInitialized, setLandmarkInitialized] = React.useState(false);
 
     const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
         visible: false, title: '', message: '', iconName: 'warning-outline',
@@ -155,64 +167,35 @@ export default function BookCaregiverSupportScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    // Sync selectedAddress with initial fetched address on mount or when fetched
+    // Follow the centralized active address whenever it changes elsewhere
+    // in the app, unless the user has already made their own pick here.
     React.useEffect(() => {
-        if (address && address !== 'Fetching address...' && !selectedAddress) {
-            setSelectedAddress({
-                line1: address,
-                cityName: '',
-                pincode: '',
-                latitude: 0,
-                longitude: 0
-            });
+        if (!activeAddress) return;
+        setSelectedAddress(prev => {
+            if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+            return {
+                id: activeAddress.id,
+                line1: activeAddress.line1,
+                line2: activeAddress.line2,
+                cityName: activeAddress.cityName,
+                pincode: activeAddress.pincode,
+                landmark: activeAddress.landmark,
+                latitude: activeAddress.latitude,
+                longitude: activeAddress.longitude,
+                state: activeAddress.state,
+            };
+        });
+        if (!landmarkInitialized && activeAddress.landmark) {
+            setLandmark(activeAddress.landmark);
+            setLandmarkInitialized(true);
         }
-    }, [address]);
-
-    // Auto-fill profile address only on mount when GPS address is not available
-    React.useEffect(() => {
-        if (addressInitialized) return; // Only run once
-        const addressEmpty = !address || address === 'Fetching address...' || address === '';
-        if (addressEmpty && profile?.addresses?.length) {
-            const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
-            const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName, defaultAddr.state].filter(Boolean);
-            if (parts.length) {
-                setAddress(parts.join(', '));
-                setAddressInitialized(true);
-            }
-        }
-        if (!addressEmpty) {
-            setAddressInitialized(true);
-        }
-    }, [address]);
+    }, [activeAddress, landmarkInitialized]);
 
     const handleAddressChange = (addr: AddressData) => {
         setSelectedAddress(addr);
-        setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
-    };
-
-    // Silently upsert the address back to profile when user books
-    const syncAddressToProfile = async (addressText: string, landmarkText: string) => {
-        if (!profile?.id || !addressText.trim()) return;
-        try {
-            const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
-            const payload: any = {
-                line1: addressText.trim(),
-                landmark: landmarkText.trim() || undefined,
-                label: 'Home' as string,
-                state: (selectedAddress?.state || 'Unknown') as string,
-                cityName: (selectedAddress?.cityName || 'Unknown') as string,
-                isDefault: true,
-                pincode: (selectedAddress?.pincode || '000000') as string,
-            };
-            if (existing?.id) {
-                await userService.updateAddress(profile.id, existing.id, payload);
-            } else {
-                await userService.addAddress(profile.id, payload);
-            }
-            await refreshData();
-        } catch (e) {
-            console.warn('Sync address to profile failed:', e);
-        }
+        if (addr.landmark) setLandmark(addr.landmark);
+        setLandmarkInitialized(true);
+        // AddressPickerSection already calls selectActiveAddress internally.
     };
 
     const [isBooking, setIsBooking] = useState(false);
@@ -225,9 +208,9 @@ export default function BookCaregiverSupportScreen() {
             selectedCondition &&
             selectedGender &&
             scheduledDate &&
-            (selectedAddress?.line1 || (address && address.trim().length >= 5))
+            selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5
         );
-    }, [selectedWho, selectedFamilyMemberId, selectedDuration, selectedCondition, selectedGender, scheduledDate, address, selectedAddress]);
+    }, [selectedWho, selectedFamilyMemberId, selectedDuration, selectedCondition, selectedGender, scheduledDate, selectedAddress]);
 
     const handleBookService = async () => {
         if (!selectedWho) {
@@ -254,7 +237,7 @@ export default function BookCaregiverSupportScreen() {
             triggerAlert('Required', 'Please select date & time slot.');
             return;
         }
-        if (!selectedAddress?.line1 && (!address || address.trim().length < 5)) {
+        if (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5) {
             triggerAlert('Required', 'Please select or confirm your service address.');
             return;
         }
@@ -270,21 +253,24 @@ export default function BookCaregiverSupportScreen() {
         try {
             setIsBooking(true);
 
-            // Sync address back to profile (non-blocking, non-fatal)
-            syncAddressToProfile(address, landmark);
-
             // Upload images first (safe before payment — no booking created yet)
             let uploadedImageUrls: string[] = [];
             if (selectedImages.length > 0) {
                 uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'nurse-care');
             }
 
+            // Booking location comes from the address the user actually
+            // confirmed on screen — never a fresh device GPS read.
+            const addressLine = [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ');
+
             // Navigate to checkout — booking created inside checkout after payment succeeds
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: scheduledDate.toISOString(),
-                addressLine: address || undefined,
+                addressLine: addressLine || undefined,
+                latitude: selectedAddress.latitude,
+                longitude: selectedAddress.longitude,
                 landmark: landmark || undefined,
                 staffType: selectedStaff === 'Qualified Nurse' ? 'qualified-nurse' : 'bedside-attendant',
                 shiftDuration,

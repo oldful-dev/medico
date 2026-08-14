@@ -12,11 +12,9 @@ import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
-import { locationService } from '@/services/device/locationService';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
-import { useUser } from '@/context/UserContext';
+import { useAddress } from '@/context/AddressContext';
 import { bookingService, Booking } from '@/services/api/bookingService';
-import { userService } from '@/services/api/userService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
@@ -77,8 +75,8 @@ export default function DoctorVisitScreen() {
     const styles = makeStyles(colors, isDarkMode);
 
     // ─── Global State ───
-    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, isLoading: isLoadingInit } = useServiceInitialization('doctor-visit');
-    const { profile, refreshData } = useUser();
+    const { isReady, cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('doctor-visit');
+    const { activeAddress } = useAddress();
 
     // ─── State ───
     const [selectedProblems, setSelectedProblems] = React.useState<string[]>([]);
@@ -87,45 +85,62 @@ export default function DoctorVisitScreen() {
     const [scheduledDate, setScheduledDate] = React.useState<Date | undefined>(undefined);
     const [landmark, setLandmark] = React.useState('');
     const [visitType] = React.useState<'Home'>('Home');
-    const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(null);
 
-    // Sync selectedAddress with initial fetched address on mount or when fetched
+    // selectedAddress now seeds from — and stays in sync with — the
+    // centralized Active Service Location instead of an independent
+    // GPS-only string plus a local default-address lookup. This is the
+    // fix for the "picked a different address elsewhere, this screen
+    // silently reset to default/GPS" bug.
+    const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(
+        activeAddress ? {
+            id: activeAddress.id,
+            line1: activeAddress.line1,
+            line2: activeAddress.line2,
+            cityName: activeAddress.cityName,
+            pincode: activeAddress.pincode,
+            landmark: activeAddress.landmark,
+            latitude: activeAddress.latitude,
+            longitude: activeAddress.longitude,
+            state: activeAddress.state,
+        } : null
+    );
+    const [landmarkInitialized, setLandmarkInitialized] = React.useState(false);
+
+    // Follow the centralized active address whenever it changes elsewhere
+    // in the app (Manage Addresses, the global location sheet, another
+    // screen's picker) — as long as the user hasn't made their own pick
+    // on THIS screen via handleAddressChange below (tracked via the id
+    // match; a real edit here always wins for the current session).
     React.useEffect(() => {
-        if (address && address !== 'Fetching address...' && !selectedAddress) {
-            setSelectedAddress({
-                line1: address,
-                cityName: '',
-                pincode: '',
-                latitude: 28.7041,
-                longitude: 77.1025,
-            });
+        if (!activeAddress) return;
+        setSelectedAddress(prev => {
+            if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+            return {
+                id: activeAddress.id,
+                line1: activeAddress.line1,
+                line2: activeAddress.line2,
+                cityName: activeAddress.cityName,
+                pincode: activeAddress.pincode,
+                landmark: activeAddress.landmark,
+                latitude: activeAddress.latitude,
+                longitude: activeAddress.longitude,
+                state: activeAddress.state,
+            };
+        });
+        if (!landmarkInitialized && activeAddress.landmark) {
+            setLandmark(activeAddress.landmark);
+            setLandmarkInitialized(true);
         }
-    }, [address]);
+    }, [activeAddress, landmarkInitialized]);
 
     const handleAddressChange = (addr: AddressData) => {
         setSelectedAddress(addr);
-        setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
         if (addr.landmark) setLandmark(addr.landmark);
+        setLandmarkInitialized(true);
+        // AddressPickerSection already calls selectActiveAddress internally
+        // (syncToContext defaults to true) — no need to duplicate that call
+        // here.
     };
-
-    // ─── Auto-fill profile address only on mount when GPS address is not available ───
-    const [addressInitialized, setAddressInitialized] = React.useState(false);
-    React.useEffect(() => {
-        if (addressInitialized) return; // Only run once
-        const addressEmpty = !address || address === 'Fetching address...' || address === '';
-        if (addressEmpty && profile?.addresses?.length) {
-            const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
-            if (defaultAddr) {
-                const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName].filter(Boolean);
-                setAddress(parts.join(', '));
-                if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
-                setAddressInitialized(true);
-            }
-        }
-        if (!addressEmpty) {
-            setAddressInitialized(true);
-        }
-    }, [profile]);
 
     // ─── Repeat Order State ───
     const [lastPhysioBooking, setLastPhysioBooking] = React.useState<Booking | null>(null);
@@ -265,39 +280,14 @@ export default function DoctorVisitScreen() {
     };
 
 
-    // Silently upsert the address back to profile when user books
-    const syncAddressToProfile = async (addressText: string, landmarkText: string) => {
-        if (!profile?.id || !addressText.trim()) return;
-        try {
-            const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
-            const payload = {
-                label: existing?.label || 'Home',
-                line1: addressText.trim(),
-                cityName: existing?.cityName || '',
-                state: existing?.state || '',
-                pincode: existing?.pincode || '',
-                landmark: landmarkText.trim() || undefined,
-                isDefault: true,
-            };
-            if (existing?.id) {
-                await userService.updateAddress(profile.id, existing.id, payload);
-            } else {
-                await userService.addAddress(profile.id, payload);
-            }
-            await refreshData();
-        } catch {
-            // non-fatal — booking still proceeds
-        }
-    };
-
     const isFormValid = React.useMemo(() => {
         return !!(
             selectedProblems.length > 0 &&
             (selectedProblems.includes('Other') ? otherProblemText.trim() : true) &&
             scheduledDate &&
-            address && address.trim().length >= 5 && address !== 'Fetching address...'
+            selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5
         );
-    }, [selectedProblems, otherProblemText, scheduledDate, address]);
+    }, [selectedProblems, otherProblemText, scheduledDate, selectedAddress]);
 
     const handleBookService = async () => {
         if (selectedProblems.length === 0) {
@@ -316,10 +306,8 @@ export default function DoctorVisitScreen() {
             triggerAlert(t('common.error'), t('doctor_visit.invalid_time_alert'));
             return;
         }
-        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            triggerAlert(t('common.required'), locationDenied
-                ? t('doctor_visit.address_required_gps_denied')
-                : t('doctor_visit.address_required_failed'));
+        if (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5) {
+            triggerAlert(t('common.required'), t('doctor_visit.address_required_failed'));
             return;
         }
         if (!isReady) {
@@ -331,20 +319,23 @@ export default function DoctorVisitScreen() {
 
             const symptomsList = selectedProblems.map(p => p === 'Other' ? otherProblemText.trim() : p);
 
-            // Sync address back to profile (non-blocking, non-fatal)
-            syncAddressToProfile(address, landmark);
-
-            // Navigate to checkout — booking is created INSIDE checkout after payment succeeds
-            const gps = await locationService.getCurrentLocation().catch(() => null);
+            // Booking location comes from the address the user actually
+            // confirmed on screen (selectedAddress, which mirrors
+            // AddressContext.activeAddress) — never a fresh device GPS
+            // read at submit time. This is what makes a booking for a
+            // remote address (e.g. a parent's home in another city)
+            // correctly use that address's coordinates instead of the
+            // device's current physical location.
+            const addressLine = [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ');
 
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: scheduledDate.toISOString(),
-                addressLine: address || undefined,
+                addressLine: addressLine || undefined,
                 landmark: landmark.trim() || undefined,
-                latitude: gps?.latitude,
-                longitude: gps?.longitude,
+                latitude: selectedAddress.latitude,
+                longitude: selectedAddress.longitude,
                 symptoms: symptomsList,
                 doctorType: selectedDoctorType === 'GP' ? 'general-physician' : 'physiotherapist',
                 formDataJson: {
