@@ -149,13 +149,42 @@ const publishLegalDocument = async (req, res, next) => {
     }
 };
 
-// DELETE /api/legal/:id  (drafts only)
+// PUT /api/legal/:id/archive  (published or draft — pulls the document from public view)
+const archiveLegalDocument = async (req, res, next) => {
+    try {
+        const doc = await prisma.legalDocument.findUnique({ where: { id: req.params.id } });
+        if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+
+        const archived = await prisma.legalDocument.update({
+            where: { id: req.params.id },
+            data: { status: 'ARCHIVED' },
+        });
+
+        if (req.user?.type === 'admin') {
+            await createAuditLog({
+                adminId: req.user.id,
+                action: 'LEGAL_DOCUMENT_ARCHIVED',
+                entity: 'LegalDocument',
+                entityId: archived.id,
+                oldValue: { status: doc.status },
+                newValue: { status: 'ARCHIVED' },
+                ipAddress: req.ip,
+            });
+        }
+
+        sendResponse(res, 200, archived, 'Document archived');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// DELETE /api/legal/:id  (drafts and archived docs only)
 const deleteLegalDocument = async (req, res, next) => {
     try {
         const doc = await prisma.legalDocument.findUnique({ where: { id: req.params.id } });
         if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
         if (doc.status === 'PUBLISHED') {
-            return res.status(400).json({ success: false, message: 'Cannot delete a published document. Archive it first by publishing a newer version.' });
+            return res.status(400).json({ success: false, message: 'Cannot delete a published document. Archive it first.' });
         }
         await prisma.legalDocument.delete({ where: { id: req.params.id } });
         sendResponse(res, 200, null, 'Document deleted');
@@ -166,5 +195,5 @@ const deleteLegalDocument = async (req, res, next) => {
 
 module.exports = {
     getLegalDocuments, getLegalDocumentById, getPublishedDocument, getPublishedDocuments,
-    createLegalDocument, updateLegalDocument, publishLegalDocument, deleteLegalDocument,
+    createLegalDocument, updateLegalDocument, publishLegalDocument, archiveLegalDocument, deleteLegalDocument,
 };

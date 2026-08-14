@@ -1,31 +1,19 @@
 'use client';
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ChevronRight } from 'lucide-react';
 import { useSDUIHooks } from '@/hooks/useSDUIHooks';
-import { useAuthStore } from '@/store/authStore';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 
 export function ServicesPreview() {
   const { useHomeConfig } = useSDUIHooks();
   const { data: config, isLoading } = useHomeConfig();
-  const { isAuthenticated } = useAuthStore();
-  const router = useRouter();
 
-  console.log("ServicesPreview Render - Config Data:", config);
   const previewServices = (config?.sections || [])
     .filter(s => s.enabled)
     .flatMap(s => s.services)
     .filter(s => s.enabled)
     .slice(0, 6);
-  console.log("ServicesPreview Render - Preview Services List:", previewServices);
-
-  const handleViewAll = () => {
-    // Redirect guests to login; authenticated users to services catalog
-    router.push(isAuthenticated ? '/app/services' : '/auth');
-  };
 
   return (
     <section className="w-full bg-[#f8f9fc] py-16 px-4 flex flex-col items-center">
@@ -37,12 +25,6 @@ export function ServicesPreview() {
               Everything you need to manage elder care right from your home, delivered by trusted professionals.
             </p>
           </div>
-          <button
-            onClick={handleViewAll}
-            className="text-[var(--color-primary)] font-bold flex items-center gap-1 hover:underline underline-offset-4 active:scale-95 transition-all whitespace-nowrap"
-          >
-            View All Services <ChevronRight className="w-5 h-5" />
-          </button>
         </div>
 
         {isLoading || !config ? (

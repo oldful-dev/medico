@@ -4,14 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Phone, Mail, MessageSquare, Search,
-  CheckCircle, Info, BadgeHelp, CheckCircle2, MapPin, Building
+  CheckCircle, Info, BadgeHelp, CheckCircle2, MapPin, Building, Loader2
 } from 'lucide-react';
 
-const FAQ_DATA = [
+const STATIC_FAQ_DATA = [
   { id: 'about',    q: 'What is Ayuxa Health Tech Platforms?', a: 'Ayuxa is a specialized elder care platform offering comprehensive caregiver support, doctors profiles, nurse profiles, and community activities to keep senior citizens safe and healthy.' },
   { id: 'profiles', q: 'Are caregiver and doctor profiles verified?', a: 'Yes, all profiles listed on Ayuxa undergo rigorous verification, including official police verification and qualification checks.' },
-  { id: 'careers',  q: 'How do I apply for open positions?', a: 'Visit our Careers page to view current job listings and send your profile to careers@ayuxa.co.in.' },
-  { id: 'enquiry',  q: 'Whom should I contact for general queries?', a: 'For any general inquiries, please email us at ho@ayuxa.co.in or call our care line at 080 4728 0789.' },
 ];
 
 const SUPPORT_PROMISE = [
@@ -20,20 +18,23 @@ const SUPPORT_PROMISE = [
   { id: 'track',   text: 'Official channels for careers & investor relations.', icon: Info },
 ];
 
+const FALLBACK_SETTINGS = {
+  company_name: "Ayuxa Health Tech Platforms Pvt. Ltd.",
+  address: "No. 42, 3rd Main Road, Sector 7, HSR Layout, Bengaluru, Karnataka 560102",
+  official_contact: "+91 94801 98108",
+  customer_care: "080 4728 0789",
+  emails: {
+    support: "support@ayuxacare.com",
+    investor: "office@ayuxa.co.in",
+    careers: "careers@ayuxa.co.in",
+    enquiries: "ho@ayuxa.co.in"
+  }
+};
+
 export default function ContactPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [settings, setSettings] = useState({
-    company_name: "Ayuxa Health Tech Platforms Pvt. Ltd.",
-    address: "No. 42, 3rd Main Road, Sector 7, HSR Layout, Bengaluru, Karnataka 560102",
-    official_contact: "+91 94801 98108",
-    customer_care: "080 4728 0789",
-    emails: {
-      support: "support@ayuxacare.com",
-      investor: "office@ayuxa.co.in",
-      careers: "careers@ayuxa.co.in",
-      enquiries: "ho@ayuxa.co.in"
-    }
-  });
+  const [settings, setSettings] = useState<typeof FALLBACK_SETTINGS | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -41,6 +42,7 @@ export default function ContactPage() {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
         const res = await fetch(`${apiUrl}/ui-config/published?t=${Date.now()}`, { cache: 'no-store' });
         const json = await res.json();
+        let resolved = FALLBACK_SETTINGS;
         if (json.success && json.data) {
           const found = json.data.find((c: any) => c.key === "company_global_config");
           if (found && found.configJson) {
@@ -48,29 +50,47 @@ export default function ContactPage() {
             if (typeof parsed === "string") {
               try { parsed = JSON.parse(parsed); } catch (_) {}
             }
-            setSettings({
-              company_name: parsed.company_name || "Ayuxa Health Tech Platforms Pvt. Ltd.",
-              address: parsed.address || "No. 42, 3rd Main Road, Sector 7, HSR Layout, Bengaluru, Karnataka 560102",
-              official_contact: parsed.official_contact || "+91 94801 98108",
-              customer_care: parsed.customer_care || "080 4728 0789",
+            resolved = {
+              company_name: parsed.company_name || FALLBACK_SETTINGS.company_name,
+              address: parsed.address || FALLBACK_SETTINGS.address,
+              official_contact: parsed.official_contact || FALLBACK_SETTINGS.official_contact,
+              customer_care: parsed.customer_care || FALLBACK_SETTINGS.customer_care,
               emails: {
-                support: parsed.emails?.support || "support@ayuxacare.com",
-                investor: parsed.emails?.investor || "office@ayuxa.co.in",
-                careers: parsed.emails?.careers || "careers@ayuxa.co.in",
-                enquiries: parsed.emails?.enquiries || "ho@ayuxa.co.in"
+                support: parsed.emails?.support || FALLBACK_SETTINGS.emails.support,
+                investor: parsed.emails?.investor || FALLBACK_SETTINGS.emails.investor,
+                careers: parsed.emails?.careers || FALLBACK_SETTINGS.emails.careers,
+                enquiries: parsed.emails?.enquiries || FALLBACK_SETTINGS.emails.enquiries
               }
-            });
+            };
           }
         }
+        setSettings(resolved);
       } catch (err) {
         console.error("Failed to load contact settings:", err);
+        setSettings(FALLBACK_SETTINGS);
+      } finally {
+        setLoading(false);
       }
     };
     fetchSettings();
   }, []);
 
-  const filteredFAQs = FAQ_DATA.filter(f => 
-    f.q.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  if (loading || !settings) {
+    return (
+      <div className="min-h-screen bg-gray-50/50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
+      </div>
+    );
+  }
+
+  const faqData = [
+    ...STATIC_FAQ_DATA,
+    { id: 'careers',  q: 'How do I apply for open positions?', a: `Visit our Careers page to view current job listings and send your profile to ${settings.emails.careers}.` },
+    { id: 'enquiry',  q: 'Whom should I contact for general queries?', a: `For any general inquiries, please email us at ${settings.emails.enquiries} or call our care line at ${settings.customer_care}.` },
+  ];
+
+  const filteredFAQs = faqData.filter(f =>
+    f.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
     f.a.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -155,7 +175,7 @@ export default function ContactPage() {
                 Common Queries
               </h2>
               <div className="space-y-6">
-                {(searchQuery ? filteredFAQs : FAQ_DATA).map((faq) => (
+                {(searchQuery ? filteredFAQs : faqData).map((faq) => (
                   <div key={faq.id} className="group cursor-default border-b border-gray-50 pb-6 last:border-0 last:pb-0">
                     <h3 className="text-sm md:text-base font-bold text-gray-900 mb-2 group-hover:text-[var(--color-primary)] transition-colors">{faq.q}</h3>
                     <p className="text-xs md:text-sm text-gray-500 leading-relaxed">{faq.a}</p>

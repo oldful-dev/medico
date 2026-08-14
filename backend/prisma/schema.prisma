@@ -1047,6 +1047,7 @@ enum LegalDocType {
 enum LegalDocStatus {
   DRAFT
   PUBLISHED
+  ARCHIVED
 }
 
 enum InsuranceAppStatus {

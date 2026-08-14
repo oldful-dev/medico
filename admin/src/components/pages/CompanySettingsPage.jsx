@@ -23,6 +23,7 @@ export default function CompanySettingsPage() {
         address: "",
         official_contact: "",
         customer_care: "",
+        iso_certifications: [],
         emails: {
             support: "support@ayuxacare.com",
             investor: "office@ayuxa.co.in",
@@ -183,6 +184,7 @@ export default function CompanySettingsPage() {
                             ...parsedJson,
                             emails: { ...prev.emails, ...(parsedJson?.emails || {}) },
                             careers_list: parsedJson?.careers_list || [],
+                            iso_certifications: parsedJson?.iso_certifications || [],
                             community_content: { ...prev.community_content, ...(parsedJson?.community_content || {}) },
                             blogs_content: {
                                 posts: parsedJson?.blogs_content?.posts || [],
@@ -370,6 +372,70 @@ export default function CompanySettingsPage() {
                                     />
                                 </div>
                             </div>
+                        </div>
+
+                        <div style={{ borderTop: "1px solid var(--border-color)", marginTop: 10, paddingTop: 20 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <div>
+                                    <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>ISO Certifications</h3>
+                                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0" }}>Shown in the website footer and mobile app. Add each certification the company currently holds.</p>
+                                </div>
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => setFormData({ ...formData, iso_certifications: [...(formData.iso_certifications || []), { label: "ISO 9001:2015 Certified", certNumber: "" }] })}
+                                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                                >
+                                    <Plus size={16} /> Add Certification
+                                </button>
+                            </div>
+
+                            {(formData.iso_certifications || []).length === 0 ? (
+                                <p style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>No certifications added yet.</p>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    {(formData.iso_certifications || []).map((cert, index) => (
+                                        <div key={index} style={{ display: "flex", gap: 12, alignItems: "center", padding: 14, background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+                                            <div className="form-group" style={{ flex: 2, display: "flex", flexDirection: "column", gap: 4 }}>
+                                                <label style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>Certification Label</label>
+                                                <input
+                                                    value={cert.label || ""}
+                                                    onChange={e => {
+                                                        const updated = [...(formData.iso_certifications || [])];
+                                                        updated[index] = { ...updated[index], label: e.target.value };
+                                                        setFormData({ ...formData, iso_certifications: updated });
+                                                    }}
+                                                    placeholder="ISO 9001:2015 Certified"
+                                                    style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
+                                                />
+                                            </div>
+                                            <div className="form-group" style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+                                                <label style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>Certificate No. (optional)</label>
+                                                <input
+                                                    value={cert.certNumber || ""}
+                                                    onChange={e => {
+                                                        const updated = [...(formData.iso_certifications || [])];
+                                                        updated[index] = { ...updated[index], certNumber: e.target.value };
+                                                        setFormData({ ...formData, iso_certifications: updated });
+                                                    }}
+                                                    placeholder="e.g. IND-2026-0042"
+                                                    style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    const updated = [...(formData.iso_certifications || [])];
+                                                    updated.splice(index, 1);
+                                                    setFormData({ ...formData, iso_certifications: updated });
+                                                }}
+                                                style={{ alignSelf: "flex-end", marginBottom: 6, border: "none", background: "transparent", color: "var(--accent-danger)", cursor: "pointer" }}
+                                                title="Delete certification"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div style={{ borderTop: "1px solid var(--border-color)", marginTop: 10, paddingTop: 20 }}>
