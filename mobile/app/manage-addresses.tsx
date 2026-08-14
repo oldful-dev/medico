@@ -6,9 +6,9 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useUser } from '@/context/UserContext';
+import { useAddress } from '@/context/AddressContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { userService, Address } from '@/services/api/userService';
-import { locationService } from '@/services/device/locationService';
 import { LocationPickerModal } from '@/components/LocationPickerModal';
 import { useTranslation } from 'react-i18next';
 import * as Location from 'expo-location';
@@ -72,6 +72,13 @@ const parseAddressComponents = async (address: string, coords?: { lat: number; l
 export default function ManageAddressesScreen() {
     const router = useRouter();
     const { profile, setProfile } = useUser();
+    const {
+        addAddress: addAddressToContext,
+        editAddress: editAddressInContext,
+        deleteAddress: deleteAddressFromContext,
+        setDefaultAddress: setDefaultAddressInContext,
+        detectCurrentLocationSnapshot,
+    } = useAddress();
     const colors = useThemeColors();
     const { t } = useTranslation();
     const [showAddForm, setShowAddForm] = useState(false);
@@ -139,17 +146,21 @@ export default function ManageAddressesScreen() {
         }, [setProfile])
     );
 
-    // Auto-detect current location (Swiggy/Zomato style)
+    // Auto-detect current location (Swiggy/Zomato style) — routed through
+    // AddressContext's detectCurrentLocationSnapshot so this screen's GPS
+    // lookup uses the same funnel as every other GPS trigger in the app,
+    // instead of its own copy of the permission/fetch/geocode sequence.
+    // This only populates the detect card and add-form for review; it does
+    // NOT commit the result as the active address — that only happens once
+    // the user explicitly saves it via saveAddress/addAddressToContext.
     const detectLocation = async () => {
         setDetectingLocation(true);
         setLocationDetectionAttempted(true);
         try {
-            const hasPermission = await locationService.requestPermission();
-            if (hasPermission) {
-                const coords = await locationService.getCurrentLocation();
-                const address = await locationService.getAddressFromCoordinates(coords);
-                setDetectedAddress(address);
-                setDetectedCoords({ lat: coords.latitude, lng: coords.longitude });
+            const snapshot = await detectCurrentLocationSnapshot();
+            if (snapshot) {
+                setDetectedAddress(snapshot.line1);
+                setDetectedCoords({ lat: snapshot.latitude, lng: snapshot.longitude });
             }
         } catch (err) {
             console.warn('Location detection failed:', err);
@@ -247,20 +258,15 @@ export default function ManageAddressesScreen() {
                 isDefault: addresses.length === 0,
             };
 
-            let res;
-            if (editingId) {
-                res = await userService.updateAddress(profile.id, editingId, addressData);
-            } else {
-                res = await userService.addAddress(profile.id, addressData);
-            }
+            const saved = editingId
+                ? await editAddressInContext(editingId, addressData)
+                : await addAddressToContext(addressData);
 
-            if (res.success) {
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) setProfile(profileRes.data);
+            if (saved) {
                 resetForm();
                 triggerAlert(t('manage_addresses.alerts.success_title'), editingId ? t('manage_addresses.alerts.address_updated') : t('manage_addresses.alerts.address_added'), 'checkmark-circle-outline');
             } else {
-                triggerAlert(t('manage_addresses.alerts.error_title'), res.message || t('manage_addresses.alerts.failed_save'));
+                triggerAlert(t('manage_addresses.alerts.error_title'), t('manage_addresses.alerts.failed_save'));
             }
         } catch (err: any) {
             triggerAlert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.something_went_wrong'));
@@ -277,10 +283,12 @@ export default function ManageAddressesScreen() {
             async () => {
                 if (!profile?.id || !address.id) return;
                 try {
-                    await userService.deleteAddress(profile.id, address.id);
-                    const profileRes = await userService.getProfile();
-                    if (profileRes.success && profileRes.data) setProfile(profileRes.data);
-                    triggerAlert(t('manage_addresses.alerts.success_title'), t('manage_addresses.alerts.address_deleted'), 'checkmark-circle-outline');
+                    const ok = await deleteAddressFromContext(address.id);
+                    if (ok) {
+                        triggerAlert(t('manage_addresses.alerts.success_title'), t('manage_addresses.alerts.address_deleted'), 'checkmark-circle-outline');
+                    } else {
+                        triggerAlert(t('manage_addresses.alerts.error_title'), t('manage_addresses.alerts.failed_delete'));
+                    }
                 } catch (err: any) {
                     triggerAlert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.failed_delete'));
                 }
@@ -292,9 +300,7 @@ export default function ManageAddressesScreen() {
     const setDefault = async (address: Address) => {
         if (!profile?.id || !address.id) return;
         try {
-            await userService.updateAddress(profile.id, address.id, { isDefault: true });
-            const profileRes = await userService.getProfile();
-            if (profileRes.success && profileRes.data) setProfile(profileRes.data);
+            await setDefaultAddressInContext(address.id);
         } catch (err: any) {
             triggerAlert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.failed_update'));
         }

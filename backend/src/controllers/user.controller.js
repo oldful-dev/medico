@@ -483,26 +483,60 @@ const removeEmergencyContact = async (req, res, next) => {
 };
 
 // ─── Address Management ────────────────────
+//
+// Ownership is enforced via req.user.id (the authenticated caller), never
+// via a client-supplied :id/:userId route param — a param mismatch is
+// treated as "not found," never leaking whether another user's address
+// exists. Default-address writes run inside a transaction so exactly one
+// isDefault:true row can ever exist per user (see AddressContext plan,
+// Phase 1 — the frontend's "follow default unless overridden" logic is
+// only trustworthy if this invariant actually holds server-side).
+
+const isValidCoordinate = (lat, lng) => {
+    if (lat === undefined && lng === undefined) return true; // neither supplied — fine
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) return false;
+    if (latNum < -90 || latNum > 90) return false;
+    if (lngNum < -180 || lngNum > 180) return false;
+    return true;
+};
 
 // POST /api/users/:id/addresses
 const addAddress = async (req, res, next) => {
     try {
+        if (req.params.id !== req.user.id) {
+            return sendResponse(res, 403, null, 'Not authorized to add an address for this user');
+        }
+
         const { label, line1, line2, flatNumber, addressLine, cityName, state, pincode, landmark, isDefault, latitude, longitude } = req.body;
 
-        const address = await prisma.address.create({
-            data: {
-                userId: req.params.id,
-                label: label || 'Home',
-                line1: line1 || flatNumber || '',
-                line2: line2 || addressLine || '',
-                cityName: cityName || '',
-                state: state || '',
-                pincode: pincode || '',
-                landmark: landmark || null,
-                isDefault: !!isDefault,
-                latitude: latitude ? parseFloat(latitude) : null,
-                longitude: longitude ? parseFloat(longitude) : null,
-            },
+        if (!isValidCoordinate(latitude, longitude)) {
+            return sendResponse(res, 400, null, 'Invalid latitude/longitude');
+        }
+
+        const address = await prisma.$transaction(async (tx) => {
+            if (isDefault) {
+                await tx.address.updateMany({
+                    where: { userId: req.user.id, isDefault: true },
+                    data: { isDefault: false },
+                });
+            }
+            return tx.address.create({
+                data: {
+                    userId: req.user.id,
+                    label: label || 'Home',
+                    line1: line1 || flatNumber || '',
+                    line2: line2 || addressLine || '',
+                    cityName: cityName || '',
+                    state: state || '',
+                    pincode: pincode || '',
+                    landmark: landmark || null,
+                    isDefault: !!isDefault,
+                    latitude: latitude ? parseFloat(latitude) : null,
+                    longitude: longitude ? parseFloat(longitude) : null,
+                },
+            });
         });
         sendResponse(res, 201, address, 'Address added');
     } catch (error) {
@@ -514,7 +548,11 @@ const addAddress = async (req, res, next) => {
 const updateAddress = async (req, res, next) => {
     try {
         const { label, line1, line2, flatNumber, addressLine, cityName, state, pincode, landmark, isDefault, latitude, longitude } = req.body;
-        
+
+        if (!isValidCoordinate(latitude, longitude)) {
+            return sendResponse(res, 400, null, 'Invalid latitude/longitude');
+        }
+
         const data = {};
         if (label !== undefined) data.label = label;
         if (line1 !== undefined) data.line1 = line1;
@@ -529,10 +567,26 @@ const updateAddress = async (req, res, next) => {
         if (latitude !== undefined) data.latitude = parseFloat(latitude);
         if (longitude !== undefined) data.longitude = parseFloat(longitude);
 
-        const address = await prisma.address.update({
-            where: { id: req.params.addressId },
-            data,
+        const address = await prisma.$transaction(async (tx) => {
+            if (data.isDefault === true) {
+                await tx.address.updateMany({
+                    where: { userId: req.user.id, isDefault: true, NOT: { id: req.params.addressId } },
+                    data: { isDefault: false },
+                });
+            }
+            const result = await tx.address.updateMany({
+                where: { id: req.params.addressId, userId: req.user.id },
+                data,
+            });
+            if (result.count === 0) {
+                return null; // not found or not owned
+            }
+            return tx.address.findUnique({ where: { id: req.params.addressId } });
         });
+
+        if (!address) {
+            return sendResponse(res, 404, null, 'Address not found');
+        }
         sendResponse(res, 200, address, 'Address updated');
     } catch (error) {
         next(error);
@@ -542,7 +596,34 @@ const updateAddress = async (req, res, next) => {
 // DELETE /api/users/:userId/addresses/:addressId
 const deleteAddress = async (req, res, next) => {
     try {
-        await prisma.address.delete({ where: { id: req.params.addressId } });
+        const result = await prisma.$transaction(async (tx) => {
+            const existing = await tx.address.findFirst({
+                where: { id: req.params.addressId, userId: req.user.id },
+            });
+            if (!existing) {
+                return { notFound: true };
+            }
+
+            await tx.address.delete({ where: { id: req.params.addressId } });
+
+            if (existing.isDefault) {
+                const nextDefault = await tx.address.findFirst({
+                    where: { userId: req.user.id },
+                    orderBy: { createdAt: 'desc' },
+                });
+                if (nextDefault) {
+                    await tx.address.update({
+                        where: { id: nextDefault.id },
+                        data: { isDefault: true },
+                    });
+                }
+            }
+            return { notFound: false };
+        });
+
+        if (result.notFound) {
+            return sendResponse(res, 404, null, 'Address not found');
+        }
         sendResponse(res, 200, null, 'Address deleted');
     } catch (error) {
         next(error);

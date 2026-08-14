@@ -16,6 +16,7 @@ import { labService, type LabSlot } from '@/services/api/labService';
 import { storeService } from '@/services/api/storeService';
 import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
 import { useUser } from '@/context/UserContext';
+import { useAddress } from '@/context/AddressContext';
 import { useCart } from '@/context/CartContext';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
@@ -56,6 +57,7 @@ export default function CheckoutScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const { profile, refreshData, isLoading } = useUser();
+    const { activeAddress } = useAddress();
     const { items, clearCategory, removeItems } = useCart();
     const rupee = <Text style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif' }}>₹</Text>;
 
@@ -309,9 +311,27 @@ export default function CheckoutScreen() {
     const [shippingLoading, setShippingLoading] = useState(false);
 
     // ─── Address Selection (for product/wellness/blood-test deliveries) ──────
-    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+    // selectedAddress seeds from — and stays in sync with — the centralized
+    // AddressContext.activeAddress (authoritative). This covers both the
+    // "came via schedule.tsx" flow and the direct "Book Now" shortcut from
+    // blood-test/index.tsx (which skips scheduling and lands here directly).
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
+        activeAddress ? {
+            id: activeAddress.id,
+            line1: activeAddress.line1,
+            line2: activeAddress.line2,
+            cityName: activeAddress.cityName,
+            pincode: activeAddress.pincode,
+            landmark: activeAddress.landmark,
+            latitude: activeAddress.latitude,
+            longitude: activeAddress.longitude,
+            fullName: profile?.name || '',
+            state: activeAddress.state || '',
+            country: 'India',
+        } : null
+    );
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [landmark, setLandmark] = useState('');
+    const [landmark, setLandmark] = useState(activeAddress?.landmark || '');
 
     // ─── Sync phone from profile when it loads
     useEffect(() => {
@@ -321,28 +341,26 @@ export default function CheckoutScreen() {
         }
     }, [profile?.phone]);
 
-    // ─── Sync default address from profile when it loads (for wellness & blood-test)
     useEffect(() => {
-        if (profile?.addresses?.length && !selectedAddress) {
-            const defaultAddr = (profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0]) as any;
-            if (defaultAddr) {
-                setSelectedAddress({
-                    id: defaultAddr.id,
-                    line1: defaultAddr.line1 || '',
-                    line2: defaultAddr.line2,
-                    cityName: defaultAddr.cityName || '',
-                    pincode: defaultAddr.pincode || '',
-                    landmark: defaultAddr.landmark,
-                    latitude: defaultAddr.latitude || 28.7041,
-                    longitude: defaultAddr.longitude || 77.1025,
-                    fullName: defaultAddr.fullName || profile.name || '',
-                    phone: defaultAddr.phone || '',
-                    state: defaultAddr.state || '',
-                    country: defaultAddr.country || 'India',
-                });
-            }
-        }
-    }, [profile?.addresses, selectedAddress, profile?.name]);
+        if (!activeAddress) return;
+        setSelectedAddress(prev => {
+            if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+            return {
+                id: activeAddress.id,
+                line1: activeAddress.line1,
+                line2: activeAddress.line2,
+                cityName: activeAddress.cityName,
+                pincode: activeAddress.pincode,
+                landmark: activeAddress.landmark,
+                latitude: activeAddress.latitude,
+                longitude: activeAddress.longitude,
+                fullName: profile?.name || '',
+                state: activeAddress.state || '',
+                country: 'India',
+            };
+        });
+        if (activeAddress.landmark) setLandmark(activeAddress.landmark);
+    }, [activeAddress, profile?.name]);
 
     // ─── Blood Test Specific State ─────────────────────────────────────────
     // selectedDate/selectedTime are only ever set by an explicit tap (handleDaySelect/

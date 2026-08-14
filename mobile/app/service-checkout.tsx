@@ -36,6 +36,7 @@ import { planService, Plan, BillingCycle } from "@/services/api/planService";
 import { meetupService } from "@/services/api/meetupService";
 import { storageService, STORAGE_KEYS } from "@/services/device/storageService";
 import { useUser } from "@/context/UserContext";
+import { useAddress } from "@/context/AddressContext";
 import { useTranslation } from "react-i18next";
 import SubscriptionUpsellBanner, {
   PlanTypeNeeded,
@@ -122,6 +123,7 @@ export default function ServiceCheckoutScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { profile, refreshData } = useUser();
+  const { activeAddress, selectActiveAddress } = useAddress();
   const { isDarkMode } = useTheme();
   const colors = useThemeColors();
   const styles = makeStyles(colors, isDarkMode);
@@ -379,22 +381,56 @@ export default function ServiceCheckoutScreen() {
   const [savingsLoading, setSavingsLoading] = useState(false);
 
   // ─── Address Selection ──────────────────────────────────────────────
+  // selectedAddress seeds from — and stays in sync with — the centralized
+  // AddressContext.activeAddress (authoritative). A stray bookingPayload
+  // address is only used as a one-time hydrate fallback when no active
+  // address exists yet — it must never compete with/override a real
+  // activeAddress once one is set (see Phase 6 checkout rule).
   const [selectedAddress, setSelectedAddress] = useState<any>(
-    profile?.addresses && profile.addresses.length > 0
-      ? profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0]
+    activeAddress
+      ? {
+          id: activeAddress.id,
+          line1: activeAddress.line1,
+          line2: activeAddress.line2,
+          cityName: activeAddress.cityName,
+          pincode: activeAddress.pincode,
+          landmark: activeAddress.landmark,
+          latitude: activeAddress.latitude,
+          longitude: activeAddress.longitude,
+          state: activeAddress.state,
+        }
       : null,
   );
-  const [landmark, setLandmark] = useState("");
+  const [landmark, setLandmark] = useState(activeAddress?.landmark || "");
 
-  // Sync selectedAddress with initial fetched address from bookingPayload if no profile address or if dynamic service
   useEffect(() => {
+    if (!activeAddress) return;
+    setSelectedAddress((prev: any) => {
+      if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+      return {
+        id: activeAddress.id,
+        line1: activeAddress.line1,
+        line2: activeAddress.line2,
+        cityName: activeAddress.cityName,
+        pincode: activeAddress.pincode,
+        landmark: activeAddress.landmark,
+        latitude: activeAddress.latitude,
+        longitude: activeAddress.longitude,
+        state: activeAddress.state,
+      };
+    });
+    if (activeAddress.landmark) setLandmark(activeAddress.landmark);
+  }, [activeAddress]);
+
+  // Hydrate-only fallback: an unmigrated upstream screen may still pass the
+  // address solely via bookingPayload. Only applies while no activeAddress
+  // exists yet — never overrides a real activeAddress.
+  useEffect(() => {
+    if (activeAddress || selectedAddress) return;
     if (params.bookingPayload) {
       try {
         const parsed = JSON.parse(params.bookingPayload);
-        if (
-          parsed.addressLine &&
-          (!selectedAddress || selectedAddress.line1 !== parsed.addressLine)
-        ) {
+        if (parsed.addressLine) {
           setSelectedAddress({
             line1: parsed.addressLine,
             cityName: parsed.cityName || "",
@@ -411,7 +447,7 @@ export default function ServiceCheckoutScreen() {
         console.warn("Failed to parse bookingPayload address:", e);
       }
     }
-  }, [params.bookingPayload]);
+  }, [params.bookingPayload, activeAddress, selectedAddress]);
 
   // ─── Benefit calculation state ──────────────────────────────────────
   const [calcLoading, setCalcLoading] = useState(false);
@@ -1691,7 +1727,7 @@ export default function ServiceCheckoutScreen() {
                             selectedAddress?.id === addr.id &&
                               styles.addressCardActive,
                           ]}
-                          onPress={() => setSelectedAddress(addr)}
+                          onPress={() => selectActiveAddress(addr)}
                           activeOpacity={0.7}
                         >
                           <Ionicons

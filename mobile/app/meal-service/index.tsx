@@ -8,6 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { useAddress } from '@/context/AddressContext';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +27,8 @@ export default function MealServiceScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
+    const { activeAddress } = useAddress();
+
     const [mealType, setMealType] = useState('Home Style');
     const [subMode, setSubMode] = useState('Monthly Subscription');
     const [noOnionGarlic, setNoOnionGarlic] = useState(false);
@@ -33,10 +36,25 @@ export default function MealServiceScreen() {
     const [otherReq, setOtherReq] = useState('');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [landmark, setLandmark] = useState('');
-    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+    // selectedAddress now seeds from — and stays in sync with — the
+    // centralized Active Service Location.
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
+        activeAddress ? {
+            id: activeAddress.id,
+            line1: activeAddress.line1,
+            line2: activeAddress.line2,
+            cityName: activeAddress.cityName,
+            pincode: activeAddress.pincode,
+            landmark: activeAddress.landmark,
+            latitude: activeAddress.latitude,
+            longitude: activeAddress.longitude,
+            state: activeAddress.state,
+        } : null
+    );
+    const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
     // Global Initialization
-    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('tiffin');
+    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('tiffin');
     const [isBooking, setIsBooking] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
@@ -46,27 +64,38 @@ export default function MealServiceScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    // Sync selectedAddress with initial fetched address on mount or when fetched
+    // Follow the centralized active address whenever it changes elsewhere
+    // in the app, unless the user has already made their own pick here.
     React.useEffect(() => {
-        if (address && address !== 'Fetching address...' && !selectedAddress) {
-            setSelectedAddress({
-                line1: address,
-                cityName: '',
-                pincode: '',
-                latitude: 28.7041,
-                longitude: 77.1025,
-            });
+        if (!activeAddress) return;
+        setSelectedAddress(prev => {
+            if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+            return {
+                id: activeAddress.id,
+                line1: activeAddress.line1,
+                line2: activeAddress.line2,
+                cityName: activeAddress.cityName,
+                pincode: activeAddress.pincode,
+                landmark: activeAddress.landmark,
+                latitude: activeAddress.latitude,
+                longitude: activeAddress.longitude,
+                state: activeAddress.state,
+            };
+        });
+        if (!landmarkInitialized && activeAddress.landmark) {
+            setLandmark(activeAddress.landmark);
+            setLandmarkInitialized(true);
         }
-    }, [address]);
+    }, [activeAddress, landmarkInitialized]);
 
     const isFormValid = React.useMemo(() => {
         return !!(
             mealType &&
             subMode &&
             selectedDate &&
-            (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'))
+            selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5
         );
-    }, [mealType, subMode, selectedDate, address, selectedAddress]);
+    }, [mealType, subMode, selectedDate, selectedAddress]);
 
     const handleBookService = async () => {
         if (!mealType) {
@@ -81,7 +110,7 @@ export default function MealServiceScreen() {
             triggerAlert(t('common.required') || 'Required', t('medical_equipment.select_date', 'Please select date and time.'));
             return;
         }
-        if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+        if (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5) {
             triggerAlert(t('common.required') || 'Required', t('errors.address_required', 'Please confirm your delivery address.'));
             return;
         }
@@ -92,13 +121,19 @@ export default function MealServiceScreen() {
         try {
             setIsBooking(true);
 
+            // Booking location comes from the address the user actually
+            // confirmed on screen — never a fresh device GPS read.
+            const addressLine = [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ');
+
             // Navigate to checkout — booking created inside checkout after payment succeeds
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
-                addressLine: address || undefined,
+                addressLine: addressLine || undefined,
                 landmark: landmark || undefined,
+                latitude: selectedAddress.latitude,
+                longitude: selectedAddress.longitude,
                 formDataJson: {
                     mealType,
                     subscriptionMode: subMode,
@@ -264,8 +299,9 @@ export default function MealServiceScreen() {
                         selectedAddress={selectedAddress}
                         onAddressChange={(addr) => {
                             setSelectedAddress(addr);
-                            setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
                             if (addr.landmark) setLandmark(addr.landmark);
+                            setLandmarkInitialized(true);
+                            // AddressPickerSection already calls selectActiveAddress internally.
                         }}
                         title={t('order_medicines.address_label')}
                         showPhoneField={false}

@@ -14,6 +14,7 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { locationService } from '@/services/device/locationService';
 import { useUser } from '@/context/UserContext';
+import { useAddress } from '@/context/AddressContext';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { sduiService, HomeConfig, HomeSection } from '@/services/firebase/sduiService';
 import { getAssetUrl } from '@/utils/getAssetUrl';
@@ -22,6 +23,7 @@ import Svg, { Path } from 'react-native-svg';
 import { BannerSlider } from '@/components/BannerSlider';
 import { bannerService, Banner } from '@/services/api/bannerService';
 import { meetupService } from '@/services/api/meetupService';
+import { GlobalLocationSheet } from '@/components/GlobalLocationSheet';
 
 const logoSmall = require('@/assets/images/onlylogo.png');
 
@@ -518,6 +520,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { profile, selectedCity, setSelectedCity, services, refreshData } = useUser();
+  const { activeAddress } = useAddress();
   const { cities } = useAppConfig();
   const colors = useThemeColors();
 
@@ -527,6 +530,7 @@ export default function HomeScreen() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [currentLocationStr, setCurrentLocationStr] = useState('Loading...');
   const [isCitySupported, setIsCitySupported] = useState(true);
+  const [globalLocationSheetVisible, setGlobalLocationSheetVisible] = useState(false);
   const [featuredMeetup, setFeaturedMeetup] = useState<any>(null);
   const [userPinCode, setUserPinCode] = useState<string | null>(null);
 
@@ -833,10 +837,11 @@ export default function HomeScreen() {
       <SafeAreaView edges={['top']} style={s.headerSafe}>
         <View style={s.header}>
           <Image source={logoSmall} style={s.logoSmall} resizeMode="contain" />
-          <TouchableOpacity style={s.locationPill} onPress={() => router.push('/(auth)/city-selection')}>
+          <TouchableOpacity style={s.locationPill} onPress={() => setGlobalLocationSheetVisible(true)}>
             <Ionicons name="location-sharp" size={15} color={colors.primary} />
             <Text style={s.locationText} numberOfLines={1}>
-              {currentLocationStr === 'Loading...' ? t('home.location_loading') :
+              {activeAddress ? (activeAddress.label || activeAddress.line1 || activeAddress.cityName) :
+               currentLocationStr === 'Loading...' ? t('home.location_loading') :
                currentLocationStr === 'Location Unavailable' ? t('home.location_unavailable') :
                currentLocationStr === 'Enable in Settings' ? t('home.enable_in_settings') :
                currentLocationStr === 'Location Required' ? t('home.location_required') :
@@ -1090,6 +1095,11 @@ export default function HomeScreen() {
           );
         })()}
       </ScrollView>
+
+      <GlobalLocationSheet
+        visible={globalLocationSheetVisible}
+        onClose={() => setGlobalLocationSheetVisible(false)}
+      />
     </View>
   );
 }

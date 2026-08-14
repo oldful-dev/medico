@@ -10,9 +10,8 @@ import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { useTranslation } from 'react-i18next';
-import { useUser } from '@/context/UserContext';
+import { useAddress } from '@/context/AddressContext';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
-import { userService } from '@/services/api/userService';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 
@@ -31,15 +30,30 @@ export default function MedicalEquipmentScreen() {
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
-    const { profile, refreshData } = useUser();
+    const { activeAddress } = useAddress();
     const [selectedEquipment, setSelectedEquipment] = useState('wheelchair');
     const [otherType, setOtherType] = useState('');
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
     const [customDuration, setCustomDuration] = useState('');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [isBooking, setIsBooking] = useState(false);
-    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+    // selectedAddress now seeds from — and stays in sync with — the
+    // centralized Active Service Location.
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
+        activeAddress ? {
+            id: activeAddress.id,
+            line1: activeAddress.line1,
+            line2: activeAddress.line2,
+            cityName: activeAddress.cityName,
+            pincode: activeAddress.pincode,
+            landmark: activeAddress.landmark,
+            latitude: activeAddress.latitude,
+            longitude: activeAddress.longitude,
+            state: activeAddress.state,
+        } : null
+    );
     const [landmark, setLandmark] = useState('');
+    const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
         visible: false, title: '', message: '', iconName: 'warning-outline',
@@ -48,68 +62,37 @@ export default function MedicalEquipmentScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('equipment-rental');
+    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('equipment-rental');
 
-    // Sync selectedAddress with initial fetched address on mount or when fetched
+    // Follow the centralized active address whenever it changes elsewhere
+    // in the app, unless the user has already made their own pick here.
     React.useEffect(() => {
-        if (address && address !== 'Fetching address...' && !selectedAddress) {
-            setSelectedAddress({
-                line1: address,
-                cityName: '',
-                pincode: '',
-                latitude: 28.7041,
-                longitude: 77.1025,
-            });
+        if (!activeAddress) return;
+        setSelectedAddress(prev => {
+            if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+            return {
+                id: activeAddress.id,
+                line1: activeAddress.line1,
+                line2: activeAddress.line2,
+                cityName: activeAddress.cityName,
+                pincode: activeAddress.pincode,
+                landmark: activeAddress.landmark,
+                latitude: activeAddress.latitude,
+                longitude: activeAddress.longitude,
+                state: activeAddress.state,
+            };
+        });
+        if (!landmarkInitialized && activeAddress.landmark) {
+            setLandmark(activeAddress.landmark);
+            setLandmarkInitialized(true);
         }
-    }, [address]);
+    }, [activeAddress, landmarkInitialized]);
 
     const handleAddressChange = (addr: AddressData) => {
         setSelectedAddress(addr);
-        setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
         if (addr.landmark) setLandmark(addr.landmark);
-    };
-
-    // Auto-fill profile address only on mount when GPS address is not available
-    const [addressInitialized, setAddressInitialized] = React.useState(false);
-    React.useEffect(() => {
-        if (addressInitialized) return;
-        const addressEmpty = !address || address === 'Fetching address...' || address === '';
-        if (addressEmpty && profile?.addresses?.length) {
-            const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
-            if (defaultAddr) {
-                const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName].filter(Boolean);
-                setAddress(parts.join(', '));
-                if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
-                setAddressInitialized(true);
-            }
-        }
-        if (!addressEmpty) {
-            setAddressInitialized(true);
-        }
-    }, [profile]);
-
-    const syncAddressToProfile = async (addressText: string, landmarkText: string) => {
-        if (!profile?.id || !addressText.trim()) return;
-        try {
-            const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
-            const payload = {
-                label: existing?.label || 'Home',
-                line1: addressText.trim(),
-                cityName: existing?.cityName || '',
-                state: existing?.state || '',
-                pincode: existing?.pincode || '',
-                landmark: landmarkText.trim() || undefined,
-                isDefault: true,
-            };
-            if (existing?.id) {
-                await userService.updateAddress(profile.id, existing.id, payload);
-            } else {
-                await userService.addAddress(profile.id, payload);
-            }
-            await refreshData();
-        } catch {
-            // non-fatal
-        }
+        setLandmarkInitialized(true);
+        // AddressPickerSection already calls selectActiveAddress internally.
     };
 
     const isFormValid = React.useMemo(() => {
@@ -119,9 +102,9 @@ export default function MedicalEquipmentScreen() {
             selectedDuration &&
             (selectedDuration !== 'Custom' || customDuration.trim()) &&
             selectedDate &&
-            (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'))
+            selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5
         );
-    }, [selectedEquipment, otherType, selectedDuration, customDuration, selectedDate, address, selectedAddress]);
+    }, [selectedEquipment, otherType, selectedDuration, customDuration, selectedDate, selectedAddress]);
 
     const handleBookService = async () => {
         if (!selectedEquipment) {
@@ -144,7 +127,7 @@ export default function MedicalEquipmentScreen() {
             triggerAlert(t('common.required') || 'Required', t('medical_equipment.select_date', 'Please select date and time.'));
             return;
         }
-        if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+        if (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5) {
             triggerAlert(t('common.required') || 'Required', t('service_detail.address_required', 'Please provide a valid address.'));
             return;
         }
@@ -155,15 +138,16 @@ export default function MedicalEquipmentScreen() {
         try {
             setIsBooking(true);
 
-            // Sync address to profile (non-blocking, non-fatal)
-            syncAddressToProfile(address, landmark);
+            // Booking location comes from the address the user actually
+            // confirmed on screen — never a fresh device GPS read.
+            const addressLine = [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ');
 
             // Navigate to checkout — booking created inside checkout after payment succeeds
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
-                addressLine: address || undefined,
+                addressLine: addressLine || undefined,
                 landmark: landmark.trim() || undefined,
                 latitude: selectedAddress?.latitude,
                 longitude: selectedAddress?.longitude,

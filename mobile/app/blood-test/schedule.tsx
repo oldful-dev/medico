@@ -23,9 +23,9 @@ import {
 } from "@/services/api/labService";
 import { locationService } from "@/services/device/locationService";
 import { useUser } from "@/context/UserContext";
+import { useAddress } from "@/context/AddressContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useThemeColors, ThemeColors } from "@/hooks/use-theme-colors";
-import { userService } from "@/services/api/userService";
 import { LocationPickerModal } from "@/components/LocationPickerModal";
 import { useTranslation } from "react-i18next";
 import { AddressPickerSection, type AddressData } from "@/components/AddressPickerSection";
@@ -40,7 +40,8 @@ export default function BloodTestScheduleScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { profile, setProfile } = useUser();
+  const { profile } = useUser();
+  const { activeAddress, selectActiveAddress, addAddress: addAddressToContext } = useAddress();
   const { isDarkMode } = useTheme();
   const colors = useThemeColors();
   const styles = makeStyles(isDarkMode, colors);
@@ -112,39 +113,34 @@ export default function BloodTestScheduleScreen() {
     setSelectedDate(today);
   }, [params.packagePayload]);
 
-  // Auto-fill profile default address when entering step 2 and no address is set
+  // Seed from — and stay in sync with — the centralized Active Service
+  // Location whenever it changes elsewhere in the app, unless the user has
+  // already made their own pick on this screen (tracked via id/line1 match).
   useEffect(() => {
-    if (step === 2 && !selectedAddress && profile?.addresses?.length) {
-      const defaultAddr =
-        profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
-      if (defaultAddr) {
-        const parts = [
-          defaultAddr.line1,
-          defaultAddr.line2,
-          defaultAddr.cityName,
-        ].filter(Boolean);
-        const addrText = parts.join(", ");
-        setSelectedAddress(addrText);
-        if (defaultAddr.pincode) setPincode(defaultAddr.pincode);
-        if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
-        if (defaultAddr.latitude && defaultAddr.longitude) {
-          setCoords({
-            lat: String(defaultAddr.latitude),
-            long: String(defaultAddr.longitude),
-          });
-        }
-        setSelectedAddressData({
-          line1: defaultAddr.line1 || "",
-          line2: defaultAddr.line2 || "",
-          cityName: defaultAddr.cityName || "",
-          pincode: defaultAddr.pincode || "",
-          landmark: defaultAddr.landmark || "",
-          latitude: defaultAddr.latitude || 28.7041,
-          longitude: defaultAddr.longitude || 77.1025,
-        });
-      }
-    }
-  }, [step]);
+    if (!activeAddress) return;
+    setSelectedAddressData(prev => {
+      if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+      return {
+        id: activeAddress.id,
+        line1: activeAddress.line1,
+        line2: activeAddress.line2,
+        cityName: activeAddress.cityName,
+        pincode: activeAddress.pincode,
+        landmark: activeAddress.landmark,
+        latitude: activeAddress.latitude,
+        longitude: activeAddress.longitude,
+        state: activeAddress.state,
+      };
+    });
+    const addrText = [activeAddress.line1, activeAddress.line2, activeAddress.cityName].filter(Boolean).join(", ");
+    setSelectedAddress(addrText);
+    if (activeAddress.pincode) setPincode(activeAddress.pincode);
+    if (activeAddress.landmark) setLandmark(activeAddress.landmark);
+    setCoords({
+      lat: String(activeAddress.latitude),
+      long: String(activeAddress.longitude),
+    });
+  }, [activeAddress]);
 
   // Fetch slots when date changes
   useEffect(() => {
@@ -264,18 +260,18 @@ export default function BloodTestScheduleScreen() {
         cityName: "",
         state: "",
         pincode: newAddrPincode,
+        latitude: newAddrCoords.lat ? parseFloat(newAddrCoords.lat) : undefined,
+        longitude: newAddrCoords.long ? parseFloat(newAddrCoords.long) : undefined,
         ...(newAddrLandmark.trim() ? { landmark: newAddrLandmark.trim() } : {}),
         isDefault: (profile.addresses?.length ?? 0) === 0,
       };
-      const res = await userService.addAddress(profile.id, payload);
-      const savedAddr =
-        res.success && res.data
-          ? res.data
-          : { ...payload, id: String(Date.now()) };
-      setProfile({
-        ...profile,
-        addresses: [...(profile.addresses || []), savedAddr],
-      });
+      const savedAddr = await addAddressToContext(payload);
+      if (savedAddr) {
+        // Explicit user action — saving a new address here is exactly the
+        // "save as new address" case, so pinning it as the active
+        // selection (not silently changing the default) is correct.
+        selectActiveAddress(savedAddr);
+      }
       // Auto-select the newly added address
       setSelectedAddress(newAddrText.trim());
       setPincode(newAddrPincode);
@@ -388,26 +384,11 @@ export default function BloodTestScheduleScreen() {
         },
       };
 
-      // Sync address back to profile (non-blocking, non-fatal)
-      if (profile?.id && selectedAddress.trim()) {
-        const existing =
-          profile.addresses?.find((a: any) => a.isDefault) ||
-          profile.addresses?.[0];
-        const addrPayload = {
-          label: existing?.label || "Home",
-          line1: selectedAddress.trim(),
-          cityName: existing?.cityName || "",
-          state: existing?.state || "",
-          pincode: pincode || existing?.pincode || "",
-          ...(landmark.trim() ? { landmark: landmark.trim() } : {}),
-          isDefault: true,
-        };
-        if (existing?.id) {
-          await userService.updateAddress(profile.id, existing.id, addrPayload).catch(() => {});
-        } else {
-          await userService.addAddress(profile.id, addrPayload).catch(() => {});
-        }
-      }
+      // Address persistence is handled by AddressPickerSection at
+      // selection time (via AddressContext.selectActiveAddress /
+      // addAddress) — booking submission no longer silently overwrites
+      // the user's saved default address with whatever text happens to
+      // be in the form.
 
       const amount = pkg.discounted_cost || pkg.cost;
       router.push({

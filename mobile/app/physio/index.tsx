@@ -9,6 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { useAddress } from '@/context/AddressContext';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
@@ -39,14 +40,31 @@ export default function PhysioScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
+    const { activeAddress } = useAddress();
+
     // State
     const [selectedBodyPart, setSelectedBodyPart] = useState<string>('Back');
     const [otherIssue, setOtherIssue] = useState<string>('');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [landmark, setLandmark] = useState('');
-    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+    // selectedAddress now seeds from — and stays in sync with — the
+    // centralized Active Service Location.
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
+        activeAddress ? {
+            id: activeAddress.id,
+            line1: activeAddress.line1,
+            line2: activeAddress.line2,
+            cityName: activeAddress.cityName,
+            pincode: activeAddress.pincode,
+            landmark: activeAddress.landmark,
+            latitude: activeAddress.latitude,
+            longitude: activeAddress.longitude,
+            state: activeAddress.state,
+        } : null
+    );
+    const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
-    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
+    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
     const [isBooking, setIsBooking] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
@@ -56,26 +74,37 @@ export default function PhysioScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    // Sync selectedAddress with initial fetched address on mount or when fetched
+    // Follow the centralized active address whenever it changes elsewhere
+    // in the app, unless the user has already made their own pick here.
     React.useEffect(() => {
-        if (address && address !== 'Fetching address...' && !selectedAddress) {
-            setSelectedAddress({
-                line1: address,
-                cityName: '',
-                pincode: '',
-                latitude: 28.7041,
-                longitude: 77.1025,
-            });
+        if (!activeAddress) return;
+        setSelectedAddress(prev => {
+            if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+            return {
+                id: activeAddress.id,
+                line1: activeAddress.line1,
+                line2: activeAddress.line2,
+                cityName: activeAddress.cityName,
+                pincode: activeAddress.pincode,
+                landmark: activeAddress.landmark,
+                latitude: activeAddress.latitude,
+                longitude: activeAddress.longitude,
+                state: activeAddress.state,
+            };
+        });
+        if (!landmarkInitialized && activeAddress.landmark) {
+            setLandmark(activeAddress.landmark);
+            setLandmarkInitialized(true);
         }
-    }, [address]);
+    }, [activeAddress, landmarkInitialized]);
 
     const isFormValid = React.useMemo(() => {
         return !!(
             selectedDate &&
             (selectedBodyPart !== 'Other Parts' || otherIssue.trim()) &&
-            (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'))
+            selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5
         );
-    }, [selectedDate, selectedBodyPart, otherIssue, address, selectedAddress]);
+    }, [selectedDate, selectedBodyPart, otherIssue, selectedAddress]);
 
     const handleBookService = async () => {
         if (!selectedDate) {
@@ -86,7 +115,7 @@ export default function PhysioScreen() {
             triggerAlert(t('common.required') || 'Required', 'Please describe your affected body parts.');
             return;
         }
-        if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+        if (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5) {
             triggerAlert(t('common.required') || 'Required', t('errors.address_required') || 'Please confirm your service address.');
             return;
         }
@@ -97,12 +126,18 @@ export default function PhysioScreen() {
         try {
             setIsBooking(true);
 
+            // Booking location comes from the address the user actually
+            // confirmed on screen — never a fresh device GPS read.
+            const addressLine = [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ');
+
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
-                addressLine: address || undefined,
+                addressLine: addressLine || undefined,
                 landmark: landmark || undefined,
+                latitude: selectedAddress.latitude,
+                longitude: selectedAddress.longitude,
                 formDataJson: {
                     module: 'Physio',
                     bodyPart: selectedBodyPart,
@@ -216,8 +251,9 @@ export default function PhysioScreen() {
                                 selectedAddress={selectedAddress}
                                 onAddressChange={(addr) => {
                                     setSelectedAddress(addr);
-                                    setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
                                     if (addr.landmark) setLandmark(addr.landmark);
+                                    setLandmarkInitialized(true);
+                                    // AddressPickerSection already calls selectActiveAddress internally.
                                 }}
                                 title={t('order_medicines.address_label') || 'Address'}
                                 showPhoneField={false}

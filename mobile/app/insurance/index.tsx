@@ -10,7 +10,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
-import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
@@ -19,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { mediaService } from '@/services/api/mediaService';
 import { familyMemberService, FamilyMember } from '@/services/api/familyMemberService';
 import { useUser } from '@/context/UserContext';
+import { useAddress } from '@/context/AddressContext';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
@@ -36,7 +36,8 @@ export default function InsuranceScreen() {
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
-    const { profile, refreshData } = useUser();
+    const { profile } = useUser();
+    const { activeAddress } = useAddress();
 
     const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
         visible: false, title: '', message: '', iconName: 'warning-outline',
@@ -64,11 +65,25 @@ export default function InsuranceScreen() {
     // API state
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
-    const [address, setAddress] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
     const [isLoadingInit, setIsLoadingInit] = React.useState(true);
-    const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(null);
+    // selectedAddress now seeds from — and stays in sync with — the
+    // centralized Active Service Location.
+    const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(
+        activeAddress ? {
+            id: activeAddress.id,
+            line1: activeAddress.line1,
+            line2: activeAddress.line2,
+            cityName: activeAddress.cityName,
+            pincode: activeAddress.pincode,
+            landmark: activeAddress.landmark,
+            latitude: activeAddress.latitude,
+            longitude: activeAddress.longitude,
+            state: activeAddress.state,
+        } : null
+    );
     const [landmark, setLandmark] = React.useState('');
+    const [landmarkInitialized, setLandmarkInitialized] = React.useState(false);
 
     // Fetch family members when profile is loaded
     const fetchFamilyMembers = React.useCallback(async () => {
@@ -122,12 +137,6 @@ export default function InsuranceScreen() {
     React.useEffect(() => {
         (async () => {
             try {
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                }
                 const profileRes = await userService.getProfile();
                 if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
                 const serviceRes = await apiClient.get<any[]>('/services');
@@ -140,66 +149,35 @@ export default function InsuranceScreen() {
         })();
     }, []);
 
-    // Sync selectedAddress with initial fetched address on mount or when fetched
+    // Follow the centralized active address whenever it changes elsewhere
+    // in the app, unless the user has already made their own pick here.
     React.useEffect(() => {
-        if (address && address !== 'Fetching address...' && !selectedAddress) {
-            setSelectedAddress({
-                line1: address,
-                cityName: '',
-                pincode: '',
-                latitude: 28.7041,
-                longitude: 77.1025,
-            });
+        if (!activeAddress) return;
+        setSelectedAddress(prev => {
+            if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+            return {
+                id: activeAddress.id,
+                line1: activeAddress.line1,
+                line2: activeAddress.line2,
+                cityName: activeAddress.cityName,
+                pincode: activeAddress.pincode,
+                landmark: activeAddress.landmark,
+                latitude: activeAddress.latitude,
+                longitude: activeAddress.longitude,
+                state: activeAddress.state,
+            };
+        });
+        if (!landmarkInitialized && activeAddress.landmark) {
+            setLandmark(activeAddress.landmark);
+            setLandmarkInitialized(true);
         }
-    }, [address]);
+    }, [activeAddress, landmarkInitialized]);
 
     const handleAddressChange = (addr: AddressData) => {
         setSelectedAddress(addr);
-        setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
         if (addr.landmark) setLandmark(addr.landmark);
-    };
-
-    // Auto-fill profile address only on mount when GPS address is not available
-    const [addressInitialized, setAddressInitialized] = React.useState(false);
-    React.useEffect(() => {
-        if (addressInitialized) return;
-        const addressEmpty = !address || address === 'Fetching address...' || address === '';
-        if (addressEmpty && profile?.addresses?.length) {
-            const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
-            if (defaultAddr) {
-                const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName].filter(Boolean);
-                setAddress(parts.join(', '));
-                if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
-                setAddressInitialized(true);
-            }
-        }
-        if (!addressEmpty) {
-            setAddressInitialized(true);
-        }
-    }, [profile]);
-
-    const syncAddressToProfile = async (addressText: string, landmarkText: string) => {
-        if (!profile?.id || !addressText.trim()) return;
-        try {
-            const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
-            const payload = {
-                label: existing?.label || 'Home',
-                line1: addressText.trim(),
-                cityName: existing?.cityName || '',
-                state: existing?.state || '',
-                pincode: existing?.pincode || '',
-                landmark: landmarkText.trim() || undefined,
-                isDefault: true,
-            };
-            if (existing?.id) {
-                await userService.updateAddress(profile.id, existing.id, payload);
-            } else {
-                await userService.addAddress(profile.id, payload);
-            }
-            await refreshData();
-        } catch {
-            // non-fatal
-        }
+        setLandmarkInitialized(true);
+        // AddressPickerSection already calls selectActiveAddress internally.
     };
 
     const handleUploadDocument = async (docType: 'aadhaar' | 'pan') => {
@@ -259,9 +237,6 @@ export default function InsuranceScreen() {
         try {
             setIsBooking(true);
 
-            // Sync address to profile (non-blocking, non-fatal)
-            syncAddressToProfile(address, landmark);
-
             // Upload Aadhaar & PAN Card to GCS
             let aadhaarUrl = '';
             let panUrl = '';
@@ -281,11 +256,17 @@ export default function InsuranceScreen() {
                 }
             }
 
+            // Booking location comes from the address the user actually
+            // confirmed on screen — never a fresh device GPS read.
+            const addressLine = selectedAddress?.line1
+                ? [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ')
+                : 'Online Consultation';
+
             const res = await bookingService.createBooking({
                 serviceId,
                 cityId,
                 scheduledDate: new Date().toISOString(),
-                addressLine: address || 'Online Consultation',
+                addressLine,
                 latitude: selectedAddress?.latitude,
                 longitude: selectedAddress?.longitude,
                 formDataJson: {
