@@ -593,7 +593,7 @@ export default function CompanySettingsPage() {
                                 <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>Loading team members...</div>
                             ) : teamMembers.length === 0 ? (
                                 <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
-                                    No team members yet. Click "Add Team Member" to feature someone on the website.
+                                    No team members yet. Click &quot;Add Team Member&quot; to feature someone on the website.
                                 </div>
                             ) : (
                                 teamMembers.map((member) => {
