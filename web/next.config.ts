@@ -4,11 +4,11 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: 'export',
   reactCompiler: true,
-  unoptimizedImages: true,
   onDemandEntries: {
     maxInactiveAge: 0,
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
