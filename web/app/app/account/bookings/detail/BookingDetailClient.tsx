@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { 
     ChevronLeft, Clock, MapPin, Package, ShieldCheck, 
@@ -41,10 +41,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
    PAYMENT_FAILED: { label: 'Payment Failed', color: 'bg-red-50 text-red-600 border-red-200', icon: AlertCircle },
 };
 
-export default function BookingDetailsPage() {
+export default function BookingDetailClient() {
    const router = useRouter();
-   const { id } = useParams<{ id: string }>();
    const searchParams = useSearchParams();
+   const id = searchParams.get('id') as string;
    const isLabType = searchParams.get('type') === 'lab';
    const [isDownloading, setIsDownloading] = React.useState(false);
    const { user, isAuthenticated } = useAuthStore();

@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { Suspense, useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import waitlistService from '@/services/api/waitlistService';
 import { useCartStore } from '@/store/cartStore';
 import { Loader2, ShoppingCart, Package, ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import WellnessProductDetail from './WellnessProductDetail';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxa.onrender.com/api';
 
@@ -23,6 +24,29 @@ interface Product {
 }
 
 export default function WellnessPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 bg-[#FFFCF6] flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
+      </div>
+    }>
+      <WellnessRouter />
+    </Suspense>
+  );
+}
+
+function WellnessRouter() {
+  const searchParams = useSearchParams();
+  const productId = searchParams.get('id');
+
+  if (productId) {
+    return <WellnessProductDetail id={productId} />;
+  }
+
+  return <WellnessListing />;
+}
+
+function WellnessListing() {
   const router = useRouter();
   const { addItem } = useCartStore();
   const [products, setProducts] = useState<Product[]>([]);
@@ -125,7 +149,7 @@ export default function WellnessPage() {
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden group flex flex-col"
                 >
                   {/* Image — clicking navigates to detail */}
-                  <Link href={`/wellness/${product.id}`} className="block">
+                  <Link href={`/wellness?id=${product.id}`} className="block">
                     <div className="aspect-square bg-gray-50 relative overflow-hidden">
                       {product.imageUrl ? (
                         <img
@@ -158,7 +182,7 @@ export default function WellnessPage() {
                         {product.category.name}
                       </span>
                     )}
-                    <Link href={`/wellness/${product.id}`} className="block group/title">
+                    <Link href={`/wellness?id=${product.id}`} className="block group/title">
                       <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 group-hover/title:text-[var(--color-primary)] transition-colors">
                         {product.name}
                       </h3>
@@ -190,7 +214,7 @@ export default function WellnessPage() {
                         <ShoppingCart className="w-4 h-4" /> Add
                       </button>
                       <Link
-                        href={`/wellness/${product.id}`}
+                        href={`/wellness?id=${product.id}`}
                         className="flex items-center justify-center gap-1 border border-gray-200 hover:border-[var(--color-primary)] text-gray-500 hover:text-[var(--color-primary)] font-semibold py-2.5 px-3 rounded-xl transition-colors text-sm"
                       >
                         <ArrowRight className="w-4 h-4" />

@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
 import { toast } from 'sonner';
 import {
-  ArrowLeft, ShoppingCart, Package, Tag, CheckCircle,
+  ArrowLeft, ShoppingCart, Package, CheckCircle,
   AlertTriangle, Star, Truck, ShieldCheck, RefreshCw,
   Loader2, ChevronRight,
 } from 'lucide-react';
@@ -26,8 +26,7 @@ interface Product {
   createdAt: string;
 }
 
-export default function ProductDetailPage() {
-  const { id } = useParams<{ id: string }>();
+export default function WellnessProductDetail({ id }: { id: string }) {
   const router = useRouter();
   const { addItem } = useCartStore();
 
@@ -38,6 +37,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!id) return;
+    setImageError(false);
     (async () => {
       setLoading(true);
       try {
@@ -281,7 +281,7 @@ export default function ProductDetailPage() {
                 return (
                   <Link
                     key={rel.id}
-                    href={`/wellness/${rel.id}`}
+                    href={`/wellness?id=${rel.id}`}
                     className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden group block"
                   >
                     <div className="aspect-square bg-gray-50 relative overflow-hidden">
