@@ -393,9 +393,9 @@ function BookingsTab() {
                   <button
                     onClick={() => {
                       if (booking.kind === 'lab') {
-                        router.push(`/app/account/bookings/${booking.id}?type=lab`);
+                        router.push(`/app/account/bookings/detail?id=${booking.id}&type=lab`);
                       } else {
-                        router.push(`/app/account/bookings/${booking.id}`);
+                        router.push(`/app/account/bookings/detail?id=${booking.id}`);
                       }
                     }}
                     className="text-xs font-semibold text-[var(--color-primary)] flex items-center gap-0.5 hover:underline"
