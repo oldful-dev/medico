@@ -158,7 +158,6 @@ export default function ServiceCheckoutScreen() {
   const isZeroPayment =
     (category === "MEDICINES" ||
       category === "TIFFIN" ||
-      label.toLowerCase().includes("physio") ||
       (params.checkoutGroup === "D" && params.paymentMode !== "PAID")) &&
     !isPaidBookingOverride;
   const [calculatedPrices, setCalculatedPrices] = useState<{
@@ -602,7 +601,7 @@ export default function ServiceCheckoutScreen() {
     "GROCERY_DELIVERY",
     "GROCERY_RUN",
   ].includes(category);
-  const isServiceFeeWaived = false;
+  const isServiceFeeWaived = isZeroPayment;
   const fallbackTaxPercentage = isHomeEssential ? 18 : 6;
   const taxRate = calculatedPrices
     ? (calculatedPrices.taxPercentage ?? fallbackTaxPercentage)

@@ -151,6 +151,7 @@ export default function PhysioScreen() {
                     bookingPayload,
                     amount: String(servicePrice),
                     label: 'Physio',
+                    serviceSlug: 'physio-fitness',
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });

@@ -172,7 +172,6 @@ function RootLayoutContent() {
         <Stack.Screen name="meetup" options={{ headerShown: false }} />
         <Stack.Screen name="blood-test" options={{ headerShown: false }} />
         <Stack.Screen name="cart" options={{ headerShown: false }} />
-        <Stack.Screen name="physio-fitness" options={{ headerShown: false }} />
         <Stack.Screen name="fitness" options={{ headerShown: false }} />
         <Stack.Screen name="physio" options={{ headerShown: false }} />
         <Stack.Screen name="scan-ecg" options={{ headerShown: false }} />

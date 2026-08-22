@@ -252,11 +252,12 @@ export const planService = {
 // ─── Legal document service (for T&C) ────────────────────────────────────────
 export const legalService = {
     /**
-     * GET /api/legal?type=SUBSCRIPTION_TERMS
+     * GET /api/legal/published/SUBSCRIPTION_TERMS
      * Fetches the published subscription terms & conditions from LegalDocument table.
-     * Returns null if not found.
+     * Returns null if not found. Must use the public /published endpoint —
+     * /api/legal (no /published) requires admin auth and 401s for app users.
      */
     getSubscriptionTerms: async (): Promise<ApiResponse<{ content: string; title: string } | null>> => {
-        return apiClient.get('/legal?type=SUBSCRIPTION_TERMS');
+        return apiClient.get('/legal/published/SUBSCRIPTION_TERMS');
     },
 };

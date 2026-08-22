@@ -62,7 +62,7 @@ export default function MedicalEquipmentScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('equipment-rental');
+    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('medical-equipment');
 
     // Follow the centralized active address whenever it changes elsewhere
     // in the app, unless the user has already made their own pick here.

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FileText, Edit2, Eye, Upload, Plus, Trash2, Globe, Clock, ChevronLeft, AlertCircle, Check, ScrollText, ShieldCheck, Banknote, AlertTriangle, ClipboardList, Landmark, Cookie, Archive } from "lucide-react";
+import { FileText, Edit2, Eye, Upload, Plus, Trash2, Globe, Clock, ChevronLeft, AlertCircle, Check, ScrollText, ShieldCheck, Banknote, AlertTriangle, Landmark, Cookie, Archive } from "lucide-react";
 import { legalAPI } from "@/lib/api";
 import { showToast, formatDateTime } from "@/lib/hooks";
 
@@ -9,7 +9,6 @@ const DOC_TYPES = {
     PRIVACY_POLICY: 'Privacy Policy',
     REFUND_POLICY: 'Refund Policy',
     DISCLAIMER: 'Disclaimer',
-    SERVICE_POLICY: 'Service Scope & Operational Policy',
     STATUTORY_DISCLOSURES: 'Statutory Disclosures',
     COOKIE_POLICY: 'Cookie Policy',
 };
@@ -19,7 +18,6 @@ const DOC_ICONS = {
     PRIVACY_POLICY: ShieldCheck,
     REFUND_POLICY: Banknote,
     DISCLAIMER: AlertTriangle,
-    SERVICE_POLICY: ClipboardList,
     STATUTORY_DISCLOSURES: Landmark,
     COOKIE_POLICY: Cookie,
 };

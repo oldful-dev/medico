@@ -26,7 +26,7 @@ export default async function CookiePolicyPage() {
   const doc = await getLegalDoc();
 
   return (
-    <div className="bg-[#FFFCF6] min-h-screen pb-12 px-6 md:px-12 lg:px-24 font-[var(--font-poppins)] pt-24">
+    <div className="bg-[#FFFCF6] min-h-screen pb-12 px-6 md:px-12 lg:px-24 font-[var(--font-poppins)] pt-8">
       <div className="max-w-4xl mx-auto flex flex-col gap-6">
 
         <header className="mb-6">

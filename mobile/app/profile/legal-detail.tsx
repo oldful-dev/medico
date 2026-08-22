@@ -6,10 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { legalService, LegalDocument } from '@/services/api/legalService';
+import { userService } from '@/services/api/userService';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import RenderHtml from 'react-native-render-html';
 import { useTranslation } from 'react-i18next';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 
 export default function LegalDetailScreen() {
     const router = useRouter();
@@ -21,12 +24,37 @@ export default function LegalDetailScreen() {
 
     const [document, setDocument] = useState<LegalDocument | null>(null);
     const [loading, setLoading] = useState(true);
+    const [downloadingData, setDownloadingData] = useState(false);
 
     useEffect(() => {
         if (type) {
             fetchDocument();
         }
     }, [type]);
+
+    const handleDownloadMyData = async () => {
+        if (downloadingData) return;
+        setDownloadingData(true);
+        try {
+            const res = await userService.exportMyData();
+            if (!res.success || !res.data) {
+                Alert.alert(t('common.error'), res.message || t('legal.failed_load'));
+                return;
+            }
+            const fileUri = FileSystem.cacheDirectory + `ayuxa-my-data-${Date.now()}.json`;
+            await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(res.data, null, 2));
+
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(fileUri, { mimeType: 'application/json', dialogTitle: 'My Ayuxa Data' });
+            } else {
+                Alert.alert(t('legal.download_title') || 'Download Ready', `Saved to: ${fileUri}`);
+            }
+        } catch (error) {
+            Alert.alert(t('common.error'), t('legal.failed_load'));
+        } finally {
+            setDownloadingData(false);
+        }
+    };
 
     const fetchDocument = async () => {
         setLoading(true);
@@ -45,7 +73,7 @@ export default function LegalDetailScreen() {
     };
 
     const styles = makeStyles(isDarkMode, colors);
-    const displayTitle = title || document?.title || t('account.docs_title');
+    const displayTitle = document?.title || title || t('account.docs_title');
 
     return (
         <View style={styles.screen}>
@@ -99,6 +127,24 @@ export default function LegalDetailScreen() {
                                 'styled-box': styles.styledBox,
                             }}
                         />
+
+                        {type === 'RIGHTS_TO_ACCESS_DATA' && (
+                            <TouchableOpacity
+                                style={[styles.downloadButton, downloadingData && { opacity: 0.6 }]}
+                                onPress={handleDownloadMyData}
+                                activeOpacity={0.8}
+                                disabled={downloadingData}
+                            >
+                                {downloadingData ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
+                                ) : (
+                                    <Ionicons name="download-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                                )}
+                                <Text style={styles.downloadButtonText}>
+                                    {downloadingData ? (t('legal.generating_pdf') || 'Preparing...') : 'Download My Data'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
 
                         <View style={{ height: 40 }} />
                     </ScrollView>
@@ -213,6 +259,20 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         marginTop: Spacing.lg,
     },
     retryButtonText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: '#FAF7ED',
+    },
+    downloadButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colors.primary,
+        paddingVertical: 14,
+        borderRadius: Radius.md,
+        marginTop: Spacing.lg,
+    },
+    downloadButtonText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
         color: '#FAF7ED',

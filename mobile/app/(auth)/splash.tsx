@@ -2,21 +2,58 @@
 // Layout: Cream background, centered Ayuxa Care logo, ISO badge below, mandala bottom-left
 // No business logic — pure presentation
 import React, { useEffect, useState } from 'react';
-import { View, Image, StyleSheet, Animated } from 'react-native';
+import { View, Text, Image, StyleSheet, Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import * as ExpoSplashScreen from 'expo-splash-screen';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
+import { uiConfigService } from '@/services/api/uiConfigService';
+import { Fonts } from '@/constants/theme';
 // Figma-exported assets
 const logoImage = require('@/assets/images/nameandlogo.png');
-const isoBadgeImage = require('@/assets/images/727280010474dfd5bcb5f19d227968488ebee634.png');
 const mandalaImage = require('@/assets/images/0b96a399f500dd9db46b7a473a511a23fa2abc2b.png');
+
+interface IsoCertification {
+    label: string;
+    certNumber?: string;
+}
+
+const FALLBACK_ISO_CERTIFICATIONS: IsoCertification[] = [{ label: 'ISO 9001-2015 Certified' }];
 
  export default function SplashScreen() {
       const router = useRouter();
       const { isAuthenticated, isLoading } = useAuth();
      const [fadeAnim] = useState(new Animated.Value(0));
- 
+     // Same admin-managed source as the website footer (company_global_config
+     // via /ui-config/published) — starts null so we never flash the fallback
+     // text before the real value has had a chance to load.
+     const [isoCertifications, setIsoCertifications] = useState<IsoCertification[] | null>(null);
+     const [isoLoadFailed, setIsoLoadFailed] = useState(false);
+
+     useEffect(() => {
+         (async () => {
+             try {
+                 const res = await uiConfigService.getPublishedConfigs();
+                 const found = res.success && res.data ? res.data.find(c => c.key === 'company_global_config') : null;
+                 if (found?.configJson) {
+                     let parsed: any = found.configJson;
+                     if (typeof parsed === 'string') {
+                         try { parsed = JSON.parse(parsed); } catch { /* ignore */ }
+                     }
+                     const certs = Array.isArray(parsed?.iso_certifications) ? parsed.iso_certifications : [];
+                     setIsoCertifications(certs.length > 0 ? certs : FALLBACK_ISO_CERTIFICATIONS);
+                     return;
+                 }
+                 setIsoLoadFailed(true);
+             } catch {
+                 setIsoLoadFailed(true);
+             }
+         })();
+     }, []);
+
+     const displayIsoCertifications = isoCertifications || (isoLoadFailed ? FALLBACK_ISO_CERTIFICATIONS : null);
+
      useEffect(() => {
          // Simple fade-in animation
          Animated.timing(fadeAnim, {
@@ -71,14 +108,25 @@ const mandalaImage = require('@/assets/images/0b96a399f500dd9db46b7a473a511a23fa
                     />
                 </View>
 
-                {/* ISO certified badge — Figma: 338×74 at y=577, horizontally centered */}
-                <View style={styles.badgeContainer}>
-                    <Image
-                        source={isoBadgeImage}
-                        style={styles.badge}
-                        resizeMode="contain"
-                    />
-                </View>
+                {/* ISO certification — admin-managed via company_global_config,
+                    same source as the website footer. Renders nothing until
+                    loaded (or definitively failed) to avoid a stale flash. */}
+                {displayIsoCertifications && (
+                    <View style={styles.badgeContainer}>
+                        {displayIsoCertifications.map((cert, i) => (
+                            <View key={i} style={styles.isoRow}>
+                                <View style={styles.isoIconCircle}>
+                                    <Ionicons name="checkmark" size={14} color="#5C7268" />
+                                </View>
+                                <Text style={styles.isoText} numberOfLines={1} adjustsFontSizeToFit>
+                                    {cert.label}
+                                    {cert.certNumber ? <Text style={styles.isoCertNumber}>{`  ·  ${cert.certNumber}`}</Text> : null}
+                                </Text>
+                            </View>
+                        ))}
+                        <View style={styles.isoDivider} />
+                    </View>
+                )}
 
                 {/* Bottom-left mandala decoration — Figma: at bottom-left, rotated -6.79°, clipped */}
                 <View style={styles.mandalaContainer}>
@@ -120,10 +168,45 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 190,
         alignItems: 'center',
+        paddingHorizontal: 24,
+        width: '100%',
     },
-    badge: {
-        width: 338,
-        height: 74,
+    isoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 2,
+    },
+    isoIconCircle: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        borderWidth: 1.5,
+        borderColor: '#8FA396',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 10,
+    },
+    isoText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 13,
+        fontWeight: '600',
+        letterSpacing: -0.3,
+        color: '#7D9285',
+        textAlign: 'center',
+    },
+    isoCertNumber: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 11,
+        fontWeight: '600',
+        letterSpacing: 0,
+        color: '#A8B7A9',
+    },
+    isoDivider: {
+        marginTop: 20,
+        width: '88%',
+        height: 1,
+        backgroundColor: '#C9D6CC',
     },
 
     /* Mandala — Figma: left=-36.87, top=639.64 (bottom-left corner), rotated -6.79° */

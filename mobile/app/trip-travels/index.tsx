@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Modal, FlatList, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -10,6 +10,7 @@ import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { bookingService } from '@/services/api/bookingService';
 import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 const PRIMARY = '#02743F';
 const PRIMARY_LIGHT = '#E8F5E9';
@@ -50,6 +51,19 @@ export default function TripTravelsScreen() {
     const [showTravellerPicker, setShowTravellerPicker] = useState(false);
     const [showPurposePicker, setShowPurposePicker]   = useState(false);
 
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx) — all
+    // single-button notices go through CustomAlertModal via triggerAlert.
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+    const closeAlert = () => setAlertConfig(prev => ({ ...prev, visible: false }));
+
     const { cityId, serviceId, isLoading: isLoadingInit } = useServiceInitialization('trip-travels');
 
     const formattedDate = travelDates
@@ -59,11 +73,11 @@ export default function TripTravelsScreen() {
     const selectedPurpose = purposeOptions.find(p => t(`trip_travels.${p.labelKey}`) === purposeOfTravel);
 
     const handleSubmit = async () => {
-        if (!destination.trim())  { Alert.alert(t('common.required'), t('trip_travels.destination_required')); return; }
-        if (!travelDates)         { Alert.alert(t('common.required'), t('trip_travels.dates_required')); return; }
-        if (!numTravellers)       { Alert.alert(t('common.required'), t('trip_travels.travellers_required')); return; }
-        if (!purposeOfTravel)     { Alert.alert(t('common.required'), t('trip_travels.purpose_required')); return; }
-        if (!cityId || !serviceId) { Alert.alert(t('common.error'), t('booking.init_incomplete')); return; }
+        if (!destination.trim())  { triggerAlert(t('common.required'), t('trip_travels.destination_required')); return; }
+        if (!travelDates)         { triggerAlert(t('common.required'), t('trip_travels.dates_required')); return; }
+        if (!numTravellers)       { triggerAlert(t('common.required'), t('trip_travels.travellers_required')); return; }
+        if (!purposeOfTravel)     { triggerAlert(t('common.required'), t('trip_travels.purpose_required')); return; }
+        if (!cityId || !serviceId) { triggerAlert(t('common.error'), t('booking.init_incomplete')); return; }
 
         try {
             setIsBooking(true);
@@ -85,11 +99,11 @@ export default function TripTravelsScreen() {
             if (res.success && res.data) {
                 router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
             } else {
-                Alert.alert(t('booking.booking_failed'), res.message || t('booking.something_wrong'));
+                triggerAlert(t('booking.booking_failed'), res.message || t('booking.something_wrong'));
             }
         } catch (error) {
             console.error('Trip booking error:', error);
-            Alert.alert(t('common.error'), t('common.generic_error'));
+            triggerAlert(t('common.error'), t('common.generic_error'));
         } finally {
             setIsBooking(false);
         }
@@ -325,6 +339,15 @@ export default function TripTravelsScreen() {
                     </View>
                 </View>
             </Modal>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={closeAlert}
+            />
         </View>
     );
 }

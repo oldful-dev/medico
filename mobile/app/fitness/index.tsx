@@ -134,6 +134,7 @@ export default function FitnessScreen() {
                     bookingPayload,
                     amount: String(servicePrice),
                     label: 'Fitness',
+                    serviceSlug: 'fitness-wellness',
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });

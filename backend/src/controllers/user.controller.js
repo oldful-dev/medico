@@ -804,6 +804,39 @@ const getMyProfile = async (req, res, next) => {
     }
 };
 
+// GET /api/users/profile/export-data  (App user — full personal-data export, "Right to Access Data")
+const exportMyData = async (req, res, next) => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            include: {
+                city: { select: { name: true, code: true } },
+                addresses: true,
+                emergencyContacts: true,
+                familyMembers: true,
+                medicalCards: true,
+                healthReports: true,
+                bookings: true,
+                labOrders: true,
+                productOrders: true,
+                insuranceApps: true,
+                payments: true,
+                savedCards: { select: { id: true, cardBrand: true, cardLast4: true, cardType: true, isDefault: true, createdAt: true } },
+                sosAlerts: true,
+                subscriptions: { include: { plan: true } },
+                upgradeHistory: true,
+                waitlistEntries: true,
+                meetupRegistrations: true,
+            },
+        });
+
+        const { otpCode, otpExpiresAt, refreshToken, ...safeUser } = user;
+        sendResponse(res, 200, safeUser);
+    } catch (error) {
+        next(error);
+    }
+};
+
 // PUT /api/users/profile  (App user — update own profile)
 const updateMyProfile = async (req, res, next) => {
     try {
@@ -1125,6 +1158,7 @@ module.exports = {
     addAddress, updateAddress, deleteAddress,
     upsertMedicalCard, uploadHealthReport, deleteHealthReport,
     getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports, deleteProfile, deleteProfileByAdmin,
+    exportMyData,
     getAllHealthReports,
     getHealthReportViewUrl,
 };

@@ -124,7 +124,7 @@ export default function TeamPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-screen)] pt-20">
+    <div className="min-h-screen bg-[var(--color-bg-screen)]">
       {/* Hero Section */}
       <section className="relative pt-10 md:pt-16 pb-12 overflow-hidden">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-emerald-50/50 rounded-bl-[200px] -z-10" />

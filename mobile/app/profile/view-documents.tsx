@@ -52,7 +52,7 @@ export default function ViewDocumentsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('account.view_documents') || 'View Documents'}</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>{document?.title || t('legal.loading') || 'Loading...'}</Text>
             </View>
 
             {loading ? (

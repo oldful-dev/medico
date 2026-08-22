@@ -589,8 +589,10 @@ export default function HomeScreen() {
         setIsLoading(false);
       });
 
-    // Refresh database services catalog as well
-    refreshData().catch(() => {});
+    // Refresh database services catalog as well — force through the
+    // internal throttle so a manual refresh always reflects the latest
+    // admin-edited prices, not whatever was cached up to 5 minutes ago.
+    refreshData(true).catch(() => {});
 
     // ── 2. Banners ─────────────────────────────────────────────────────────────
     bannerService.getHomeBanners(true)

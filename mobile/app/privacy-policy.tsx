@@ -52,7 +52,7 @@ export default function PrivacyPolicyScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('legal.privacy_policy')}</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>{document?.title || t('legal.loading')}</Text>
             </View>
 
             {loading ? (
