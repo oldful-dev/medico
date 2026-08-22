@@ -54,7 +54,7 @@ export default function MealServiceScreen() {
     const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
     // Global Initialization
-    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('tiffin');
+    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('meal-service');
     const [isBooking, setIsBooking] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({

@@ -56,10 +56,6 @@ export const legalService = {
         return legalService.getPublishedDocument('DISCLAIMER');
     },
 
-    getServicePolicy: async (): Promise<ApiResponse<LegalDocument>> => {
-        return legalService.getPublishedDocument('SERVICE_POLICY');
-    },
-
     getStatutoryDisclosures: async (): Promise<ApiResponse<LegalDocument>> => {
         return legalService.getPublishedDocument('STATUTORY_DISCLOSURES');
     },

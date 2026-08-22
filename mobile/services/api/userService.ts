@@ -107,6 +107,15 @@ export const userService = {
     },
 
     /**
+     * GET /api/users/profile/export-data
+     * Full personal-data export ("Right to Access Data") — bookings, orders,
+     * addresses, and all other data tied to the authenticated user.
+     */
+    exportMyData: async (): Promise<ApiResponse<any>> => {
+        return apiClient.get<any>('/users/profile/export-data');
+    },
+
+    /**
      * POST /api/users
      * Called after OTP verification for new users to complete registration.
      */

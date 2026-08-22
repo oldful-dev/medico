@@ -62,7 +62,7 @@ export default function OrderMedicinesScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    const { isReady, cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('medicines');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('order-medicines');
 
     // Follow the centralized active address whenever it changes elsewhere
     // in the app, unless the user has already made their own pick here.

@@ -13,6 +13,7 @@ router.delete('/profile', authenticateUser, ctrl.deleteProfile);
 router.put('/profile/avatar', authenticateUser, upload.single('avatar'), ctrl.uploadProfileAvatar);
 router.put('/profile/device-token', authenticateUser, ctrl.registerDeviceToken);
 router.get('/profile/health-reports', authenticateUser, ctrl.getMyHealthReports);
+router.get('/profile/export-data', authenticateUser, ctrl.exportMyData);
 
 router.get('/admin/health-reports', authenticateAdmin, ctrl.getAllHealthReports);
 router.get('/health-reports/:reportId/view-url', authenticateAdmin, ctrl.getHealthReportViewUrl);

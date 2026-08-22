@@ -1,22 +1,20 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { FloatingCards } from './FloatingCards';
-import { PhoneFrame } from './PhoneFrame';
-import { Star, ShieldCheck } from 'lucide-react';
-import Image from 'next/image';
+import React from "react";
+import { motion } from "framer-motion";
+import { FloatingCards } from "./FloatingCards";
+import { PhoneFrame } from "./PhoneFrame";
+import { Star, ShieldCheck } from "lucide-react";
+import Image from "next/image";
 
 export function Hero() {
   return (
     <section className="relative w-full min-h-[90vh] bg-gradient-to-b from-[#FFFCF6] to-[#FFF3E0]/30 pt-8 pb-20 overflow-hidden flex flex-col items-center">
-
       {/* Background Radial Glow */}
       <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[90vw] h-[90vw] max-w-[900px] max-h-[900px] bg-gradient-radial from-[#FFF3E0] via-white/40 to-transparent rounded-full opacity-80 pointer-events-none z-0 blur-[80px]"></div>
 
       {/* Content wrapper */}
       <div className="relative z-30 container mx-auto px-4 max-w-4xl text-center flex flex-col items-center">
-
         {/* Animated Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
@@ -24,7 +22,8 @@ export function Hero() {
           transition={{ duration: 0.8 }}
           className="text-5xl md:text-7xl font-bold tracking-tight text-gray-900 leading-[1.1] mb-6 drop-shadow-sm"
         >
-          Care that feels <br /> like family
+          Care that feels <br /> like{" "}
+          <span className="text-[var(--color-primary)]">family</span>
         </motion.h1>
 
         {/* Subtext */}
@@ -34,7 +33,8 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.1 }}
           className="text-lg md:text-xl text-gray-600 max-w-2xl mb-12 font-medium"
         >
-          We bring high-quality healthcare and expert elder care management directly to you—combining human empathy with modern technology.
+          We bring high-quality healthcare and expert elder care management
+          directly to you—combining human empathy with modern technology.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -54,8 +54,12 @@ export function Hero() {
               />
             </div>
             <div className="flex flex-col items-start leading-none">
-              <span className="text-[10px] text-gray-300 uppercase font-bold tracking-wider">Download on the</span>
-              <span className="text-base font-bold tracking-wide mt-0.5">App Store</span>
+              <span className="text-[10px] text-gray-300 uppercase font-bold tracking-wider">
+                Download on the
+              </span>
+              <span className="text-base font-bold tracking-wide mt-0.5">
+                App Store
+              </span>
             </div>
           </button>
 
@@ -69,8 +73,12 @@ export function Hero() {
               />
             </div>
             <div className="flex flex-col items-start leading-none">
-              <span className="text-[10px] text-gray-300 uppercase font-bold tracking-wider">GET IT ON</span>
-              <span className="text-base font-bold tracking-wide mt-0.5">Google Play</span>
+              <span className="text-[10px] text-gray-300 uppercase font-bold tracking-wider">
+                GET IT ON
+              </span>
+              <span className="text-base font-bold tracking-wide mt-0.5">
+                Google Play
+              </span>
             </div>
           </button>
         </motion.div>
@@ -91,7 +99,9 @@ export function Hero() {
           <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
             <ShieldCheck className="text-blue-500 w-3 h-3" />
           </div>
-          <span className="text-sm font-bold text-gray-800">Verified Caregivers</span>
+          <span className="text-sm font-bold text-gray-800">
+            Verified Caregivers
+          </span>
         </motion.div>
       </div>
 
@@ -105,12 +115,13 @@ export function Hero() {
         <div className="w-8 h-8 bg-[var(--color-primary)] rounded-full flex items-center justify-center shadow-inner">
           <Star className="text-white w-4 h-4 fill-current" />
         </div>
-        <span className="font-bold text-sm text-gray-800">900k+ reviews on Trust Pilot</span>
+        <span className="font-bold text-sm text-gray-800">
+          900k+ reviews on Trust Pilot
+        </span>
       </motion.div>
 
       {/* Extreme Bottom Mask for layout blending */}
       <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white to-transparent pointer-events-none z-30" />
-
     </section>
   );
 }

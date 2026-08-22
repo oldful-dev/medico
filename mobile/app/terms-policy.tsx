@@ -27,7 +27,7 @@ export default function TermsPolicyScreen() {
     const fetchMasterAgreement = async () => {
         setLoading(true);
         try {
-            const res = await legalService.getPublishedDocument('AYUXA_S_MASTER_AGREEMENT');
+            const res = await legalService.getPublishedDocument('MASTER_POLICY');
             if (res.success && res.data) {
                 setDocument(res.data);
             } else {
@@ -52,7 +52,7 @@ export default function TermsPolicyScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Ayuxa&apos;s Master Agreement</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>{document?.title || t('legal.loading')}</Text>
             </View>
 
             {loading ? (

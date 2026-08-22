@@ -69,12 +69,6 @@ const getDocStyle = (type: string, isDarkMode: boolean) => {
                 bg: isDarkMode ? '#2D1A0A' : '#FFF3E0',
                 color: '#EF6C00',
             };
-        case 'SERVICE_POLICY':
-            return {
-                icon: 'clipboard-outline' as const,
-                bg: isDarkMode ? '#1A0A2D' : '#EDE7F6',
-                color: '#6A1B9A',
-            };
         case 'STATUTORY_DISCLOSURES':
             return {
                 icon: 'business-outline' as const,
@@ -697,14 +691,6 @@ export default function AccountScreen() {
                     ) : (
                         publishedDocs.map(doc => {
                             const style = getDocStyle(doc.type, isDarkMode);
-                            let displayTitle = doc.title;
-                            if (doc.type === 'TERMS_AND_CONDITIONS') displayTitle = t('account.terms_conditions');
-                            else if (doc.type === 'PRIVACY_POLICY') displayTitle = t('account.privacy_policy');
-                            else if (doc.type === 'REFUND_POLICY') displayTitle = t('account.refund_policy');
-                            else if (doc.type === 'DISCLAIMER') displayTitle = t('legal.disclaimer');
-                            else if (doc.type === 'SERVICE_POLICY') displayTitle = t('legal.service_policy');
-                            else if (doc.type === 'STATUTORY_DISCLOSURES') displayTitle = t('legal.statutory_disclosures');
-                            else if (doc.type === 'COOKIE_POLICY') displayTitle = t('legal.cookie_policy');
 
                             return (
                                 <MenuRow
@@ -712,10 +698,10 @@ export default function AccountScreen() {
                                     icon={style.icon}
                                     iconBg={style.bg}
                                     iconColor={style.color}
-                                    title={displayTitle}
+                                    title={doc.title}
                                     onPress={() => router.push({
                                         pathname: '/profile/legal-detail',
-                                        params: { type: doc.type, title: displayTitle }
+                                        params: { type: doc.type, title: doc.title }
                                     } as any)}
                                     colors={colors}
                                 />
@@ -724,8 +710,6 @@ export default function AccountScreen() {
                     )}
                     <MenuRow icon="checkmark-done-circle-outline" iconBg={isDarkMode ? '#1E1340' : '#F3E5F5'} iconColor="#6A1B9A"
                         title={t('account.consent_forms')} onPress={() => router.push('/profile/consent-forms' as any)} colors={colors} />
-                    <MenuRow icon="clipboard-outline" iconBg={isDarkMode ? '#001A18' : '#E0F2F1'} iconColor="#00796B"
-                        title={t('account.service_agreements')} onPress={() => router.push('/profile/service-agreements' as any)} colors={colors} />
                     <MenuRow icon="eye-outline" iconBg={isDarkMode ? '#001A18' : '#EFF7F6'} iconColor="#004D40"
                         title={t('account.view_documents')} onPress={() => router.push('/profile/view-documents' as any)} colors={colors} />
                     <MenuRow icon="download-outline" iconBg={isDarkMode ? '#0A1A00' : '#F1F8E9'} iconColor="#558B2F"

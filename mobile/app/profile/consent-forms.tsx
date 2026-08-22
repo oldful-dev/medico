@@ -52,7 +52,7 @@ export default function ConsentFormsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('account.consent_forms') || 'Consent Forms'}</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>{document?.title || t('legal.loading') || 'Loading...'}</Text>
             </View>
 
             {loading ? (

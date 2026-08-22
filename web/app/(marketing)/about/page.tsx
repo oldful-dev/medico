@@ -107,13 +107,31 @@ export default function AboutPage() {
   return (
     <div className="bg-[#FFFCF6] min-h-screen pt-12 md:pt-16 pb-16 px-6 md:px-12 lg:px-24 font-[var(--font-poppins)]">
       <div className="max-w-4xl mx-auto flex flex-col gap-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-full text-emerald-700 text-xs font-bold uppercase tracking-widest w-fit"
-        >
-          <Sparkles className="w-3.5 h-3.5" /> Who We Are
-        </motion.div>
+        <div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-full text-emerald-700 text-xs font-bold uppercase tracking-widest w-fit mb-6"
+          >
+            <Sparkles className="w-3.5 h-3.5" /> Who We Are
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight"
+          >
+            For the <span className="text-[var(--color-primary)]">People</span> Who Cared for Us
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-lg text-gray-600 max-w-2xl leading-relaxed"
+          >
+            We&apos;re building a future where every elder feels respected, supported, connected, and never alone.
+          </motion.p>
+        </div>
 
         {sections.map((section, index) => (
           <motion.div

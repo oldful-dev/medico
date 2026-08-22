@@ -144,7 +144,7 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
                 { id: 'scan_ecg',       label: 'Scan &\nECG',             icon: 'scan&ecg.jpg',                              route: '/account/medical-logs',   enabled: true, sort_order: 2 },
                 { id: 'medicines',      label: 'Medicine',                icon: '79c15725f6f1a73658b615886f1289634cef9408.png', route: '/order-medicines',   enabled: true, sort_order: 3 },
                 { id: 'insurance',      label: 'Insurance',               icon: 'e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png', route: '/insurance',         enabled: true, sort_order: 4 },
-                { id: 'fitness',        label: 'Fitness',                 icon: '54f5c849cf75e776592dec8236f221da3694ca53.png', route: '/physio-fitness',    enabled: true, sort_order: 5 },
+                { id: 'fitness',        label: 'Fitness',                 icon: '54f5c849cf75e776592dec8236f221da3694ca53.png', route: '/fitness',           enabled: true, sort_order: 5 },
                 { id: 'equipment',      label: 'Equipment',               icon: 'd3906f517597b2ef10369d92c422b16bf20e879e.png', route: '/medical-equipment', enabled: true, sort_order: 6 },
                 { id: 'caregiver',      label: 'Caregiver\nSupport',      icon: '2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/caregiver-support', enabled: true, sort_order: 7 },
                 { id: 'emergency',      label: 'Emergency\nAssist',       icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/sos-emergency',     enabled: false, sort_order: 8 },

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator,
     TextInput, ScrollView,
@@ -174,6 +174,23 @@ export const AddressPickerSection = ({
             setDetectingLocation(false);
         }
     }, [detectCurrentLocationSnapshot, onAddressChange, syncToContext, selectActiveAddress, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn, t]);
+
+    // Serviceability check for an address the parent already supplied (e.g.
+    // seeded from AddressContext.activeAddress before this component even
+    // mounts) — the handlers above only run the check for addresses picked
+    // *through this component*, so without this effect a pre-filled address
+    // silently shows "unchecked" until the user re-picks something.
+    const checkedCoordsRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!showServiceabilityCheck || !onServiceabilityChange || !checkServiceabilityFn) return;
+        if (!selectedAddress?.latitude || !selectedAddress?.longitude) return;
+        if (serviceabilityStatus !== 'unchecked') return;
+        const key = `${selectedAddress.latitude},${selectedAddress.longitude}`;
+        if (checkedCoordsRef.current === key) return;
+        checkedCoordsRef.current = key;
+        onServiceabilityChange('checking');
+        checkServiceabilityFn(String(selectedAddress.latitude), String(selectedAddress.longitude));
+    }, [selectedAddress?.latitude, selectedAddress?.longitude, serviceabilityStatus, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn]);
 
     // Google Maps location picker (tertiary option)
     const handleLocationConfirmed = useCallback((location: any) => {

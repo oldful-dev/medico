@@ -115,7 +115,7 @@ export default function DownloadDocumentsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('account.download_documents') || 'Download Documents'}</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>{document?.title || t('legal.loading') || 'Loading...'}</Text>
             </View>
 
             {loading ? (

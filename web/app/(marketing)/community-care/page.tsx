@@ -11,7 +11,7 @@ interface CommunityContent {
 }
 
 const FALLBACK_CONTENT: CommunityContent = {
-  title: "Community Care",
+  title: "Ayuxa Community Initiatives",
   description: "At Ayuxa, we believe that quality elder care is a basic human right, not just a luxury. Our Community Care initiative is dedicated to reaching those who need us most but can afford us least.",
   charity_initiatives: [
     "Free Health Camps: We organize monthly health screening camps in rural and underprivileged urban areas, providing free check-ups, basic medication, and geriatric counseling to elders.",
@@ -86,7 +86,11 @@ export default function CommunityCarePage() {
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight"
           >
-            {content.title}
+            {content.title.split(/(Community)/i).map((part, i) =>
+              part.toLowerCase() === 'community'
+                ? <span key={i} className="text-[var(--color-primary)]">{part}</span>
+                : part
+            )}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}

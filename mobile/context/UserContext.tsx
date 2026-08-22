@@ -14,7 +14,7 @@ interface UserContextType {
     setProfile: (profile: UserProfile | null) => void;
     services: ServiceItem[];
     isLoading: boolean;
-    refreshData: () => Promise<void>;
+    refreshData: (force?: boolean) => Promise<void>;
     getServiceBySlug: (slug: string) => ServiceItem | undefined;
 
     selectedCity: string;
@@ -58,10 +58,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const lastServicesLoadRef = useRef<number>(0);
     const THROTTLE_MS = 24 * 60 * 60 * 1000; // 24 Hours refresh interval
 
-    const loadServices = useCallback(async () => {
+    const loadServices = useCallback(async (force = false) => {
         const now = Date.now();
-        // Skip if services were loaded recently (within 5 minutes)
-        if (lastServicesLoadRef.current > 0 && (now - lastServicesLoadRef.current < 5 * 60 * 1000)) {
+        // Skip if services were loaded recently (within 5 minutes), unless forced —
+        // pricing/catalog edits made in admin should show up on an explicit refresh
+        // (pull-to-refresh, retry button) without waiting out the throttle window.
+        if (!force && lastServicesLoadRef.current > 0 && (now - lastServicesLoadRef.current < 5 * 60 * 1000)) {
             return;
         }
 
@@ -84,8 +86,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }, [logout, router]);
 
     const loadData = useCallback(async (force = false) => {
-        // Load services catalog (throttled internally)
-        loadServices();
+        // Load services catalog (throttled internally, unless force-refreshed)
+        loadServices(force);
 
         if (!isAuthenticated) return;
         const now = Date.now();

@@ -106,9 +106,19 @@ exports.calculateCheckout = async (req, res) => {
             visitFee = config.visitFee || 0;
             nightCharge = config.nightCharge || 0;
             surgeCharge = config.surgeCharge || 0;
-            if (config.serviceFee > 0 && (!vendorFee || Number(vendorFee) === 0)) {
+            // Vendor/service fee is authoritative from Service.basePrice — never
+            // from the ServiceCharge row's own serviceFee mirror, which can drift
+            // out of sync the moment /pricing and /services are edited separately.
+            // Only fall back to config.serviceFee when this service has no real
+            // Service record at all (a category-only charge with nothing to read
+            // basePrice from).
+            if (!serviceRecord && config.serviceFee > 0 && (!vendorFee || Number(vendorFee) === 0)) {
                 serviceFeeVal = config.serviceFee;
+            } else if (serviceRecord && serviceRecord.basePrice > 0) {
+                serviceFeeVal = serviceRecord.basePrice;
             }
+        } else if (serviceRecord && serviceRecord.basePrice > 0) {
+            serviceFeeVal = serviceRecord.basePrice;
         }
 
         let benefitDiscount = 0;
@@ -126,13 +136,17 @@ exports.calculateCheckout = async (req, res) => {
         }
 
         let waiveGstActive = false;
-        // Check for any active subscription to apply subscription perks (waive booking/platform fees)
-        if (isSubscriptionEligible && !req.body.isPaidBooking) {
+        // Check for an active subscription of the plan type this service actually
+        // requires (CARE vs HOMEMAKER) to apply subscription perks. Matching any
+        // active subscription regardless of type let a CARE-only plan waive fees
+        // on Home Essentials (HOMEMAKER-only) bookings and vice versa.
+        if (isSubscriptionEligible && !req.body.isPaidBooking && requiredPlanType) {
             const activeSubscription = await prisma.subscription.findFirst({
                 where: {
                     userId,
                     status: 'ACTIVE',
                     expiryDate: { gte: new Date() },
+                    plan: { planType: requiredPlanType },
                 },
                 include: { plan: { select: { planType: true, metadata: true } } },
             });
@@ -301,9 +315,16 @@ exports.calculateMembershipSavings = async (req, res) => {
             visitFee = config.visitFee || 0;
             nightCharge = config.nightCharge || 0;
             surgeCharge = config.surgeCharge || 0;
-            if (config.serviceFee > 0 && (!vendorFee || Number(vendorFee) === 0)) {
+            // Vendor/service fee is authoritative from Service.basePrice — see
+            // calculateCheckout for why (keeps /pricing and /services from
+            // silently disagreeing on the same service's price).
+            if (!serviceRecord && config.serviceFee > 0 && (!vendorFee || Number(vendorFee) === 0)) {
                 serviceFeeVal = config.serviceFee;
+            } else if (serviceRecord && serviceRecord.basePrice > 0) {
+                serviceFeeVal = serviceRecord.basePrice;
             }
+        } else if (serviceRecord && serviceRecord.basePrice > 0) {
+            serviceFeeVal = serviceRecord.basePrice;
         }
 
         // Determine required plan type
