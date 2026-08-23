@@ -54,7 +54,7 @@ export default function MealServiceScreen() {
     const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
     // Global Initialization
-    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('meal-service');
+    const { cityId, serviceId, serviceName, servicePrice, dbService, isLoading: isLoadingInit } = useServiceInitialization('meal-service');
     const [isBooking, setIsBooking] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
@@ -145,7 +145,13 @@ export default function MealServiceScreen() {
 
             router.push({
                 pathname: '/service-checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName || 'Meal Service', ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
+                params: {
+                    bookingPayload,
+                    amount: String(servicePrice),
+                    label: serviceName || 'Meal Service',
+                    checkoutGroup: dbService?.checkoutGroup || 'D',
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
+                },
             });
         } catch (error) {
             console.error('Meal service error:', error);

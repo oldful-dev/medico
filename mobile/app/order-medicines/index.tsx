@@ -62,7 +62,7 @@ export default function OrderMedicinesScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    const { isReady, cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('order-medicines');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, dbService, isLoading: isLoadingInit } = useServiceInitialization('order-medicines');
 
     // Follow the centralized active address whenever it changes elsewhere
     // in the app, unless the user has already made their own pick here.
@@ -193,7 +193,13 @@ export default function OrderMedicinesScreen() {
 
             router.push({
                 pathname: '/service-checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName, ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
+                params: {
+                    bookingPayload,
+                    amount: String(servicePrice),
+                    label: serviceName,
+                    checkoutGroup: dbService?.checkoutGroup || 'D',
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
+                },
             });
         } catch (error) {
             console.error('Medicines error:', error);

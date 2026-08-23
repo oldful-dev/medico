@@ -156,9 +156,8 @@ export default function ServiceCheckoutScreen() {
     ? params.serviceSlug.toUpperCase().replace(/-/g, "_")
     : mapLabelToCategory(label);
   const isZeroPayment =
-    (category === "MEDICINES" ||
-      category === "TIFFIN" ||
-      (params.checkoutGroup === "D" && params.paymentMode !== "PAID")) &&
+    params.checkoutGroup === "D" &&
+    params.paymentMode !== "PAID" &&
     !isPaidBookingOverride;
   const [calculatedPrices, setCalculatedPrices] = useState<{
     totalAmount: number;
