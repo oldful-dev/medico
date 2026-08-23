@@ -3,7 +3,7 @@ const prisma = require('../config/database');
 // ─── Service category → required planType mapping ───────────────────────────
 const CARE_CATEGORIES = [
     'DOCTOR_HOME_VISIT', 'HOME_NURSE', 'HOSPITAL_TRIP',
-    'PHYSIO_FITNESS', 'BLOOD_TEST', 'SCAN_ECG',
+    'PHYSIO_FITNESS', 'BLOOD_TEST', 'SCAN_ECG', 'EQUIPMENT_RENTAL',
 ];
 const HOME_CATEGORIES = [
     'PLUMBING_ELECTRICAL', 'APPLIANCE_REPAIR', 'AC_APPLIANCE_REPAIR', 'HOME_ESSENTIALS',
