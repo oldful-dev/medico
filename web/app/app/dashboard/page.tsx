@@ -4,23 +4,20 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
-import { 
-  CalendarDays, Activity, Stethoscope, ArrowRight, 
-  Bell, Search, Shield, Clock, Zap, ChevronRight,
+import {
+  CalendarDays, Activity, Stethoscope, ArrowRight,
+  Bell, Shield, Zap, ChevronRight,
   Ambulance, Heart, FileText
 } from 'lucide-react';
 import { useSDUIHooks } from '@/hooks/useSDUIHooks';
 import { useAuthStore } from '@/store/authStore';
-import { useUserHooks, USER_QUERY_KEYS } from '@/hooks/useUserHooks';
+import { useUserHooks } from '@/hooks/useUserHooks';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { getAssetUrl } from '@/utils/getAssetUrl';
-import { notificationService } from '@/services/api/notificationService';
 import { testPushNotification } from '@/services/firebase/testPushNotification';
 import { getFCMToken } from '@/services/firebase/getFCMToken';
 import { diagnosePushNotifications } from '@/services/firebase/diagnosePushNotifications';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { NotificationDropdown } from '@/components/dashboard/NotificationDropdown';
 
 const QUICK_ACTIONS = [
@@ -32,16 +29,9 @@ const QUICK_ACTIONS = [
   { icon: Ambulance, label: 'Emergency', href: '/app/account?tab=emergency', color: 'bg-red-50 text-red-600', border: 'border-red-100' },
 ];
 
-const STATS = [
-  { label: 'Doctors Available', value: '48', sub: 'Right now', icon: Stethoscope, color: 'text-emerald-600' },
-  { label: 'Avg. Response', value: '45m', sub: 'To your door', icon: Clock, color: 'text-blue-600' },
-  { label: 'Active Plans', value: '3', sub: 'Services', icon: Shield, color: 'text-violet-600' },
-  { label: 'Health Score', value: '92%', sub: 'Excellent', icon: Activity, color: 'text-rose-600' },
-];
-
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuthStore();
+  const { user } = useAuthStore();
   const { useBookings, useNotifications, useProfile } = useUserHooks();
   const { useHomeConfig } = useSDUIHooks();
 
@@ -83,15 +73,6 @@ export default function DashboardPage() {
     n.title?.includes('Template:') !== true
   );
   const unreadCount = notifications.filter(n => !n.isRead).length;
-
-  const queryClient = useQueryClient();
-
-  const handleMarkAsRead = async (id: string) => {
-    try {
-      await notificationService.markAsRead(id);
-      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.notifications });
-    } catch (e) { console.error(e); }
-  };
 
   const greeting = React.useCallback(() => {
     const hour = new Date().getHours();

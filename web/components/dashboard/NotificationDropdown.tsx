@@ -3,7 +3,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Loader2 } from 'lucide-react';
-import { notificationService } from '@/services/api/notificationService';
 import { useUserHooks } from '@/hooks/useUserHooks';
 
 interface Notification {

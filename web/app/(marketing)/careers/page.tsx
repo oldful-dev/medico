@@ -27,7 +27,14 @@ const PERKS = [
 export default function CareersPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [careersList, setCareersList] = useState<any[]>([]);
+  const [careersList, setCareersList] = useState<{
+    id?: string;
+    title: string;
+    department?: string;
+    location?: string;
+    type?: string;
+    description?: string;
+  }[]>([]);
   const [roles, setRoles] = useState<string[]>(ROLES);
   const [form, setForm] = useState({
     name: '',
@@ -45,7 +52,7 @@ export default function CareersPage() {
         const config = await uiConfigService.getCompanyGlobalConfig();
         if (config && Array.isArray(config.careers_list) && config.careers_list.length > 0) {
           setCareersList(config.careers_list);
-          const dynamicRoles = config.careers_list.map((c: any) => c.title);
+          const dynamicRoles = config.careers_list.map((c: { title: string }) => c.title);
           setRoles(dynamicRoles);
           setForm(prev => ({ ...prev, role: dynamicRoles[0] }));
         }

@@ -149,7 +149,7 @@ export default function PlansPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-           {plans.map((plan, idx) => {
+           {plans.map((plan) => {
              const isOnDemand = plan.quarterlyPrice === 0;
              const isPro = plan.name === 'HomeMaker Plan';
              const isActive = profile?.subscriptions?.some(s => s.status === 'ACTIVE' && s.plan.name === plan.name);

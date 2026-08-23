@@ -12,9 +12,7 @@ import {
   ShieldCheck,
   CreditCard,
   Wallet,
-  AlertCircle,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { bookingService } from "@/services/api/bookingService";
 import { subscriptionService } from "@/services/api/subscriptionService";
 import { paymentService } from "@/services/api/paymentService";

@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import Image from 'next/image';
-import { 
-  Camera, 
-  MapPin, 
-  ChevronRight, 
+import {
+  Camera,
+  MapPin,
   Info,
   CheckCircle2,
   ArrowRight
@@ -32,7 +31,6 @@ interface ProfileFormData {
 }
 
 function ProfileSetupForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const phone = searchParams.get('phone') || '';
   const { login } = useAuthStore();

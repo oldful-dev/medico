@@ -1,6 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { Heart, Activity, AlertCircle, ShieldCheck, Clock, Receipt, CreditCard } from 'lucide-react';
+import { Heart, Activity, Receipt, CreditCard } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: "Refund Policy | Ayuxa",

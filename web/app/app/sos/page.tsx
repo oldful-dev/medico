@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Phone, ShieldAlert, Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { X, ShieldAlert } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 import { SOSButtonUI } from '@/components/sos/SOSButtonUI';
@@ -40,7 +40,7 @@ export default function SOSPage() {
       } else {
         toast.error('Partial alert: Contacting hotline manually.', { id: tId });
       }
-    } catch (err) {
+    } catch {
       toast.error('Network error. Please call hotline directly.', { id: tId });
     } finally {
       setIsTriggering(false);

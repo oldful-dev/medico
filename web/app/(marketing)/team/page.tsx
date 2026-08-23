@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, ArrowRight, ExternalLink, X, Phone, MapPin } from 'lucide-react';
+import { Mail, ArrowRight, X, MapPin } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 const LinkedInIcon = ({ className }: { className?: string }) => (
@@ -137,7 +137,7 @@ export default function TeamPage() {
               The Missionaries of <span className="text-[var(--color-primary)] italic">Care</span>
             </h1>
             <p className="text-lg md:text-xl text-[var(--color-text-body)] leading-relaxed opacity-80">
-              Meet our dedicated management team committed to senior citizens' well-being.
+              Meet our dedicated management team committed to senior citizens&apos; well-being.
             </p>
           </motion.div>
         </div>

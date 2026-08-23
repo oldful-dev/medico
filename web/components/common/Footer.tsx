@@ -34,11 +34,11 @@ export function Footer() {
         const res = await fetch(`${apiUrl}/ui-config/published?t=${Date.now()}`, { cache: 'no-store' });
         const json = await res.json();
         if (json.success && json.data) {
-          const found = json.data.find((c: any) => c.key === "company_global_config");
+          const found = json.data.find((c: { key: string }) => c.key === "company_global_config");
           if (found && found.configJson) {
             let parsed = found.configJson;
             if (typeof parsed === "string") {
-              try { parsed = JSON.parse(parsed); } catch (_) {}
+              try { parsed = JSON.parse(parsed); } catch {}
             }
             setSettings({
               company_name: parsed.company_name || FALLBACK_SETTINGS.company_name,

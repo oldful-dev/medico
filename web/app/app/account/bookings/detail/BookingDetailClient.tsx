@@ -198,7 +198,7 @@ export default function BookingDetailClient() {
             setIsProcessingPayment(false);
          });
          rzp.open();
-      } catch (error: unknown) {
+      } catch {
          toast.error('Failed to initialize payment.');
          setIsProcessingPayment(false);
       }
@@ -443,7 +443,7 @@ export default function BookingDetailClient() {
                                     const url = window.URL.createObjectURL(blob);
                                     window.open(url, '_blank');
                                     toast.success('Report opened', { id: tId });
-                                 } catch (err) {
+                                 } catch {
                                     toast.error('Could not fetch report yet', { id: tId });
                                  }
                               }}
