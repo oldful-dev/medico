@@ -1,4 +1,4 @@
-import { Bell, HeartPulse, Stethoscope, Search, User, ShieldAlert, Activity, Pill, Loader2, Home, Sparkles, ShoppingCart } from 'lucide-react';
+import { Bell, HeartPulse, Search, User, Home, Sparkles, ShoppingCart } from 'lucide-react';
 import { useSDUIHooks } from '@/hooks/useSDUIHooks';
 import Image from 'next/image';
 import { getAssetUrl } from '@/utils/getAssetUrl';
@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 
 export function InteractivePhoneUI() {
   const { useHomeConfig } = useSDUIHooks();
-  const { data: config, isLoading } = useHomeConfig();
+  const { data: config } = useHomeConfig();
 
   const containerVariants = {
     hidden: { opacity: 0 },

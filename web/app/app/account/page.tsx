@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   User, MapPin, FileText, Heart, Settings, HelpCircle,
   LogOut, ChevronRight, Shield, Bell, Phone, Mail,
@@ -11,13 +11,11 @@ import {
   Clock, Package, Stethoscope, Activity, Camera,
   Save, X, Loader2, ExternalLink, UploadCloud, History, Image as LucideImage
 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
 import { userService, UserProfile, Address, EmergencyContact, MedicalCard, Booking, HealthReport } from '@/services/api/userService';
-import { labService, LabOrderListItem } from '@/services/api/labService';
+import { LabOrderListItem } from '@/services/api/labService';
 import { useUserHooks, USER_QUERY_KEYS } from '@/hooks/useUserHooks';
-import { getServiceConfig } from '@/lib/services-config';
-import { getAssetUrl } from '@/utils/getAssetUrl';
 import { formatPrice } from '@/utils/formatPrice';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { PhoneInput } from '@/components/common/PhoneInput';
@@ -630,7 +628,7 @@ function PrescriptionsTab({ profile }: { profile: UserProfile }) {
       } else {
         toast.error(res.message || 'Upload failed');
       }
-    } catch (err) {
+    } catch {
       toast.error('Upload failed. Please try again.');
     } finally {
       setUploading(false);

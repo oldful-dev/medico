@@ -165,13 +165,11 @@ export default function ServiceDetailClient() {
       });
 
       router.push('/app/checkout');
-    } catch (err) {
+    } catch {
       toast.error('Failed to prepare booking', { id: 'upload' });
       setIsBooking(false);
     }
   };
-
-  const visitType = 'Home'; // Default
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-screen)] pb-16">

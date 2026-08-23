@@ -1,13 +1,13 @@
 'use client';
 
-import { labService, LabPackage, TimeSlot } from '@/services/api/labService';
+import { labService, LabPackage } from '@/services/api/labService';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
 import { formatPrice } from '@/utils/formatPrice';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Activity, AlertCircle, ArrowLeft, ArrowRight, 
-    ChevronDown, Clock, Loader2, MapPin, Search, Zap,
+import {
+    Activity, AlertCircle, ArrowLeft, ArrowRight,
+    Clock, Loader2, MapPin, Zap,
     HeartPulse, ScanSearch, TestTube, ShieldPlus,
     FlaskConical, PackageSearch, Stethoscope
 } from 'lucide-react';
@@ -30,8 +30,7 @@ export default function LabTestBooking() {
     // UI State
     const [loading, setLoading] = useState(false);
     const [bookingLoading, setBookingLoading] = useState(false);
-    const [isOpen, setIsOpen] = useState(false);
-    
+
     // Data State
     // Data State
     const [packages, setPackages] = useState<LabPackage[]>([]);
@@ -164,7 +163,7 @@ export default function LabTestBooking() {
         try {
             const res = await labService.searchPackages('');
             if (res.success) setPackages(res.data || []);
-        } catch (err) {
+        } catch {
             toast.error('Could not load test packages');
         } finally {
             setLoading(false);
@@ -175,7 +174,7 @@ export default function LabTestBooking() {
         try {
             const res = await labService.getTimeSlots(bookingDate, coords.lat, coords.long);
             if (res.success) setAvailableSlots(res.data || []);
-        } catch (err) {
+        } catch {
             toast.error('Could not load time slots');
         }
     };

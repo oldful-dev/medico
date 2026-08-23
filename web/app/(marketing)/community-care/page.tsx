@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Globe, Users, Gift, Smile, Loader2 } from 'lucide-react';
+import { Heart, Globe, Users, Gift, Loader2 } from 'lucide-react';
 
 interface CommunityContent {
   title: string;
@@ -31,11 +31,11 @@ export default function CommunityCarePage() {
         const json = await res.json();
         let resolved = FALLBACK_CONTENT;
         if (json.success && json.data) {
-          const found = json.data.find((c: any) => c.key === "company_global_config");
+          const found = json.data.find((c: { key: string }) => c.key === "company_global_config");
           if (found && found.configJson) {
             let parsed = found.configJson;
             if (typeof parsed === "string") {
-              try { parsed = JSON.parse(parsed); } catch (_) {}
+              try { parsed = JSON.parse(parsed); } catch {}
             }
             if (parsed?.community_content) {
               const cc = parsed.community_content;

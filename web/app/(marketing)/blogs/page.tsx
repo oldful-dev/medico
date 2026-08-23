@@ -159,7 +159,7 @@ export default function BlogsPage() {
       } else {
         toast.error(res.message || 'Subscription failed');
       }
-    } catch (err) {
+    } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
       setSubscribing(false);
