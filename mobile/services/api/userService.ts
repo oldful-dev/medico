@@ -116,6 +116,15 @@ export const userService = {
     },
 
     /**
+     * POST /api/users/profile/email-my-data
+     * "Download Your Data" — generates a PDF of the full personal-data export
+     * and emails it to the user's registered address.
+     */
+    emailMyData: async (): Promise<ApiResponse<null>> => {
+        return apiClient.post<null>('/users/profile/email-my-data');
+    },
+
+    /**
      * POST /api/users
      * Called after OTP verification for new users to complete registration.
      */

@@ -2,7 +2,7 @@ import {
     LayoutDashboard, Users, Shield, MapPin, Settings, CalendarCheck,
     HeartPulse, CreditCard, DollarSign, AlertTriangle, Bell, FileText,
     ShoppingBag, Image as ImageIcon, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, Clock, Activity, Sparkles, PartyPopper,
-    Trash2, Banknote, TestTube2, Smartphone, Globe
+    Trash2, Banknote, TestTube2, Smartphone, Globe, HelpCircle
 } from "lucide-react";
 
 export const NAV_SECTIONS = [
@@ -60,6 +60,7 @@ export const NAV_SECTIONS = [
         items: [
             { id: "support", href: "/support", label: "Support Tickets", icon: LifeBuoy, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'SUPPORT_AGENT'] },
             { id: "legal", href: "/legal", label: "Legal CMS", icon: FileText, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
+            { id: "faq", href: "/faq", label: "FAQ Management", icon: HelpCircle, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },
             { id: "smart", href: "/smart", label: "Smart Features", icon: Brain, roles: ['SUPER_ADMIN'] },
             { id: "sessions", href: "/sessions", label: "Active Sessions", icon: Activity, roles: ['SUPER_ADMIN'] },
             { id: "user-activity", href: "/user-activity", label: "User Activity", icon: Activity, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },

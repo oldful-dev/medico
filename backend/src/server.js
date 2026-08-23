@@ -53,6 +53,7 @@ const mediaRoutes = require('./routes/media.routes');
 const webhookRoutes = require('./routes/webhook.routes');
 const labRoutes = require('./routes/lab.routes');
 const bannerRoutes = require('./routes/banner.routes');
+const faqRoutes = require('./routes/faq.routes');
 const locationRoutes = require('./routes/location.routes');
 const remoteConfigRoutes = require('./routes/remoteConfig.routes');
 const appConfigRoutes = require('./routes/appConfig.routes');
@@ -259,6 +260,9 @@ app.use('/api/waitlist', waitlistRoutes);
 
 // Banners (public + admin)
 app.use('/api/banners', bannerRoutes);
+
+// FAQs (public + admin)
+app.use('/api/faqs', faqRoutes);
 
 // Local Meetups
 app.use('/api/meetups', meetupRoutes);

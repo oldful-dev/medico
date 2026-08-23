@@ -13,6 +13,7 @@ router.post('/confirm',    authenticate, ctrl.confirmUpload);
 router.post('/upload', authenticate, upload.single('file'), ctrl.uploadMedia);
 
 // ─── Admin: list all assets (SUPER_ADMIN, CITY_ADMIN, OPERATIONS_EXECUTIVE) ───
+router.get('/folders', authenticateAdmin, blockNonManagement, ctrl.getMediaFolders);
 router.get('/',     authenticateAdmin, blockNonManagement, ctrl.getMediaAssets);
 router.delete('/:id', authenticateAdmin, blockNonManagement, ctrl.deleteMedia);
 

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Shield, Eye, Clock, UserPlus } from "lucide-react";
 import { adminAPI, authAPI, cityAPI, auditAPI } from "@/lib/api";
 import { formatDateTime, showToast } from "@/lib/hooks";
+import GCSUpload from "@/components/GCSUpload";
 
 export default function RolesPage() {
     const [activeTab, setActiveTab] = useState("admins");
@@ -13,7 +14,7 @@ export default function RolesPage() {
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editingAdminId, setEditingAdminId] = useState(null);
-    const [form, setForm] = useState({ name: '', email: '', password: '', role: 'CITY_ADMIN', phone: '', cityId: '', isActive: true });
+    const [form, setForm] = useState({ name: '', email: '', password: '', role: 'CITY_ADMIN', phone: '', cityId: '', isActive: true, documentsJson: {} });
 
     useEffect(() => {
         loadData();
@@ -41,13 +42,17 @@ export default function RolesPage() {
     const startCreate = () => {
         setIsEditing(false);
         setEditingAdminId(null);
-        setForm({ name: '', email: '', password: '', role: 'CITY_ADMIN', phone: '', cityId: '', isActive: true });
+        setForm({ name: '', email: '', password: '', role: 'CITY_ADMIN', phone: '', cityId: '', isActive: true, documentsJson: {} });
         setShowModal(true);
     };
 
     const startEdit = (admin) => {
         setIsEditing(true);
         setEditingAdminId(admin.id);
+        let docs = {};
+        try {
+            docs = typeof admin.documentsJson === 'string' ? JSON.parse(admin.documentsJson || '{}') : (admin.documentsJson || {});
+        } catch (e) { docs = {}; }
         setForm({
             name: admin.name || '',
             email: admin.email || '',
@@ -55,7 +60,8 @@ export default function RolesPage() {
             role: admin.role || 'CITY_ADMIN',
             phone: admin.phone || '',
             cityId: admin.cityId || '',
-            isActive: admin.isActive !== false
+            isActive: admin.isActive !== false,
+            documentsJson: docs
         });
         setShowModal(true);
     };
@@ -71,7 +77,8 @@ export default function RolesPage() {
                     phone: form.phone,
                     role: form.role,
                     cityId: form.cityId || null,
-                    isActive: form.isActive
+                    isActive: form.isActive,
+                    documentsJson: form.documentsJson
                 };
                 await adminAPI.update(editingAdminId, updatePayload);
 
@@ -82,12 +89,13 @@ export default function RolesPage() {
 
                 showToast('Admin updated successfully');
             } else {
-                // Create Admin
+                // Create Admin (documents are attached afterward via Edit — the account needs to
+                // exist first since compliance docs are saved through the update endpoint)
                 await authAPI.register(form);
                 showToast('Admin created successfully');
             }
             setShowModal(false);
-            setForm({ name: '', email: '', password: '', role: 'CITY_ADMIN', phone: '', cityId: '', isActive: true });
+            setForm({ name: '', email: '', password: '', role: 'CITY_ADMIN', phone: '', cityId: '', isActive: true, documentsJson: {} });
             loadData();
         } catch (e) { 
             showToast(e.response?.data?.message || 'Failed to process request', 'error'); 
@@ -214,16 +222,39 @@ export default function RolesPage() {
                                 </div>
                                 <div className="form-row">
                                     <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             id="isActive"
-                                            checked={form.isActive} 
-                                            onChange={e => setForm({ ...form, isActive: e.target.checked })} 
+                                            checked={form.isActive}
+                                            onChange={e => setForm({ ...form, isActive: e.target.checked })}
                                             style={{ width: 18, height: 18 }}
                                         />
                                         <label htmlFor="isActive" className="form-label" style={{ margin: 0, cursor: 'pointer' }}>Account Status: Active</label>
                                     </div>
                                 </div>
+
+                                {isEditing ? (
+                                    <div className="form-group">
+                                        <label style={{ marginBottom: 0 }}>Compliance Documents</label>
+                                        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 12px' }}>Internal only — never shown on the public website.</p>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                            <GCSUpload
+                                                folder="admin-compliance"
+                                                existingUrl={form.documentsJson?.aadhaarUrl}
+                                                onUploadSuccess={(url) => setForm({ ...form, documentsJson: { ...form.documentsJson, aadhaarUrl: url } })}
+                                                label="Aadhaar Card"
+                                            />
+                                            <GCSUpload
+                                                folder="admin-compliance"
+                                                existingUrl={form.documentsJson?.panUrl}
+                                                onUploadSuccess={(url) => setForm({ ...form, documentsJson: { ...form.documentsJson, panUrl: url } })}
+                                                label="PAN Card"
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>Compliance documents (Aadhaar, PAN) can be uploaded after the account is created, via Edit.</p>
+                                )}
                             </div>
                             <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button><button type="submit" className="btn btn-primary">{isEditing ? 'Save Changes' : 'Create Admin'}</button></div>
                         </form>

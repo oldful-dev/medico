@@ -262,6 +262,17 @@ export const bannerAPI = {
     delete: (id) => api.delete(`/banners/${id}`),
 };
 
+export const faqAPI = {
+    getPublished: () => api.get('/faqs/published'),  // Public
+    getAll: (params) => api.get('/faqs', { params }),
+    getById: (id) => api.get(`/faqs/${id}`),
+    create: (data) => api.post('/faqs', data),
+    update: (id, data) => api.put(`/faqs/${id}`, data),
+    toggle: (id, data) => api.patch(`/faqs/${id}/toggle`, data),
+    reorder: (data) => api.post('/faqs/reorder', data),
+    delete: (id) => api.delete(`/faqs/${id}`),
+};
+
 // ── UI Config (Server-Driven UI) ─────────────────────
 export const uiConfigAPI = {
     purgeCache: () => api.post('/ui-config/purge-cache'),
@@ -315,6 +326,7 @@ export const supportAPI = {
 // ── Media ────────────────────────────────────────────
 export const mediaAPI = {
     getAll: (params) => api.get('/media', { params }),
+    getFolders: () => api.get('/media/folders'),
     upload: (formData) => api.post('/media/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
     getSignedUrl: (data) => api.post('/media/signed-url', data),
     confirm: (data) => api.post('/media/confirm', data),

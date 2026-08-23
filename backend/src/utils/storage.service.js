@@ -151,20 +151,22 @@ const toCDNUrl = (storagePath, folder = '') => {
 
     const prefix = 'mobile/assets/images/';
     const startsWithPrefix = cleanPath.startsWith(prefix);
+
+    // The Cloudflare zone's transform rule for assets.ayuxa*.com always maps
+    // "<path>" → gs://<bucket>/mobile/assets/images/<path> — it is NOT a
+    // generic bucket mirror. Only objects actually stored under that exact
+    // GCS prefix are reachable through the CDN domain; every other folder
+    // (profiles, documents, staff-compliance, admin-compliance, prescriptions,
+    // etc.) must use the direct GCS URL, which is correct unconditionally.
     if (startsWithPrefix) {
         cleanPath = cleanPath.substring(prefix.length);
-    }
-
-    // Use direct GCS path (ayuxa-assets) for profiles and documents to ensure correct GCS path representation
-    if (folder !== 'profiles' && folder !== 'documents') {
         const cdnBase = (process.env.ASSETS_CDN_URL || '').replace(/\/+$/, '');
         if (cdnBase) return `${cdnBase}/${cleanPath}`;
     }
 
-    // Fallback: GCS direct public URL (only if no CDN configured or bypassed)
+    // Fallback / non-CDN-compatible folders: direct GCS public URL.
     if (gcsBucketName) {
-        const fullGcsPath = startsWithPrefix ? `${prefix}${cleanPath}` : cleanPath;
-        return `https://storage.googleapis.com/${gcsBucketName}/${fullGcsPath}`;
+        return `https://storage.googleapis.com/${gcsBucketName}/${storagePath}`;
     }
 
     return null;

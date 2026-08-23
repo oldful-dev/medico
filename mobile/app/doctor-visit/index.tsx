@@ -46,6 +46,9 @@ const PROBLEMS: { label: string; icon?: any; empty?: boolean }[] = [
     { label: 'Poster-surgery Rehab', icon: postSurgeryIcon },
     { label: 'Stroke Recovery', icon: strokeIcon },
     { label: 'Frozen shoulder', icon: frozenShoulderIcon },
+    // TODO: swap for a dedicated Geriatric Care icon asset when available — reusing
+    // generalWeaknessIcon as a placeholder so the option isn't blocked on asset design.
+    { label: 'Geriatric Care', icon: generalWeaknessIcon },
     { label: 'Other', icon: otherIcon },
 ];
 
@@ -59,6 +62,7 @@ const translateSymptomLabel = (label: string, t: any) => {
     'post-surgery rehab': 'doctor_visit.post_surgery',
     'stroke recovery': 'doctor_visit.stroke_recovery',
     'frozen shoulder': 'doctor_visit.frozen_shoulder',
+    'geriatric care': 'doctor_visit.geriatric_care',
     'other': 'doctor_visit.other',
   };
   const key = keyMap[label.toLowerCase()];

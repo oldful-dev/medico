@@ -18,6 +18,7 @@ const {
     sendBookingConfirmation,
     sendBookingConfirmationAdmin,
     sendPaymentReceipt,
+    sendDataExport,
     sendPlanExpiryReminder,
     sendSupportTicketToAdmin,
     sendUserReplyNotifyAdmin,
@@ -40,6 +41,7 @@ module.exports = {
     sendBookingConfirmation,
     sendBookingConfirmationAdmin,
     sendPaymentReceipt,
+    sendDataExport,
     sendPlanExpiryReminder,
 
     // Support

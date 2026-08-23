@@ -20,19 +20,42 @@ const ALLOWED_MIME_TYPES = new Set([
 const getMediaAssets = async (req, res, next) => {
     try {
         const { page, limit, skip } = paginate(req.query);
-        const { fileType, folder, search } = req.query;
+        const { fileType, folder, search, sortBy = 'name' } = req.query;
 
         const where = {};
         if (fileType) where.fileType = fileType;
         if (folder) where.folder = folder;
         if (search) where.fileName = { contains: search, mode: 'insensitive' };
 
+        const orderBy = sortBy === 'newest'
+            ? { createdAt: 'desc' }
+            : { fileName: 'asc' }; // A-Z default so large libraries stay browsable
+
         const [assets, total] = await Promise.all([
-            prisma.mediaAsset.findMany({ where, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+            prisma.mediaAsset.findMany({ where, skip, take: limit, orderBy }),
             prisma.mediaAsset.count({ where }),
         ]);
 
         sendPaginatedResponse(res, assets, total, page, limit);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ─────────────────────────────────────────────────────────
+//  GET /api/media/folders                (Admin)
+//  Distinct folder values actually present in storage, so the
+//  Media Library's segregation filter always matches reality
+//  instead of a hardcoded, easily stale list.
+// ─────────────────────────────────────────────────────────
+const getMediaFolders = async (req, res, next) => {
+    try {
+        const rows = await prisma.mediaAsset.findMany({
+            select: { folder: true },
+            distinct: ['folder'],
+            orderBy: { folder: 'asc' },
+        });
+        sendResponse(res, 200, rows.map(r => r.folder).filter(Boolean).sort());
     } catch (error) {
         next(error);
     }
@@ -190,4 +213,4 @@ const deleteMedia = async (req, res, next) => {
     }
 };
 
-module.exports = { getMediaAssets, requestSignedUrl, confirmUpload, uploadMedia, deleteMedia };
+module.exports = { getMediaAssets, getMediaFolders, requestSignedUrl, confirmUpload, uploadMedia, deleteMedia };

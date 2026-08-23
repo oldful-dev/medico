@@ -199,6 +199,18 @@ const EMAIL_TEMPLATES = {
         `),
     },
 
+    DATA_EXPORT: {
+        subject: () => `Your Ayuxa Data Export`,
+        html: (vars) => layout(`
+            <h2 style="margin:0 0 8px;color:${PRIMARY};font-size:20px;">Your Data is Attached 📄</h2>
+            <p style="margin:0 0 20px;color:#555;font-size:15px;">Hi ${vars.name}, as requested, we've attached a complete export of the personal data Ayuxa holds against your account (Ref ID: ${vars.uniqueUserId}).</p>
+            <div style="background:${BG};border:1px solid #c9e9d8;border-radius:8px;padding:20px;margin-bottom:24px;">
+                <p style="margin:0;color:#555;font-size:14px;">The attached PDF includes your profile, addresses, emergency contacts, family members, bookings, orders, payments, and subscriptions.</p>
+            </div>
+            <p style="margin:0;color:#777;font-size:13px;">If you did not request this, please contact <a href="mailto:support@ayuxacare.com" style="color:${PRIMARY};">support@ayuxacare.com</a> immediately.</p>
+        `),
+    },
+
     PLAN_EXPIRY_REMINDER: {
         subject: (vars) => `Your ${vars.planName} plan expires in ${vars.daysLeft} day${vars.daysLeft === 1 ? '' : 's'}`,
         html: (vars) => layout(`

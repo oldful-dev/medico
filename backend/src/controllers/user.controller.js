@@ -1,7 +1,7 @@
 const prisma = require('../config/database');
 const { paginate, sendResponse, sendPaginatedResponse, generateUserId } = require('../utils/helpers');
 const { sendWelcomeNotifications } = require('../utils/notifications');
-const { generateWelcomeSLAPDF } = require('../utils/pdfGenerator');
+const { generateWelcomeSLAPDF, generateUserDataExportPDF } = require('../utils/pdfGenerator');
 const { uploadFile, toCDNUrl, refreshSignedUrl } = require('../utils/storage.service');
 const { analyzeMedicalReportFromGCS, analyzeMedicalReportFromBuffer } = require('../utils/ocr.service');
 const { createAuditLog } = require('../middleware/audit');
@@ -837,6 +837,97 @@ const exportMyData = async (req, res, next) => {
     }
 };
 
+// GET /api/users/profile/export-data-pdf  (App user — Legal CMS "Access your data" download)
+// Same export as exportMyData, rendered as a PDF and streamed back directly
+// (rather than emailed) so it can be saved/shared from the app.
+const exportMyDataPDF = async (req, res, next) => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            include: {
+                city: { select: { name: true, code: true } },
+                addresses: true,
+                emergencyContacts: true,
+                familyMembers: true,
+                medicalCards: true,
+                healthReports: true,
+                bookings: true,
+                labOrders: true,
+                productOrders: true,
+                insuranceApps: true,
+                payments: true,
+                savedCards: { select: { id: true, cardBrand: true, cardLast4: true, cardType: true, isDefault: true, createdAt: true } },
+                sosAlerts: true,
+                subscriptions: { include: { plan: true } },
+                upgradeHistory: true,
+                waitlistEntries: true,
+                meetupRegistrations: true,
+            },
+        });
+
+        const pdfBuffer = await generateUserDataExportPDF(user);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="ayuxa-my-data.pdf"');
+        res.send(pdfBuffer);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/users/profile/email-my-data  (App user — "Download Your Data")
+// Generates the same personal-data export as a PDF and emails it to the
+// user's registered address, instead of returning it in the response.
+const emailMyData = async (req, res, next) => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            include: {
+                city: { select: { name: true, code: true } },
+                addresses: true,
+                emergencyContacts: true,
+                familyMembers: true,
+                medicalCards: true,
+                healthReports: true,
+                bookings: true,
+                labOrders: true,
+                productOrders: true,
+                insuranceApps: true,
+                payments: true,
+                savedCards: { select: { id: true, cardBrand: true, cardLast4: true, cardType: true, isDefault: true, createdAt: true } },
+                sosAlerts: true,
+                subscriptions: { include: { plan: true } },
+                upgradeHistory: true,
+                waitlistEntries: true,
+                meetupRegistrations: true,
+            },
+        });
+
+        if (!user.email) {
+            return res.status(400).json({ success: false, message: 'No email address on file — please add one before requesting a data export.' });
+        }
+
+        const pdfBuffer = await generateUserDataExportPDF(user);
+
+        const email = require('../services/email');
+        const sent = await email.sendDataExport({
+            to: user.email,
+            name: user.name,
+            uniqueUserId: user.uniqueUserId,
+            userId: user.id,
+            pdfBuffer,
+        });
+
+        if (!sent) {
+            return res.status(502).json({ success: false, message: 'Failed to send email — please try again later.' });
+        }
+
+        sendResponse(res, 200, null, `Your data has been emailed to ${user.email}`);
+    } catch (error) {
+        next(error);
+    }
+};
+
 // PUT /api/users/profile  (App user — update own profile)
 const updateMyProfile = async (req, res, next) => {
     try {
@@ -1120,7 +1211,9 @@ const getAllHealthReports = async (req, res, next) => {
             include: {
                 user: { select: { id: true, name: true, uniqueUserId: true, phone: true } }
             },
-            orderBy: { createdAt: 'desc' }
+            // Group by client first so a client's documents stay together,
+            // most recent upload first within each client.
+            orderBy: [{ user: { uniqueUserId: 'asc' } }, { createdAt: 'desc' }]
         });
         sendResponse(res, 200, reports, 'All health reports retrieved');
     } catch (error) {
@@ -1159,6 +1252,8 @@ module.exports = {
     upsertMedicalCard, uploadHealthReport, deleteHealthReport,
     getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports, deleteProfile, deleteProfileByAdmin,
     exportMyData,
+    exportMyDataPDF,
+    emailMyData,
     getAllHealthReports,
     getHealthReportViewUrl,
 };
