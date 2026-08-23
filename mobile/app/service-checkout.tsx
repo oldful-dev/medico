@@ -156,9 +156,7 @@ export default function ServiceCheckoutScreen() {
     ? params.serviceSlug.toUpperCase().replace(/-/g, "_")
     : mapLabelToCategory(label);
   const isZeroPayment =
-    params.checkoutGroup === "D" &&
-    params.paymentMode !== "PAID" &&
-    !isPaidBookingOverride;
+    params.paymentMode !== "PAID" && !isPaidBookingOverride;
   const [calculatedPrices, setCalculatedPrices] = useState<{
     totalAmount: number;
     taxPercentage?: number;
@@ -546,20 +544,16 @@ export default function ServiceCheckoutScreen() {
     !!calculatedPrices?.benefitApplied ||
     isUpgraded;
 
-  const baseBookingFee = isZeroPayment
-    ? 0
-    : calculatedPrices
-      ? (calculatedPrices.breakdown as any).originalBookingFee !== undefined
+  const baseBookingFee = calculatedPrices
+    ? ((calculatedPrices.breakdown as any).originalBookingFee !== undefined
         ? (calculatedPrices.breakdown as any).originalBookingFee
-        : calculatedPrices.breakdown.bookingFee
-      : 299;
-  const basePlatformFee = isZeroPayment
-    ? 0
-    : calculatedPrices
-      ? (calculatedPrices.breakdown as any).originalPlatformFee !== undefined
+        : calculatedPrices.breakdown.bookingFee)
+    : 299;
+  const basePlatformFee = calculatedPrices
+    ? ((calculatedPrices.breakdown as any).originalPlatformFee !== undefined
         ? (calculatedPrices.breakdown as any).originalPlatformFee
-        : calculatedPrices.breakdown.platformFee
-      : 50;
+        : calculatedPrices.breakdown.platformFee)
+    : 50;
 
   const bookingFee =
     hasActivePlanForCategory || isUpgraded ? 0 : baseBookingFee;
@@ -600,7 +594,6 @@ export default function ServiceCheckoutScreen() {
     "GROCERY_DELIVERY",
     "GROCERY_RUN",
   ].includes(category);
-  const isServiceFeeWaived = isZeroPayment;
   const fallbackTaxPercentage = isHomeEssential ? 18 : 6;
   const taxRate = calculatedPrices
     ? (calculatedPrices.taxPercentage ?? fallbackTaxPercentage)
@@ -867,10 +860,14 @@ export default function ServiceCheckoutScreen() {
               ? Number(selectedAddress.longitude)
               : payload.longitude;
 
+          // For INQUIRY services, still send the real reference price (not a
+          // hardcoded 0) — the backend decides the actual charge from its own
+          // price floor + subscription quota check, and returns LIMIT_EXCEEDED
+          // if the user isn't covered, rather than trusting a client-zeroed amount.
           const bookingRes = await bookingService.createBooking({
             ...payload,
             amount: isZeroPayment
-              ? 0
+              ? displayVendorFee
               : isUpgraded && savingsInfo
                 ? savingsInfo.bookingTotalWithUpgrade
                 : chargeAmount,
@@ -1358,70 +1355,40 @@ export default function ServiceCheckoutScreen() {
             {/* Order Summary */}
             <View style={styles.card}>
               <Text style={styles.cardTitle}>
-                {t("service_checkout.service_summary")}
+                {isZeroPayment
+                  ? t("service_checkout.booking_request_title")
+                  : t("service_checkout.service_summary")}
               </Text>
               <View style={styles.row}>
                 <Text style={styles.rowLabel}>{label}</Text>
                 <Text style={styles.rowValue}>
-                  ₹
-                  {(isServiceFeeWaived ? 0 : displayVendorFee).toLocaleString(
-                    "en-IN",
-                  )}
+                  ₹{displayVendorFee.toLocaleString("en-IN")}
                 </Text>
               </View>
 
-              {/* Breakdown Section */}
+              {isZeroPayment ? (
+                <Text style={styles.inquiryNote}>
+                  {t("service_checkout.inquiry_note")}
+                </Text>
+              ) : (
+              /* Breakdown Section */
               <View style={styles.breakdownSection}>
                 <View style={styles.breakdownRow}>
                   <Text style={styles.breakdownLabel}>
                     {t("service_checkout.service_fee")}
                   </Text>
-                  {isServiceFeeWaived ? (
-                    displayVendorFee > 0 ? (
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 4,
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.breakdownValue,
-                            {
-                              textDecorationLine: "line-through",
-                              color: colors.textMuted,
-                            },
-                          ]}
-                        >
-                          ₹{displayVendorFee}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.breakdownValue,
-                            {
-                              color: isDarkMode ? colors.primary : "#2e7d32",
-                              fontFamily: Fonts.semiBold,
-                            },
-                          ]}
-                        >
-                          {" "}
-                          {t("service_checkout.free")}
-                        </Text>
-                      </View>
-                    ) : (
-                      <Text
-                        style={[
-                          styles.breakdownValue,
-                          {
-                            color: isDarkMode ? colors.primary : "#2e7d32",
-                            fontFamily: Fonts.semiBold,
-                          },
-                        ]}
-                      >
-                        {t("service_checkout.free")}
-                      </Text>
-                    )
+                  {displayVendorFee <= 0 ? (
+                    <Text
+                      style={[
+                        styles.breakdownValue,
+                        {
+                          color: isDarkMode ? colors.primary : "#2e7d32",
+                          fontFamily: Fonts.semiBold,
+                        },
+                      ]}
+                    >
+                      {t("service_checkout.free")}
+                    </Text>
                   ) : (
                     <Text style={styles.breakdownValue}>
                       ₹{displayVendorFee.toLocaleString("en-IN")}
@@ -1638,8 +1605,9 @@ export default function ServiceCheckoutScreen() {
                   </Text>
                 )}
               </View>
+              )}
 
-              {couponApplied && (
+              {!isZeroPayment && couponApplied && (
                 <View style={styles.row}>
                   <Text
                     style={[
@@ -1659,20 +1627,22 @@ export default function ServiceCheckoutScreen() {
                   </Text>
                 </View>
               )}
-              <View style={[styles.row, styles.totalRow]}>
-                <Text style={styles.totalLabel}>
-                  {t("service_checkout.total")}
-                </Text>
-                <Text style={styles.totalValue}>
-                  ₹
-                  {(amountWithTaxAndFee - discount).toLocaleString("en-IN", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
-                  })}
-                </Text>
-              </View>
+              {!isZeroPayment && (
+                <View style={[styles.row, styles.totalRow]}>
+                  <Text style={styles.totalLabel}>
+                    {t("service_checkout.total")}
+                  </Text>
+                  <Text style={styles.totalValue}>
+                    ₹
+                    {(amountWithTaxAndFee - discount).toLocaleString("en-IN", {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    })}
+                  </Text>
+                </View>
+              )}
 
-              {benefitApplied && totalFeeSavings > 0 && (
+              {!isZeroPayment && benefitApplied && totalFeeSavings > 0 && (
                 <View style={styles.savingsBadge}>
                   <Text style={styles.savingsText}>
                     {t("service_checkout.you_saved_fees", {
@@ -2537,6 +2507,13 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) =>
       color: isDarkMode ? colors.primary : "#2e7d32",
       textAlign: "right",
       marginTop: -2,
+    },
+    inquiryNote: {
+      fontFamily: Fonts.regular,
+      fontSize: FontSize.caption,
+      color: colors.textMuted,
+      marginTop: Spacing.sm,
+      lineHeight: 18,
     },
     savingsBadge: {
       backgroundColor: isDarkMode ? "rgba(52, 199, 89, 0.1)" : "#E8F5E9",

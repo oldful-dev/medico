@@ -223,6 +223,12 @@ export const PlusCircleIcon: React.FC<IconProps> = ({ size = 24, color = "#4F46E
     </Svg>
 );
 
+export const MealIcon: React.FC<IconProps> = ({ size = 24, color = "#D97706" }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Path fill={color} d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z" />
+    </Svg>
+);
+
 // Map of canonical benefitCode to SVG components
 export const BENEFIT_SVG_MAP: Record<string, React.FC<IconProps>> = {
     SOS: SOSIcon,
@@ -287,6 +293,8 @@ export const BENEFIT_SVG_MAP: Record<string, React.FC<IconProps>> = {
     CLOCK: ClockIcon,
     COFFEE: CoffeeIcon,
     SHIELD: ShieldIcon,
+    MEAL_SERVICE: MealIcon,
+    MEAL: MealIcon,
 };
 
 export function renderBenefitSvg(code: string, size = 18, color?: string) {

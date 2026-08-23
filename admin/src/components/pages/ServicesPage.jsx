@@ -303,6 +303,17 @@ export default function ServicesPage() {
 
     const handleSaveDynamic = async (e) => {
         e.preventDefault();
+
+        // PAID mode must have a real charge amount — Razorpay can't process a
+        // ₹0 order, so this combination would silently break checkout.
+        // (INQUIRY mode with a non-zero base price is intentional and fine —
+        // it's shown as a reference price while the actual charge/quota is
+        // decided server-side.)
+        if (form.paymentMode === "PAID" && (!form.basePrice || parseFloat(form.basePrice) <= 0)) {
+            showToast("PAID services need a Base Price greater than ₹0 — Razorpay can't charge ₹0. Switch to INQUIRY mode or set a real price.", "error");
+            return;
+        }
+
         try {
             // Build dynamic route automatically
             const routeVal = form.route || `/dynamic-service/${form.slug}`;
@@ -779,6 +790,15 @@ export default function ServicesPage() {
                                                     onChange={e => setForm({ ...form, pricingText: e.target.value })}
                                                 />
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {form.paymentMode === "PAID" && (!form.basePrice || parseFloat(form.basePrice) <= 0) && (
+                                        <div style={{
+                                            marginBottom: "16px", fontSize: 13, padding: "10px 14px", borderRadius: 8,
+                                            background: "rgba(255, 193, 7, 0.12)", color: "#B8860B",
+                                        }}>
+                                            ⚠️ PAID mode requires a Base Price above ₹0 — Razorpay cannot charge ₹0. This service can&apos;t be saved until you set a real price or switch to INQUIRY mode.
                                         </div>
                                     )}
 

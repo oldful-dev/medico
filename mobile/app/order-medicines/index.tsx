@@ -198,6 +198,7 @@ export default function OrderMedicinesScreen() {
                     amount: String(servicePrice),
                     label: serviceName,
                     checkoutGroup: dbService?.checkoutGroup || 'D',
+                    paymentMode: dbService?.paymentMode || 'INQUIRY',
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });

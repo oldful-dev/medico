@@ -150,6 +150,7 @@ export default function MealServiceScreen() {
                     amount: String(servicePrice),
                     label: serviceName || 'Meal Service',
                     checkoutGroup: dbService?.checkoutGroup || 'D',
+                    paymentMode: dbService?.paymentMode || 'INQUIRY',
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
