@@ -9,7 +9,8 @@ const serviceActionMap = {
   BILL_PAYMENT: "BILL_PAYMENT",
   TECH_SUPPORT: "TECH_SUPPORT",
   GROCERY_ASSISTANCE: "GROCERY_ASSIST",
-  HOME_AUDIT: "HOME_AUDIT"
+  HOME_AUDIT: "HOME_AUDIT",
+  MEAL_SERVICE: "MEAL_SERVICE"
 };
 
 const serviceSlugMap = {
@@ -33,6 +34,7 @@ const serviceSlugMap = {
   "sanitisation": "SANITATION",
   "deep-cleaning": "DEEP_CLEANING",
   "home-audit": "HOME_AUDIT",
+  "meal-service": "MEAL_SERVICE",
   "anything-else": "CUSTOM_REQUEST",
   "test": "CUSTOM_REQUEST",
   

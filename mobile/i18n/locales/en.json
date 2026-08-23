@@ -1400,6 +1400,8 @@
   "service_checkout": {
     "header": "Checkout",
     "service_summary": "Service Summary",
+    "booking_request_title": "Booking Request",
+    "inquiry_note": "No payment now — we'll contact you to confirm final pricing and details.",
     "booking_fee": "Booking Fee",
     "platform_fee": "Platform Fee",
     "taxes_gst": "Taxes & GST",

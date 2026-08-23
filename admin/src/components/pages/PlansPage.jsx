@@ -33,6 +33,7 @@ const BENEFIT_CODES = [
     { code: "SANITATION",             label: "Washroom Sanitation" },
     { code: "HOME_AUDIT",             label: "Home Safety Audit" },
     { code: "CUSTOM_REQUEST",         label: "Custom Request" },
+    { code: "MEAL_SERVICE",           label: "Meal Service" },
 ];
 
 const USAGE_PERIODS = [
