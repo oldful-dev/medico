@@ -111,6 +111,7 @@ export default function AccountScreen() {
 
     const [publishedDocs, setPublishedDocs] = useState<LegalDocument[]>([]);
     const [loadingDocs, setLoadingDocs] = useState(false);
+    const [emailingMyData, setEmailingMyData] = useState(false);
 
     // Native Alert.alert is globally muted app-wide (see app/_layout.tsx)
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
@@ -288,6 +289,26 @@ export default function AccountScreen() {
                 router.replace('/(auth)/login' as any);
             },
         });
+    };
+
+    const handleDownloadMyData = async () => {
+        if (emailingMyData) return;
+        setEmailingMyData(true);
+        try {
+            const res = await userService.emailMyData();
+            if (res.success) {
+                triggerAlert(t('account.download_data_title'), t('account.download_data_success'), 'mail-outline');
+            } else {
+                triggerAlert(t('common.error'), res.message || t('account.download_data_failed'));
+            }
+        } catch (err: any) {
+            const handled = await handleApiError(err);
+            if (!handled) {
+                triggerAlert(t('common.error'), err.message || t('account.download_data_failed'));
+            }
+        } finally {
+            setEmailingMyData(false);
+        }
     };
 
     const handleDeleteAccount = () => {
@@ -714,6 +735,10 @@ export default function AccountScreen() {
                         title={t('account.view_documents')} onPress={() => router.push('/profile/view-documents' as any)} colors={colors} />
                     <MenuRow icon="download-outline" iconBg={isDarkMode ? '#0A1A00' : '#F1F8E9'} iconColor="#558B2F"
                         title={t('account.download_documents')} onPress={() => router.push('/profile/download-documents' as any)} colors={colors} />
+                    <MenuRow icon={emailingMyData ? 'hourglass-outline' : 'mail-outline'} iconBg={isDarkMode ? '#0C1F1A' : '#E6F4EA'} iconColor="#0B8043"
+                        title={t('account.download_your_data')}
+                        subtitle={t('account.download_your_data_sub')}
+                        onPress={handleDownloadMyData} colors={colors} />
                 </DropdownSection>
 
                 {/* ═══════════════════════════════════════

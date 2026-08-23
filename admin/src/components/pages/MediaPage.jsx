@@ -1,8 +1,17 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Upload, Trash2, Copy, Image, FileText, Film, Info, X, Users, Settings, Search, ExternalLink } from "lucide-react";
-import { mediaAPI, userAPI } from "@/lib/api";
+import { Upload, Trash2, Copy, Image, FileText, Film, Info, X, Users, Settings, Search, ExternalLink, UserSquare2, ChevronDown } from "lucide-react";
+import { mediaAPI, userAPI, profilesAPI, adminAPI } from "@/lib/api";
 import { showToast, formatDateTime } from "@/lib/hooks";
+
+// Caregivers/field staff carry all 4; internal Admin accounts only carry the first 2
+// (Aadhaar/PAN) — police verification & certification aren't applicable to portal-login staff.
+const EMPLOYEE_DOC_FIELDS = [
+    { key: 'aadhaarUrl', label: 'Aadhaar Card' },
+    { key: 'panUrl', label: 'PAN Card' },
+    { key: 'policeVerificationUrl', label: 'Police Verification' },
+    { key: 'certificationUrl', label: 'Certification' },
+];
 
 function formatSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
@@ -11,9 +20,11 @@ function formatSize(bytes) {
 }
 
 export default function MediaPage() {
-    const [activeTab, setActiveTab] = useState("system"); // system | client
+    const [activeTab, setActiveTab] = useState("system"); // system | client | employee
     const [assets, setAssets] = useState([]);
+    const [folders, setFolders] = useState([]);
     const [clientReports, setClientReports] = useState([]);
+    const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Filters for System Assets
@@ -25,18 +36,26 @@ export default function MediaPage() {
     const [clientSearch, setClientSearch] = useState('');
     const [clientCategory, setClientCategory] = useState('');
 
+    // Filters for Employee Documents
+    const [employeeSearch, setEmployeeSearch] = useState('');
+    const [expandedEmployeeId, setExpandedEmployeeId] = useState(null);
+
     const [uploading, setUploading] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
 
     const loadSystemAssets = useCallback(async () => {
         try {
             setLoading(true);
-            const params = {};
+            const params = { sortBy: 'name' }; // A-Z by default so large libraries stay browsable
             if (folderFilter) params.folder = folderFilter;
             if (typeFilter) params.fileType = typeFilter;
             if (searchFilter) params.search = searchFilter;
-            const r = await mediaAPI.getAll(params);
+            const [r, f] = await Promise.all([
+                mediaAPI.getAll(params),
+                mediaAPI.getFolders(),
+            ]);
             setAssets(r.data?.data || r.data?.pagination?.data || []);
+            setFolders(f.data?.data || []);
         } catch (e) {
             console.error('Failed to load media:', e);
             showToast('Failed to load media assets', 'error');
@@ -61,13 +80,41 @@ export default function MediaPage() {
         }
     }, [clientSearch, clientCategory]);
 
+    const loadEmployees = useCallback(async () => {
+        try {
+            setLoading(true);
+            // Two separate tables hold "employees": Caregiver (field workforce — nurses,
+            // doctors, drivers) via Staff Management, and Admin (internal portal-login
+            // staff — CARE_MANAGER, BILLING_EXECUTIVE, etc.) via Role & Access Management.
+            const [caregiverRes, adminRes] = await Promise.all([
+                profilesAPI.getAll({ role: 'staff', search: employeeSearch, sortBy: 'name', order: 'asc', limit: 200 }),
+                adminAPI.getAll(),
+            ]);
+            const caregivers = (caregiverRes.data?.data || []).map(c => ({ ...c, employeeType: 'Field Staff' }));
+            let admins = (adminRes.data?.data || []).map(a => ({ ...a, employeeType: 'Internal Admin' }));
+            if (employeeSearch) {
+                const q = employeeSearch.toLowerCase();
+                admins = admins.filter(a => a.name?.toLowerCase().includes(q) || a.id?.toLowerCase().includes(q) || a.email?.toLowerCase().includes(q));
+            }
+            const combined = [...caregivers, ...admins].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            setEmployees(combined);
+        } catch (e) {
+            console.error('Failed to load employee documents:', e);
+            showToast('Failed to load employee documents', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }, [employeeSearch]);
+
     useEffect(() => {
         if (activeTab === "system") {
             loadSystemAssets();
-        } else {
+        } else if (activeTab === "client") {
             loadClientReports();
+        } else {
+            loadEmployees();
         }
-    }, [activeTab, loadSystemAssets, loadClientReports]);
+    }, [activeTab, loadSystemAssets, loadClientReports, loadEmployees]);
 
     async function handleUpload(e) {
         const file = e.target.files[0];
@@ -150,7 +197,7 @@ export default function MediaPage() {
         <div>
             <div className="page-header">
                 <h2>Content & Media Library</h2>
-                <p>Manage system marketing assets and view client medical uploads securely hosted on Google Cloud Storage</p>
+                <p>Manage system assets, client medical uploads, and employee compliance documents securely hosted on Google Cloud Storage</p>
             </div>
 
             {/* Navigation Tabs */}
@@ -161,6 +208,13 @@ export default function MediaPage() {
                     style={{ display: "flex", alignItems: "center", gap: 8 }}
                 >
                     <Settings size={16} /> System Assets
+                </button>
+                <button
+                    className={`btn ${activeTab === "employee" ? "btn-primary" : "btn-secondary"}`}
+                    onClick={() => setActiveTab("employee")}
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                >
+                    <UserSquare2 size={16} /> Employee Documents
                 </button>
                 <button
                     className={`btn ${activeTab === "client" ? "btn-primary" : "btn-secondary"}`}
@@ -180,11 +234,8 @@ export default function MediaPage() {
                             <input type="file" hidden onChange={handleUpload} disabled={uploading} />
                         </label>
                         <select className="form-select" style={{ minWidth: 160 }} value={folderFilter} onChange={e => setFolderFilter(e.target.value)}>
-                            <option value="">All Folders</option>
-                            <option value="general">General</option>
-                            <option value="services">Services</option>
-                            <option value="banners">Banners</option>
-                            <option value="products">Products</option>
+                            <option value="">All Folders/Sources ({folders.length})</option>
+                            {folders.map(f => <option key={f} value={f}>{f}</option>)}
                         </select>
                         <select className="form-select" style={{ minWidth: 140 }} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
                             <option value="">All Types</option>
@@ -244,6 +295,98 @@ export default function MediaPage() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                </>
+            ) : activeTab === "employee" ? (
+                /* ─── EMPLOYEE DOCUMENTS VIEW ─── */
+                <>
+                    <div className="filter-bar" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+                        <div style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
+                            <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                            <input
+                                type="text"
+                                className="form-input"
+                                style={{ paddingLeft: 32 }}
+                                placeholder="Search Employee ID, name, phone..."
+                                value={employeeSearch}
+                                onChange={e => setEmployeeSearch(e.target.value)}
+                            />
+                        </div>
+                        {employeeSearch && (
+                            <button className="btn btn-sm btn-secondary" onClick={() => setEmployeeSearch('')}>
+                                <X size={14} /> Clear
+                            </button>
+                        )}
+                    </div>
+
+                    {loading ? (
+                        <div style={{ textAlign: "center", padding: 48, background: "var(--bg-secondary)", borderRadius: 12, color: "var(--text-muted)" }}>Loading employee documents...</div>
+                    ) : employees.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: 48, background: "var(--bg-secondary)", borderRadius: 12, color: "var(--text-muted)" }}>No employees found</div>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {employees.map(emp => {
+                                let docs = {};
+                                try {
+                                    docs = typeof emp.documentsJson === 'string' ? JSON.parse(emp.documentsJson || '{}') : (emp.documentsJson || {});
+                                } catch (e) { docs = {}; }
+                                // Internal Admin accounts only ever carry Aadhaar/PAN; police
+                                // verification & certification are field-staff-only concepts.
+                                const applicableFields = emp.employeeType === 'Internal Admin'
+                                    ? EMPLOYEE_DOC_FIELDS.slice(0, 2)
+                                    : EMPLOYEE_DOC_FIELDS;
+                                const docCount = applicableFields.filter(f => docs[f.key]).length;
+                                const isOpen = expandedEmployeeId === emp.id;
+                                return (
+                                    <div key={emp.id} className="card" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 0, overflow: "hidden" }}>
+                                        <div
+                                            onClick={() => setExpandedEmployeeId(isOpen ? null : emp.id)}
+                                            style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", cursor: "pointer" }}
+                                        >
+                                            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                                                {emp.profileImageUrl
+                                                    ? <img src={emp.profileImageUrl} alt={emp.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                                    : <UserSquare2 size={18} className="text-muted" />}
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 13.5 }}>{emp.name}</div>
+                                                <div style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", gap: 10, marginTop: 2, alignItems: "center" }}>
+                                                    <span>Employee ID: <code style={{ color: "var(--accent-primary-light)" }}>{emp.id}</code></span>
+                                                    <span>{emp.role}</span>
+                                                    <span className="badge badge-default" style={{ fontSize: 9 }}>{emp.employeeType}</span>
+                                                </div>
+                                            </div>
+                                            <span className={`badge ${docCount === applicableFields.length ? "badge-success" : docCount > 0 ? "badge-warning" : "badge-danger"}`} style={{ fontSize: 10, flexShrink: 0 }}>
+                                                {docCount}/{applicableFields.length} Docs
+                                            </span>
+                                            <ChevronDown size={16} style={{ color: "var(--text-muted)", transition: "transform var(--transition-fast)", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />
+                                        </div>
+
+                                        {isOpen && (
+                                            <div style={{ padding: "0 16px 16px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
+                                                {applicableFields.map(f => (
+                                                    <div key={f.key} style={{ background: "rgba(0,0,0,0.12)", borderRadius: 8, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                                                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{f.label}</span>
+                                                        {docs[f.key] ? (
+                                                            <div style={{ display: "flex", gap: 6 }}>
+                                                                <a href={docs[f.key]} target="_blank" rel="noreferrer" className="btn btn-sm btn-secondary" style={{ flex: 1, padding: 6, fontSize: 11, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                                                                    <ExternalLink size={11} /> View
+                                                                </a>
+                                                                <button className="btn btn-sm btn-secondary" style={{ padding: 6 }} onClick={() => copyUrl(docs[f.key])} title="Copy URL">
+                                                                    <Copy size={11} />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <span style={{ fontSize: 11, color: "var(--accent-danger, #e05252)" }}>Not uploaded</span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </>

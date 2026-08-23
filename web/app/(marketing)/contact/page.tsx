@@ -3,13 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Phone, Mail, MessageSquare, Search,
+  Phone, Mail, MessageSquare, Search, ChevronRight,
   CheckCircle, Info, BadgeHelp, CheckCircle2, MapPin, Building, Loader2
 } from 'lucide-react';
 
-const STATIC_FAQ_DATA = [
-  { id: 'about',    q: 'What is Ayuxa Health Tech Platforms?', a: 'Ayuxa is a specialized elder care platform offering comprehensive caregiver support, doctors profiles, nurse profiles, and community activities to keep senior citizens safe and healthy.' },
-  { id: 'profiles', q: 'Are caregiver and doctor profiles verified?', a: 'Yes, all profiles listed on Ayuxa undergo rigorous verification, including official police verification and qualification checks.' },
+interface FAQItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+const FALLBACK_FAQ_DATA: FAQItem[] = [
+  { id: 'about',    question: 'What is Ayuxa Health Tech Platforms?', answer: 'Ayuxa is a specialized elder care platform offering comprehensive caregiver support, doctors profiles, nurse profiles, and community activities to keep senior citizens safe and healthy.' },
+  { id: 'profiles', question: 'Are caregiver and doctor profiles verified?', answer: 'Yes, all profiles listed on Ayuxa undergo rigorous verification, including official police verification and qualification checks.' },
 ];
 
 const SUPPORT_PROMISE = [
@@ -35,11 +41,13 @@ export default function ContactPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [settings, setSettings] = useState<typeof FALLBACK_SETTINGS | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dynamicFaqs, setDynamicFaqs] = useState<FAQItem[] | null>(null);
 
   useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
     const fetchSettings = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
         const res = await fetch(`${apiUrl}/ui-config/published?t=${Date.now()}`, { cache: 'no-store' });
         const json = await res.json();
         let resolved = FALLBACK_SETTINGS;
@@ -72,7 +80,21 @@ export default function ContactPage() {
         setLoading(false);
       }
     };
+
+    const fetchFaqs = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/faqs/published?t=${Date.now()}`, { cache: 'no-store' });
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setDynamicFaqs(json.data.map((f: { id: string; question: string; answer: string }) => ({ id: f.id, question: f.question, answer: f.answer })));
+        }
+      } catch (err) {
+        console.error("Failed to load FAQs:", err);
+      }
+    };
+
     fetchSettings();
+    fetchFaqs();
   }, []);
 
   if (loading || !settings) {
@@ -83,15 +105,15 @@ export default function ContactPage() {
     );
   }
 
-  const faqData = [
-    ...STATIC_FAQ_DATA,
-    { id: 'careers',  q: 'How do I apply for open positions?', a: `Visit our Careers page to view current job listings and send your profile to ${settings.emails.careers}.` },
-    { id: 'enquiry',  q: 'Whom should I contact for general queries?', a: `For any general inquiries, please email us at ${settings.emails.enquiries} or call our care line at ${settings.customer_care}.` },
+  const faqData: FAQItem[] = dynamicFaqs ?? [
+    ...FALLBACK_FAQ_DATA,
+    { id: 'careers',  question: 'How do I apply for open positions?', answer: `Visit our Careers page to view current job listings and send your profile to ${settings.emails.careers}.` },
+    { id: 'enquiry',  question: 'Whom should I contact for general queries?', answer: `For any general inquiries, please email us at ${settings.emails.enquiries} or call our care line at ${settings.customer_care}.` },
   ];
 
   const filteredFAQs = faqData.filter(f =>
-    f.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    f.a.toLowerCase().includes(searchQuery.toLowerCase())
+    f.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    f.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -174,12 +196,15 @@ export default function ContactPage() {
                 <BadgeHelp className="w-5 h-5 text-emerald-500" />
                 Common Queries
               </h2>
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {(searchQuery ? filteredFAQs : faqData).map((faq) => (
-                  <div key={faq.id} className="group cursor-default border-b border-gray-50 pb-6 last:border-0 last:pb-0">
-                    <h3 className="text-sm md:text-base font-bold text-gray-900 mb-2 group-hover:text-[var(--color-primary)] transition-colors">{faq.q}</h3>
-                    <p className="text-xs md:text-sm text-gray-500 leading-relaxed">{faq.a}</p>
-                  </div>
+                  <details key={faq.id} className="group bg-gray-50/50 rounded-2xl border border-gray-100 overflow-hidden">
+                    <summary className="flex items-center justify-between gap-4 p-5 cursor-pointer font-bold text-sm md:text-base text-gray-900 list-none hover:bg-emerald-50/50 transition-colors">
+                      {faq.question}
+                      <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 group-open:rotate-90 transition-transform" />
+                    </summary>
+                    <p className="px-5 pb-5 text-xs md:text-sm text-gray-500 leading-relaxed">{faq.answer}</p>
+                  </details>
                 ))}
                 {searchQuery && filteredFAQs.length === 0 && (
                   <div className="text-center py-10 text-gray-400">

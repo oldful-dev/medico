@@ -46,6 +46,15 @@ const sendPaymentReceipt = ({ to, name, invoiceNumber, amount, paymentId, invoic
         userId,
     });
 
+const sendDataExport = ({ to, name, uniqueUserId, userId, pdfBuffer }) =>
+    sendEmail({
+        to,
+        subject: EMAIL_TEMPLATES.DATA_EXPORT.subject(),
+        html: EMAIL_TEMPLATES.DATA_EXPORT.html({ name, uniqueUserId }),
+        userId,
+        attachments: [{ content: pdfBuffer, mimeType: 'application/pdf', name: 'ayuxa-my-data.pdf' }],
+    });
+
 const sendPlanExpiryReminder = ({ to, name, planName, daysLeft, expiryDate, userId }) =>
     sendEmail({
         to,
@@ -130,6 +139,7 @@ module.exports = {
     sendBookingConfirmation,
     sendBookingConfirmationAdmin,
     sendPaymentReceipt,
+    sendDataExport,
     sendPlanExpiryReminder,
     sendSupportTicketToAdmin,
     sendUserReplyNotifyAdmin,

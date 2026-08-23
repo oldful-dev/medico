@@ -14,6 +14,8 @@ router.put('/profile/avatar', authenticateUser, upload.single('avatar'), ctrl.up
 router.put('/profile/device-token', authenticateUser, ctrl.registerDeviceToken);
 router.get('/profile/health-reports', authenticateUser, ctrl.getMyHealthReports);
 router.get('/profile/export-data', authenticateUser, ctrl.exportMyData);
+router.get('/profile/export-data-pdf', authenticateUser, ctrl.exportMyDataPDF);
+router.post('/profile/email-my-data', authenticateUser, ctrl.emailMyData);
 
 router.get('/admin/health-reports', authenticateAdmin, ctrl.getAllHealthReports);
 router.get('/health-reports/:reportId/view-url', authenticateAdmin, ctrl.getHealthReportViewUrl);

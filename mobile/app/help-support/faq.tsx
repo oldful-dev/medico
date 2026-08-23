@@ -10,6 +10,7 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { getText } from '@/i18n/utils/getText';
+import { faqService, FAQItem } from '@/services/api/faqService';
 
 export default function FAQScreen() {
     const router = useRouter();
@@ -20,12 +21,28 @@ export default function FAQScreen() {
     const styles = makeStyles(colors, isDarkMode);
     const { t } = useTranslation();
 
-    const faqs = [...helpSupportConfig.faqs].sort((a, b) => a.sort_order - b.sort_order);
+    // Fallback keeps the screen usable instantly / offline; admin-managed FAQs replace it once fetched.
+    const fallbackFaqs: FAQItem[] = [...helpSupportConfig.faqs]
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map(f => ({ id: f.id, question: getText(f.q), answer: getText(f.a), category: 'GENERAL', order: f.sort_order, isActive: true }));
+
+    const [faqs, setFaqs] = React.useState<FAQItem[]>(fallbackFaqs);
     const [searchQuery, setSearchQuery] = React.useState('');
+    const [expandedId, setExpandedId] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        faqService.getPublished().then(res => {
+            if (res.success && res.data && res.data.length > 0) {
+                setFaqs(res.data);
+            }
+        }).catch(() => {
+            // Keep fallback FAQs on network failure
+        });
+    }, []);
 
     const filteredFAQs = faqs.filter(f =>
-        getText(f.q).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getText(f.a).toLowerCase().includes(searchQuery.toLowerCase())
+        f.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        f.answer.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -61,12 +78,29 @@ export default function FAQScreen() {
                         {searchQuery.length > 0 ? t('help_support.search_results') : t('help_support.faqs')}
                     </Text>
 
-                    {filteredFAQs.map(item => (
-                        <View key={item.id} style={styles.faqCard}>
-                            <Text style={styles.faqQuestion}>{getText(item.q)}</Text>
-                            <Text style={styles.faqAnswer}>{getText(item.a)}</Text>
-                        </View>
-                    ))}
+                    {filteredFAQs.map(item => {
+                        const isOpen = expandedId === item.id;
+                        return (
+                            <TouchableOpacity
+                                key={item.id}
+                                style={styles.faqCard}
+                                activeOpacity={0.7}
+                                onPress={() => setExpandedId(isOpen ? null : item.id)}
+                            >
+                                <View style={styles.faqQuestionRow}>
+                                    <Text style={styles.faqQuestion}>{item.question}</Text>
+                                    <Ionicons
+                                        name={isOpen ? 'chevron-up' : 'chevron-down'}
+                                        size={18}
+                                        color={colors.textMuted}
+                                    />
+                                </View>
+                                {isOpen && (
+                                    <Text style={styles.faqAnswer}>{item.answer}</Text>
+                                )}
+                            </TouchableOpacity>
+                        );
+                    })}
 
                     {filteredFAQs.length === 0 && (
                         <Text style={styles.noResults}>{t('help_support.no_results')}</Text>
@@ -111,8 +145,9 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         shadowRadius: 2,
         elevation: 1,
     },
-    faqQuestion:{ fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark, marginBottom: 4 },
-    faqAnswer:  { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textBody, lineHeight: 20 },
+    faqQuestionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
+    faqQuestion:{ flex: 1, fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark },
+    faqAnswer:  { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textBody, lineHeight: 20, marginTop: Spacing.sm },
     noResults:  { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textMuted, textAlign: 'center', marginTop: Spacing.xl },
     bottomSpacer: { height: 60 },
 });

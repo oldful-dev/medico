@@ -7,6 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { legalService, LegalDocument } from '@/services/api/legalService';
 import { userService } from '@/services/api/userService';
+import { apiClient } from '@/services/api/apiClient';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import RenderHtml from 'react-native-render-html';
@@ -36,16 +37,20 @@ export default function LegalDetailScreen() {
         if (downloadingData) return;
         setDownloadingData(true);
         try {
-            const res = await userService.exportMyData();
-            if (!res.success || !res.data) {
-                Alert.alert(t('common.error'), res.message || t('legal.failed_load'));
+            const fileUri = FileSystem.cacheDirectory + `ayuxa-my-data-${Date.now()}.pdf`;
+            const result = await FileSystem.downloadAsync(
+                `${apiClient.getBaseUrl()}/users/profile/export-data-pdf`,
+                fileUri,
+                { headers: { Authorization: `Bearer ${apiClient.getAuthToken()}` } }
+            );
+
+            if (result.status !== 200) {
+                Alert.alert(t('common.error'), t('legal.failed_load'));
                 return;
             }
-            const fileUri = FileSystem.cacheDirectory + `ayuxa-my-data-${Date.now()}.json`;
-            await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(res.data, null, 2));
 
             if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(fileUri, { mimeType: 'application/json', dialogTitle: 'My Ayuxa Data' });
+                await Sharing.shareAsync(fileUri, { mimeType: 'application/pdf', dialogTitle: 'My Ayuxa Data' });
             } else {
                 Alert.alert(t('legal.download_title') || 'Download Ready', `Saved to: ${fileUri}`);
             }

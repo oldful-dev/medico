@@ -62,7 +62,7 @@ const getAdminById = async (req, res, next) => {
 // PUT /api/admin/:id
 const updateAdmin = async (req, res, next) => {
     try {
-        const { name, email, phone, role, cityId, isActive } = req.body;
+        const { name, email, phone, role, cityId, isActive, documentsJson } = req.body;
         const data = {};
         if (name !== undefined) data.name = name;
         if (email !== undefined) data.email = email;
@@ -70,6 +70,7 @@ const updateAdmin = async (req, res, next) => {
         if (role !== undefined) data.role = role;
         if (cityId !== undefined) data.cityId = cityId;
         if (isActive !== undefined) data.isActive = isActive;
+        if (documentsJson !== undefined) data.documentsJson = documentsJson;
 
         const admin = await prisma.admin.update({
             where: { id: req.params.id },

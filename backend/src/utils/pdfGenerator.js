@@ -12,6 +12,13 @@ const puppeteer = require('puppeteer');
 const fontLoader = require('./fontLoader');
 const imageLoader = require('./imageLoader');
 
+// Full Ayuxa wordmark (icon + "AYUXA" + tagline), inlined as base64 so PDF
+// generation has no network dependency. Same asset as mobile/utils/medicalCardPDF.ts,
+// trimmed/resized from web/public/PNG TRANS.png (see AYUXA_LOGO_BASE64_PATH below
+// for regeneration steps if the source logo ever changes).
+// Regeneration: sharp(sourcePng).trim().resize({ height: 200 }).png().toBuffer() -> base64
+const AYUXA_LOGO_BASE64 = require('fs').readFileSync(require('path').join(__dirname, 'ayuxa-logo-base64.txt'), 'utf8').trim();
+
 /**
  * Generate GST Invoice PDF using Puppeteer with self-contained Base64 assets
  * @returns {Promise<Buffer>}
@@ -530,11 +537,13 @@ const generateInvoicePDF = async (invoiceData) => {
         await page.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 15000 });
 
         console.log('[PUPPETEER_LOG] Rendering PDF page...');
-        const pdfBuffer = await page.pdf({
+        // Puppeteer 22+ returns a Uint8Array, not a Node Buffer — wrap it so
+        // downstream .toString('base64') (email attachments, etc.) works correctly.
+        const pdfBuffer = Buffer.from(await page.pdf({
             width: '595px',
             height: '842px',
             printBackground: true
-        });
+        }));
         console.log('[PUPPETEER_LOG] PDF rendered. Size:', pdfBuffer.length);
 
         await browser.close();
@@ -903,11 +912,12 @@ const generateWelcomeSLAPDF = async (userData) => {
         });
         const page = await browser.newPage();
         await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-        const pdfBuffer = await page.pdf({
+        // Puppeteer 22+ returns a Uint8Array, not a Node Buffer.
+        const pdfBuffer = Buffer.from(await page.pdf({
             width: '595px',
             height: '842px',
             printBackground: true
-        });
+        }));
         await browser.close();
         return pdfBuffer;
     } catch (error) {
@@ -916,4 +926,225 @@ const generateWelcomeSLAPDF = async (userData) => {
     }
 };
 
-module.exports = { generateInvoicePDF, generateWelcomeSLAPDF };
+/**
+ * Generate a "Your Data" export PDF — a readable summary of the user's
+ * complete personal data (Right to Access Data), used both for the
+ * in-app Legal CMS download and the emailed copy from Profile.
+ * @param {object} userData - the raw output of exportMyData (profile + related records)
+ * @returns {Promise<Buffer>}
+ */
+const generateUserDataExportPDF = async (userData) => {
+    let browser;
+    try {
+        const generatedDate = new Date().toLocaleDateString('en-IN', {
+            day: '2-digit', month: 'long', year: 'numeric'
+        }).toUpperCase();
+
+        const esc = (v) => {
+            if (v === null || v === undefined || v === '') return '—';
+            return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        };
+        const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+
+        // Two-column info card — used for the Profile block up top.
+        const infoCard = (rows) => `
+            <div class="info-card">
+                ${rows.map(([label, value]) => `
+                    <div class="info-row">
+                        <span class="info-label">${esc(label)}</span>
+                        <span class="info-value">${esc(value)}</span>
+                    </div>`).join('')}
+            </div>`;
+
+        // Section wrapper: colored accent bar + title + item count pill.
+        const sectionShell = (title, count, body) => `
+            <div class="section">
+                <div class="section-head">
+                    <span class="section-title">${esc(title)}</span>
+                    ${count !== undefined ? `<span class="count-pill">${count}</span>` : ''}
+                </div>
+                ${body}
+            </div>`;
+
+        const listSection = (title, items, columns) => {
+            if (!items || items.length === 0) return '';
+            return sectionShell(title, items.length, `
+                <table class="list-table">
+                    <thead><tr>${columns.map(c => `<th>${esc(c.label)}</th>`).join('')}</tr></thead>
+                    <tbody>
+                        ${items.map(item => `<tr>${columns.map(c => `<td>${esc(c.value(item))}</td>`).join('')}</tr>`).join('')}
+                    </tbody>
+                </table>`);
+        };
+
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+
+                :root {
+                    --primary: #0B5135;
+                    --primary-light: #E6F1EC;
+                    --accent: #DC2626;
+                    --text: #1F2937;
+                    --muted: #6B7280;
+                    --border: #E5E7EB;
+                }
+
+                body { font-family: 'Montserrat', sans-serif; color: var(--text); font-size: 11px; -webkit-print-color-adjust: exact; }
+                .page { padding: 36px 44px 30px; }
+
+                /* ── Header ── */
+                .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 18px; margin-bottom: 22px; border-bottom: 2.5px solid var(--primary); }
+                .logo-img { height: 34px; }
+                .meta { text-align: right; }
+                .meta-title { font-size: 10.5px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.6px; }
+                .meta-date { font-size: 9.5px; color: var(--muted); margin-top: 2px; }
+
+                /* ── Title block ── */
+                .doc-title { font-size: 19px; font-weight: 800; color: var(--primary); margin-bottom: 6px; letter-spacing: -0.2px; }
+                .doc-subtitle { font-size: 10.5px; color: var(--muted); line-height: 1.6; margin-bottom: 22px; max-width: 92%; }
+                .doc-subtitle .ref-id { color: var(--accent); font-weight: 700; }
+
+                /* ── Profile info card ── */
+                .info-card { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; background: var(--primary-light); border: 1px solid #CDE5DA; border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; }
+                .info-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(11,81,53,0.08); font-size: 10.5px; }
+                .info-row:nth-last-child(-n+1) { border-bottom: none; }
+                .info-label { color: var(--muted); font-weight: 600; }
+                .info-value { color: var(--text); font-weight: 600; text-align: right; }
+
+                /* ── Sections ── */
+                .section { margin-bottom: 16px; page-break-inside: avoid; }
+                .section-head { display: flex; align-items: center; gap: 8px; background: var(--primary); border-radius: 6px; padding: 7px 14px; margin-bottom: 10px; }
+                .section-title { color: #fff; font-size: 11.5px; font-weight: 700; letter-spacing: 0.2px; }
+                .count-pill { margin-left: auto; background: rgba(255,255,255,0.22); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+
+                table.list-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+                .list-table th { background: #F9FAFB; font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); font-weight: 700; text-align: left; padding: 7px 10px; border-bottom: 1.5px solid var(--border); }
+                .list-table td { font-size: 10px; padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+                .list-table tr:last-child td { border-bottom: none; }
+                .list-table tr:nth-child(even) td { background: #FAFBFC; }
+
+                /* ── Footer ── */
+                .footer { margin-top: 26px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 8.5px; color: #9CA3AF; text-align: center; line-height: 1.6; }
+                .footer strong { color: var(--muted); }
+            </style>
+        </head>
+        <body>
+            <div class="page">
+                <div class="header">
+                    <img src="data:image/png;base64,${AYUXA_LOGO_BASE64}" class="logo-img" />
+                    <div class="meta">
+                        <div class="meta-title">Personal Data Export</div>
+                        <div class="meta-date">Generated ${generatedDate}</div>
+                    </div>
+                </div>
+
+                <div class="doc-title">Your Complete Data — ${esc(userData.name)}</div>
+                <div class="doc-subtitle">This document contains all personal data Ayuxa holds against your account (Ref ID: <span class="ref-id">${esc(userData.uniqueUserId)}</span>), generated under your Right to Access Data.</div>
+
+                ${infoCard([
+                    ['Name', userData.name],
+                    ['Phone', userData.phone],
+                    ['Email', userData.email],
+                    ['Gender', userData.gender],
+                    ['Date of Birth', fmtDate(userData.dateOfBirth)],
+                    ['City', userData.city?.name],
+                    ['Account Created', fmtDate(userData.createdAt)],
+                    ['Account Status', userData.status],
+                ])}
+
+                ${listSection('Addresses', userData.addresses, [
+                    { label: 'Label', value: a => a.label },
+                    { label: 'Address', value: a => a.addressLine },
+                    { label: 'City', value: a => a.city },
+                    { label: 'Pincode', value: a => a.pincode },
+                ])}
+
+                ${listSection('Emergency Contacts', userData.emergencyContacts, [
+                    { label: 'Name', value: c => c.name },
+                    { label: 'Phone', value: c => c.phone },
+                    { label: 'Relationship', value: c => c.relationship },
+                ])}
+
+                ${listSection('Family Members', userData.familyMembers, [
+                    { label: 'Name', value: f => f.name },
+                    { label: 'Relationship', value: f => f.relationship },
+                    { label: 'Phone', value: f => f.phone },
+                ])}
+
+                ${listSection('Bookings', userData.bookings, [
+                    { label: 'Service', value: b => b.serviceType || b.category },
+                    { label: 'Status', value: b => b.status },
+                    { label: 'Date', value: b => fmtDate(b.scheduledDate || b.createdAt) },
+                    { label: 'Amount', value: b => b.totalAmount != null ? `₹${b.totalAmount}` : '—' },
+                ])}
+
+                ${listSection('Lab Orders', userData.labOrders, [
+                    { label: 'Status', value: o => o.status },
+                    { label: 'Date', value: o => fmtDate(o.createdAt) },
+                    { label: 'Amount', value: o => o.totalAmount != null ? `₹${o.totalAmount}` : '—' },
+                ])}
+
+                ${listSection('Product Orders', userData.productOrders, [
+                    { label: 'Status', value: o => o.status },
+                    { label: 'Date', value: o => fmtDate(o.createdAt) },
+                    { label: 'Amount', value: o => o.totalAmount != null ? `₹${o.totalAmount}` : '—' },
+                ])}
+
+                ${listSection('Payments', userData.payments, [
+                    { label: 'Status', value: p => p.status },
+                    { label: 'Date', value: p => fmtDate(p.createdAt) },
+                    { label: 'Amount', value: p => p.amount != null ? `₹${p.amount}` : '—' },
+                    { label: 'Method', value: p => p.paymentMethod },
+                ])}
+
+                ${listSection('Subscriptions', userData.subscriptions, [
+                    { label: 'Plan', value: s => s.plan?.name },
+                    { label: 'Status', value: s => s.status },
+                    { label: 'Started', value: s => fmtDate(s.createdAt) },
+                ])}
+
+                ${listSection('Insurance Applications', userData.insuranceApps, [
+                    { label: 'Status', value: i => i.status },
+                    { label: 'Date', value: i => fmtDate(i.createdAt) },
+                ])}
+
+                ${listSection('SOS Alerts', userData.sosAlerts, [
+                    { label: 'Status', value: s => s.status },
+                    { label: 'Date', value: s => fmtDate(s.createdAt) },
+                ])}
+
+                ${listSection('Saved Cards (metadata only)', userData.savedCards, [
+                    { label: 'Brand', value: c => c.cardBrand },
+                    { label: 'Last 4', value: c => c.cardLast4 },
+                    { label: 'Default', value: c => c.isDefault ? 'Yes' : 'No' },
+                ])}
+
+                <div class="footer">This export was generated automatically by Ayuxa in response to a data access request from your account.<br/><strong>Questions?</strong> Contact support@ayuxacare.com</div>
+            </div>
+        </body>
+        </html>
+        `;
+
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        // Puppeteer 22+ returns a Uint8Array, not a Node Buffer.
+        const pdfBuffer = Buffer.from(await page.pdf({ format: 'A4', printBackground: true, margin: { top: '10px', bottom: '10px' } }));
+        await browser.close();
+        return pdfBuffer;
+    } catch (error) {
+        if (browser) await browser.close().catch(() => {});
+        throw error;
+    }
+};
+
+module.exports = { generateInvoicePDF, generateWelcomeSLAPDF, generateUserDataExportPDF };
