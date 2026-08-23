@@ -64,7 +64,7 @@ export default function PhysioScreen() {
     );
     const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
-    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
+    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit, dbService } = useServiceInitialization('physio-fitness');
     const [isBooking, setIsBooking] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
@@ -152,6 +152,8 @@ export default function PhysioScreen() {
                     amount: String(servicePrice),
                     label: 'Physio',
                     serviceSlug: 'physio-fitness',
+                    ...(dbService?.paymentMode && { paymentMode: dbService.paymentMode }),
+                    ...(dbService?.checkoutGroup && { checkoutGroup: dbService.checkoutGroup }),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });

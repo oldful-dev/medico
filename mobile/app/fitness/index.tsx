@@ -49,7 +49,7 @@ export default function FitnessScreen() {
     );
     const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
-    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('fitness-wellness');
+    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit, dbService } = useServiceInitialization('fitness-wellness');
     const [isBooking, setIsBooking] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
@@ -135,6 +135,8 @@ export default function FitnessScreen() {
                     amount: String(servicePrice),
                     label: 'Fitness',
                     serviceSlug: 'fitness-wellness',
+                    ...(dbService?.paymentMode && { paymentMode: dbService.paymentMode }),
+                    ...(dbService?.checkoutGroup && { checkoutGroup: dbService.checkoutGroup }),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });

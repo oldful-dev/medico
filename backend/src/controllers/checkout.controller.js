@@ -17,6 +17,44 @@ const DIAGNOSTIC_FITNESS_CATEGORIES = [
 ];
 
 /**
+ * Looks up a per-option price from a Service's formFieldsJson (the "Options
+ * List" admin builds as "Label: Price", e.g. Nurse Care's Short Visit / Full
+ * Shift durations). Matches selectedOption against each option's id first,
+ * then falls back to a case-insensitive substring match against its label —
+ * mirroring the matching mobile screens already do client-side, so the
+ * server resolves to the same option the UI displayed.
+ * Returns the option's price, or null if no formFieldsJson/options/match exists.
+ */
+function resolveOptionPrice(serviceRecord, selectedOption) {
+    if (!serviceRecord || !selectedOption) {
+        console.log('[resolveOptionPrice] skipped — serviceRecord:', !!serviceRecord, 'selectedOption:', JSON.stringify(selectedOption));
+        return null;
+    }
+    const formFieldsJson = serviceRecord.formFieldsJson;
+    if (!formFieldsJson || typeof formFieldsJson !== 'object') {
+        console.log('[resolveOptionPrice] no formFieldsJson on service:', serviceRecord.slug);
+        return null;
+    }
+
+    const sections = Array.isArray(formFieldsJson.sections) ? formFieldsJson.sections : [];
+    const needle = String(selectedOption).toLowerCase();
+
+    for (const section of sections) {
+        const fields = Array.isArray(section?.fields) ? section.fields : [];
+        for (const field of fields) {
+            const options = Array.isArray(field?.options) ? field.options : [];
+            const byId = options.find(o => o?.id === selectedOption);
+            if (byId && typeof byId.price === 'number') return byId.price;
+
+            const byLabel = options.find(o => typeof o?.label === 'string' && o.label.toLowerCase().includes(needle));
+            if (byLabel && typeof byLabel.price === 'number') return byLabel.price;
+        }
+    }
+    console.log('[resolveOptionPrice] no match for', JSON.stringify(selectedOption), 'on service:', serviceRecord.slug, 'available options:', JSON.stringify(sections.flatMap(s => (s.fields || []).flatMap(f => (f.options || []).map(o => o.label)))));
+    return null;
+}
+
+/**
  * Returns 'CARE', 'HOMEMAKER', or null based on service category.
  */
 async function getPlanTypeForCategory(category) {
@@ -49,7 +87,7 @@ async function getPlanTypeForCategory(category) {
 // @access  Private
 exports.calculateCheckout = async (req, res) => {
     try {
-        const { serviceCategory, vendorFee = 0, diagnosticFee = 0 } = req.body;
+        const { serviceCategory, vendorFee = 0, diagnosticFee = 0, selectedOption = null } = req.body;
         const userId = req.user.id;
 
         let serviceRecord = null;
@@ -119,6 +157,16 @@ exports.calculateCheckout = async (req, res) => {
             }
         } else if (serviceRecord && serviceRecord.basePrice > 0) {
             serviceFeeVal = serviceRecord.basePrice;
+        }
+
+        // A selected option (e.g. Nurse Care's "Short Visit" vs "Full Shift"
+        // duration) is the most specific price signal available — it wins
+        // over the flat Service.basePrice fallback above, since basePrice is
+        // only ever a single reference price and can't represent per-option
+        // pricing on its own.
+        const optionPrice = resolveOptionPrice(serviceRecord, selectedOption);
+        if (optionPrice !== null) {
+            serviceFeeVal = optionPrice;
         }
 
         let benefitDiscount = 0;
@@ -243,7 +291,7 @@ exports.calculateCheckout = async (req, res) => {
 // @access  Private
 exports.calculateMembershipSavings = async (req, res) => {
     try {
-        const { serviceCategory, vendorFee = 0, diagnosticFee = 0, planId, billingCycle } = req.body;
+        const { serviceCategory, vendorFee = 0, diagnosticFee = 0, planId, billingCycle, selectedOption = null } = req.body;
         const userId = req.user.id;
 
         if (!planId || !billingCycle) {
@@ -325,6 +373,13 @@ exports.calculateMembershipSavings = async (req, res) => {
             }
         } else if (serviceRecord && serviceRecord.basePrice > 0) {
             serviceFeeVal = serviceRecord.basePrice;
+        }
+
+        // A selected option's price wins over the flat basePrice fallback —
+        // see calculateCheckout for the full rationale.
+        const optionPrice = resolveOptionPrice(serviceRecord, selectedOption);
+        if (optionPrice !== null) {
+            serviceFeeVal = optionPrice;
         }
 
         // Determine required plan type

@@ -79,7 +79,7 @@ export default function DoctorVisitScreen() {
     const styles = makeStyles(colors, isDarkMode);
 
     // ─── Global State ───
-    const { isReady, cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('doctor-visit');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit, dbService } = useServiceInitialization('doctor-visit');
     const { activeAddress } = useAddress();
 
     // ─── State ───
@@ -356,6 +356,11 @@ export default function DoctorVisitScreen() {
                     amount: String(servicePrice),
                     label: serviceName || 'Doctor Home Visit',
                     serviceSlug: 'doctor-visit',
+                    // Without this, checkout always fell back to isZeroPayment
+                    // (the "Booking Request" inquiry card, no price breakdown)
+                    // regardless of admin's paymentMode setting for this service.
+                    ...(dbService?.paymentMode && { paymentMode: dbService.paymentMode }),
+                    ...(dbService?.checkoutGroup && { checkoutGroup: dbService.checkoutGroup }),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });

@@ -146,6 +146,7 @@ export default function ServiceCheckoutScreen() {
     isDynamic?: string;
     hideLocation?: string;
     serviceSlug?: string;
+    selectedOption?: string;
   }>();
 
   const [isPaidBookingOverride, setIsPaidBookingOverride] = useState(false);
@@ -155,8 +156,17 @@ export default function ServiceCheckoutScreen() {
   const category = params.serviceSlug
     ? params.serviceSlug.toUpperCase().replace(/-/g, "_")
     : mapLabelToCategory(label);
+  // Home Essentials services (AC Repair, Plumbing, Grocery, Bill Payment,
+  // Media & Tech Support) never send paymentMode — they signal "this is a
+  // real charge" purely through checkoutGroup (A/B/C = paid, D = inquiry/
+  // "Submit Request"). Without this, every Home Essentials booking in groups
+  // A/B/C silently degraded into the zero-payment inquiry flow.
+  const isPaidCheckoutGroup =
+    !!params.checkoutGroup && params.checkoutGroup !== "D";
   const isZeroPayment =
-    params.paymentMode !== "PAID" && !isPaidBookingOverride;
+    params.paymentMode !== "PAID" &&
+    !isPaidCheckoutGroup &&
+    !isPaidBookingOverride;
   const [calculatedPrices, setCalculatedPrices] = useState<{
     totalAmount: number;
     taxPercentage?: number;
@@ -457,13 +467,20 @@ export default function ServiceCheckoutScreen() {
           const category = params.serviceSlug
             ? params.serviceSlug.toUpperCase().replace(/-/g, "_")
             : mapLabelToCategory(label);
+          console.log("💳 [CHECKOUT CALC] Requesting with:", JSON.stringify({
+            serviceCategory: category,
+            vendorFee: baseAmount,
+            selectedOption: params.selectedOption,
+          }));
           const res = await paymentService.calculateCheckout({
             serviceCategory: category,
             vendorFee: baseAmount,
             baseAyuxaFee: 0,
             diagnosticFee: 0,
             isPaidBooking: isPaidBookingOverride,
+            selectedOption: params.selectedOption,
           });
+          console.log("💳 [CHECKOUT CALC] Response vendorFee:", res.data?.breakdown?.vendorFee, "success:", res.success);
           if (res.success && res.data) {
             setCalculatedPrices(res.data);
           }
@@ -480,6 +497,7 @@ export default function ServiceCheckoutScreen() {
     label,
     params.isDynamic,
     params.serviceSlug,
+    params.selectedOption,
     isPaidBookingOverride,
   ]);
 
@@ -526,6 +544,7 @@ export default function ServiceCheckoutScreen() {
           diagnosticFee: 0,
           planId: selectedUpgradePlan.id,
           billingCycle: selectedDuration,
+          selectedOption: params.selectedOption,
         });
         if (res.success && res.data) {
           setSavingsInfo(res.data);

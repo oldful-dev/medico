@@ -139,7 +139,8 @@ export default function BookCaregiverSupportScreen() {
         serviceName,
         servicePrice,
         isLoading: isLoadingInit,
-        isReady
+        isReady,
+        dbService
     } = useServiceInitialization('caregiver-support');
 
     // selectedAddress now seeds from — and stays in sync with — the
@@ -294,6 +295,8 @@ export default function BookCaregiverSupportScreen() {
                     amount: String(servicePrice),
                     label: 'Caregiver Support',
                     serviceSlug: 'caregiver-support',
+                    ...(dbService?.paymentMode && { paymentMode: dbService.paymentMode }),
+                    ...(dbService?.checkoutGroup && { checkoutGroup: dbService.checkoutGroup }),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });

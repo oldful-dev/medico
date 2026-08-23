@@ -304,6 +304,13 @@ export default function BookNursingCareScreen() {
                     amount: String(calculatedPrice),
                     label: `${serviceName} (${selectedDuration})`,
                     serviceSlug: 'nurse-care',
+                    selectedOption: selectedDuration,
+                    // Nurse Care never forwarded the admin-configured paymentMode/
+                    // checkoutGroup before, so checkout always fell back to
+                    // isZeroPayment (the "Booking Request — no payment now" inquiry
+                    // card) regardless of admin setting this service to PAID.
+                    ...(dbService?.paymentMode && { paymentMode: dbService.paymentMode }),
+                    ...(dbService?.checkoutGroup && { checkoutGroup: dbService.checkoutGroup }),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
