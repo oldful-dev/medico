@@ -62,7 +62,7 @@ export default function MedicalEquipmentScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('medical-equipment');
+    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit, dbService } = useServiceInitialization('medical-equipment');
 
     // Follow the centralized active address whenever it changes elsewhere
     // in the app, unless the user has already made their own pick here.
@@ -159,7 +159,15 @@ export default function MedicalEquipmentScreen() {
 
             router.push({
                 pathname: '/service-checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName, ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
+                params: {
+                    bookingPayload,
+                    amount: String(servicePrice),
+                    label: serviceName,
+                    serviceSlug: 'medical-equipment',
+                    ...(dbService?.paymentMode && { paymentMode: dbService.paymentMode }),
+                    ...(dbService?.checkoutGroup && { checkoutGroup: dbService.checkoutGroup }),
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
+                },
             });
         } catch (error) {
             console.error('Equipment error:', error);

@@ -187,6 +187,9 @@ export const paymentService = {
         baseAyuxaFee?: number;
         diagnosticFee?: number;
         isPaidBooking?: boolean;
+        /** Selected option id/label (e.g. Nurse Care's duration) — resolves the
+         * per-option price from the service's admin-configured Options List. */
+        selectedOption?: string;
     }): Promise<ApiResponse<{
         totalAmount: number;
         requiredPlanType?: 'CARE' | 'HOMEMAKER' | null;
@@ -221,6 +224,7 @@ export const paymentService = {
         diagnosticFee?: number;
         planId: string;
         billingCycle: string;
+        selectedOption?: string;
     }): Promise<ApiResponse<{
         bookingFeeWaived: number;
         platformFeeWaived: number;

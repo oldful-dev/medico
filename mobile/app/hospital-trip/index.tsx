@@ -93,6 +93,7 @@ export default function HospitalTripScreen() {
     servicePrice,
     isLoading: isLoadingInit,
     isReady,
+    dbService,
   } = useServiceInitialization("hospital-trip");
 
   const [isBooking, setIsBooking] = useState(false);
@@ -259,6 +260,8 @@ export default function HospitalTripScreen() {
           amount: String(servicePrice),
           label: serviceName || "Hospital Visit Assistance",
           serviceSlug: "hospital-trip",
+          ...(dbService?.paymentMode && { paymentMode: dbService.paymentMode }),
+          ...(dbService?.checkoutGroup && { checkoutGroup: dbService.checkoutGroup }),
           ...(params.subscriptionId && {
             subscriptionId: params.subscriptionId,
           }),
