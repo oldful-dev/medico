@@ -1,6 +1,6 @@
 // Medical Logs — Document vault
 // Prescriptions, blood work reports, scans, discharge summaries, etc.
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Linking, TextInput, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,12 +8,19 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { userService } from '@/services/api/userService';
 import { useUser } from '@/context/UserContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+
+// Same key medical-card.tsx uses — the user picks a save folder once and it's
+// reused across every "download to device" action in the app.
+const DOWNLOAD_DIR_KEY = 'ayuxa_download_dir_uri';
 
 // ─── Types ────────────────────────────────────────────────
 interface HealthReport {
@@ -23,6 +30,16 @@ interface HealthReport {
     mimeType?: string;
     category?: string;
     createdAt: string;
+    flagSeverity?: string;
+    flagNote?: string;
+    suggestedAllergen?: string;
+}
+
+// Backend stores flagSeverity as 'CRITICAL' | 'HIGH' | 'NORMAL'.
+function getSeverityColor(severity?: string) {
+    if (severity === 'CRITICAL') return '#DC2626';
+    if (severity === 'HIGH') return '#D97706';
+    return '#059669';
 }
 
 // ─── Category config ──────────────────────────────────────
@@ -48,11 +65,12 @@ function formatDate(iso: string): string {
 }
 
 // ─── Report Card ──────────────────────────────────────────
-function ReportCard({ item, onOpen, onDownload, onDelete }: {
+function ReportCard({ item, onOpen, onDownload, onDelete, downloadingId }: {
     item: HealthReport;
     onOpen: (url: string) => void;
-    onDownload: (url: string) => void;
+    onDownload: (item: HealthReport) => void;
     onDelete: (id: string) => void;
+    downloadingId: string | null;
 }) {
     const colors = useThemeColors();
     const { isDarkMode } = useTheme();
@@ -79,6 +97,14 @@ function ReportCard({ item, onOpen, onDownload, onDelete }: {
                         </View>
                         <Text style={styles.cardDate}>{formatDate(item.createdAt)}</Text>
                     </View>
+                    {(item.flagSeverity === 'HIGH' || item.flagSeverity === 'CRITICAL') && (
+                        <View style={[styles.catBadge, { backgroundColor: `${getSeverityColor(item.flagSeverity)}15`, marginTop: 6, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center' }]}>
+                            <Ionicons name="alert-circle" size={12} color={getSeverityColor(item.flagSeverity)} />
+                            <Text style={[styles.catBadgeText, { color: getSeverityColor(item.flagSeverity), marginLeft: 4 }]}>
+                                {item.flagSeverity === 'CRITICAL' ? t('medical_logs.severity.critical', { defaultValue: 'Critical' }) : t('medical_logs.severity.high', { defaultValue: 'Needs review' })}
+                            </Text>
+                        </View>
+                    )}
                 </View>
             </View>
             <View style={styles.cardActions}>
@@ -86,8 +112,10 @@ function ReportCard({ item, onOpen, onDownload, onDelete }: {
                     <Ionicons name="eye-outline" size={15} color={colors.primary} />
                     <Text style={styles.actionBtnText}>{t('common.view')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => onDownload(item.fileUrl)} activeOpacity={0.7}>
-                    <Ionicons name="download-outline" size={15} color="#7C3AED" />
+                <TouchableOpacity style={styles.actionBtn} onPress={() => onDownload(item)} activeOpacity={0.7} disabled={downloadingId === item.id}>
+                    {downloadingId === item.id
+                        ? <ActivityIndicator size="small" color="#7C3AED" />
+                        : <Ionicons name="download-outline" size={15} color="#7C3AED" />}
                     <Text style={[styles.actionBtnText, { color: '#7C3AED' }]}>{t('common.download')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.actionBtn, { borderColor: isDarkMode ? '#7F1D1D' : '#FEE2E2' }]} onPress={() => onDelete(item.id)} activeOpacity={0.7}>
@@ -132,6 +160,18 @@ export default function MedicalLogsScreen() {
     // Delete confirmation (needs 2 real actions, so it's separate from alertConfig)
     const [deleteConfirm, setDeleteConfirm] = useState<{ visible: boolean; id: string | null }>({ visible: false, id: null });
 
+    // OCR-suggested allergen — never auto-saved. Shown once per report per
+    // session; the user must explicitly confirm before it's added to their
+    // medical card (a field shown to medical professionals in emergencies).
+    const [allergenPrompt, setAllergenPrompt] = useState<{ visible: boolean; reportId: string | null; allergen: string | null }>({ visible: false, reportId: null, allergen: null });
+    const [dismissedAllergenReportIds, setDismissedAllergenReportIds] = useState<Set<string>>(new Set());
+
+    // Android "choose a save folder" prompt — same pattern as medical-card.tsx.
+    // Folder is picked once (via StorageAccessFramework) and reused for every
+    // download in the app; downloadingId disables the button mid-download.
+    const [folderPromptResolver, setFolderPromptResolver] = useState<(() => void) | null>(null);
+    const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
     const getTranslatedCategory = (key: string) => {
         const tKey = `medical_logs.categories.${key.toLowerCase().replace(/\s+/g, '_')}`;
         return t(tKey, { defaultValue: key });
@@ -153,6 +193,52 @@ export default function MedicalLogsScreen() {
 
     useFocusEffect(useCallback(() => { fetchReports(); }, [fetchReports]));
 
+    // After each fetch, surface at most one pending allergen suggestion —
+    // a report whose OCR flagged an allergen not already on the medical
+    // card and that the user hasn't dismissed this session.
+    useEffect(() => {
+        if (allergenPrompt.visible) return;
+        const existingAllergies = (profile?.medicalCards?.[0]?.allergies || []).map(a => a.toLowerCase().trim());
+        const pending = reports.find(r =>
+            r.suggestedAllergen &&
+            !dismissedAllergenReportIds.has(r.id) &&
+            !existingAllergies.includes(r.suggestedAllergen.toLowerCase().trim())
+        );
+        if (pending) {
+            setAllergenPrompt({ visible: true, reportId: pending.id, allergen: pending.suggestedAllergen! });
+        }
+    }, [reports, profile, dismissedAllergenReportIds, allergenPrompt.visible]);
+
+    const dismissAllergenPrompt = () => {
+        if (allergenPrompt.reportId) {
+            setDismissedAllergenReportIds(prev => new Set(prev).add(allergenPrompt.reportId!));
+        }
+        setAllergenPrompt({ visible: false, reportId: null, allergen: null });
+    };
+
+    const confirmAddAllergen = async () => {
+        const { allergen, reportId } = allergenPrompt;
+        setAllergenPrompt({ visible: false, reportId: null, allergen: null });
+        if (!allergen || !profile?.id) return;
+        if (reportId) setDismissedAllergenReportIds(prev => new Set(prev).add(reportId));
+        try {
+            const card = profile.medicalCards?.[0];
+            const res = await userService.upsertMedicalCard(profile.id, {
+                bloodGroup: card?.bloodGroup,
+                allergies: [...(card?.allergies || []), allergen],
+                chronicConditions: card?.chronicConditions || [],
+                currentMedications: card?.currentMedications || [],
+            });
+            if (res.success) {
+                triggerAlert(t('medical_logs.alerts.allergen_added_title'), t('medical_logs.alerts.allergen_added_msg', { allergen }), 'checkmark-circle-outline');
+            } else {
+                triggerAlert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_allergen_add'));
+            }
+        } catch {
+            triggerAlert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_allergen_add'));
+        }
+    };
+
     const filteredReports = reports.filter(r => {
         let matchesCategory = false;
         if (activeCategory === 'All') {
@@ -171,8 +257,96 @@ export default function MedicalLogsScreen() {
         Linking.openURL(url).catch(() => triggerAlert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_open')));
     };
 
-    const handleDownload = (url: string) => {
-        Linking.openURL(url).catch(() => triggerAlert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_download')));
+    // Extension from the mimeType if the API sent one, else from the signed
+    // URL's own file extension (present before the ?signature query string),
+    // else PDF — the most common report format — as a last resort.
+    const inferExtension = (item: HealthReport): string => {
+        if (item.mimeType?.includes('/')) return item.mimeType.split('/')[1].toLowerCase();
+        const clean = item.fileUrl.split('?')[0];
+        const match = clean.match(/\.([a-zA-Z0-9]{2,5})$/);
+        return match ? match[1].toLowerCase() : 'pdf';
+    };
+
+    const buildDownloadFilename = (item: HealthReport): { name: string; mime: string } => {
+        const ext = inferExtension(item);
+        const mime = ext === 'pdf' ? 'application/pdf'
+            : ['jpg', 'jpeg'].includes(ext) ? 'image/jpeg'
+            : ext === 'png' ? 'image/png'
+            : 'application/octet-stream';
+        const cleanTitle = (item.title || 'Report').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'Report';
+        return { name: `${cleanTitle}_${formatDate(item.createdAt).replace(/\s/g, '-')}`, mime };
+    };
+
+    const saveToAndroidDir = async (dirUri: string, item: HealthReport) => {
+        const { name, mime } = buildDownloadFilename(item);
+        try {
+            // Pull the remote file into cache first, then copy its bytes into
+            // the user-chosen folder — StorageAccessFramework can only write
+            // from a local base64 payload, not stream a remote URL directly.
+            const tmpUri = FileSystem.cacheDirectory + `${name}_${Date.now()}`;
+            const dl = await FileSystem.downloadAsync(item.fileUrl, tmpUri);
+            if (dl.status !== 200) throw new Error(`Download failed: ${dl.status}`);
+
+            const base64 = await FileSystem.readAsStringAsync(dl.uri, { encoding: FileSystem.EncodingType.Base64 });
+            const destUri = await FileSystem.StorageAccessFramework.createFileAsync(dirUri, name, mime);
+            await FileSystem.writeAsStringAsync(destUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+            await FileSystem.deleteAsync(dl.uri, { idempotent: true });
+
+            triggerAlert(t('medical_logs.alerts.downloaded_title'), t('medical_logs.alerts.downloaded_msg'), 'checkmark-circle-outline');
+        } catch (err) {
+            console.error('Medical log SAF download error:', err);
+            await AsyncStorage.removeItem(DOWNLOAD_DIR_KEY);
+            triggerAlert(t('medical_card.alerts.save_failed_title'), t('medical_card.alerts.save_failed_msg'));
+        }
+    };
+
+    const handleDownload = async (item: HealthReport) => {
+        if (downloadingId) return;
+        setDownloadingId(item.id);
+        try {
+            if (Platform.OS === 'android') {
+                const storedUri = await AsyncStorage.getItem(DOWNLOAD_DIR_KEY);
+                if (storedUri) {
+                    await saveToAndroidDir(storedUri, item);
+                } else {
+                    // Ask once; the actual download runs after the user picks a folder.
+                    setFolderPromptResolver(() => async () => {
+                        try {
+                            const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                            if (permissions.granted) {
+                                await AsyncStorage.setItem(DOWNLOAD_DIR_KEY, permissions.directoryUri);
+                                await saveToAndroidDir(permissions.directoryUri, item);
+                            } else {
+                                triggerAlert(t('medical_card.alerts.permission_denied_title'), t('medical_card.alerts.permission_denied_msg'));
+                            }
+                        } catch {
+                            triggerAlert(t('medical_logs.alerts.error_title'), t('medical_card.alerts.failed_folder_select'));
+                        } finally {
+                            setDownloadingId(null);
+                        }
+                    });
+                    return; // downloadingId cleared by the resolver above once it runs
+                }
+            } else {
+                // iOS has no folder-write API — hand the file to the share
+                // sheet, where "Save to Files" lets the user pick a real folder.
+                const { name, mime } = buildDownloadFilename(item);
+                const ext = inferExtension(item);
+                const tmpUri = `${FileSystem.cacheDirectory}${name}.${ext}`;
+                const dl = await FileSystem.downloadAsync(item.fileUrl, tmpUri);
+                if (dl.status !== 200) throw new Error(`Download failed: ${dl.status}`);
+                if (await Sharing.isAvailableAsync()) {
+                    await Sharing.shareAsync(dl.uri, { mimeType: mime, dialogTitle: item.title });
+                } else {
+                    triggerAlert(t('medical_card.alerts.sharing_not_available_title'), t('medical_card.alerts.sharing_not_available_msg'));
+                }
+            }
+        } catch (err) {
+            console.error('Medical log download error:', err);
+            triggerAlert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_download'));
+        } finally {
+            setDownloadingId(null);
+        }
     };
 
     const handleDelete = (id: string) => {
@@ -313,7 +487,7 @@ export default function MedicalLogsScreen() {
                 <FlatList
                     data={filteredReports}
                     keyExtractor={item => item.id}
-                    renderItem={({ item }) => <ReportCard item={item} onOpen={handleOpenFile} onDownload={handleDownload} onDelete={handleDelete} />}
+                    renderItem={({ item }) => <ReportCard item={item} onOpen={handleOpenFile} onDownload={handleDownload} onDelete={handleDelete} downloadingId={downloadingId} />}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
@@ -413,6 +587,32 @@ export default function MedicalLogsScreen() {
                 secondaryButtonText={t('medical_logs.alerts.delete_btn')}
                 onSecondaryPress={confirmDelete}
                 secondaryDestructive={true}
+            />
+
+            <CustomAlertModal
+                visible={allergenPrompt.visible}
+                title={t('medical_logs.alerts.allergen_prompt_title')}
+                message={t('medical_logs.alerts.allergen_prompt_msg', { allergen: allergenPrompt.allergen })}
+                iconName="alert-circle-outline"
+                buttonText={t('common.cancel')}
+                onClose={dismissAllergenPrompt}
+                secondaryButtonText={t('medical_logs.alerts.allergen_add_btn')}
+                onSecondaryPress={confirmAddAllergen}
+            />
+
+            <CustomAlertModal
+                visible={!!folderPromptResolver}
+                title={t('medical_card.alerts.select_folder_title')}
+                message={t('medical_card.alerts.select_folder_msg')}
+                iconName="folder-open-outline"
+                buttonText={t('common.cancel')}
+                onClose={() => { setFolderPromptResolver(null); setDownloadingId(null); }}
+                secondaryButtonText={t('medical_card.alerts.select_folder_title')}
+                onSecondaryPress={() => {
+                    const resolver = folderPromptResolver;
+                    setFolderPromptResolver(null);
+                    if (resolver) resolver();
+                }}
             />
         </SafeAreaView>
     );

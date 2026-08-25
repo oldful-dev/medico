@@ -114,14 +114,20 @@ const FALLBACK_ISO_CERTIFICATIONS: IsoCertification[] = [{ label: 'ISO 9001-2015
                 {displayIsoCertifications && (
                     <View style={styles.badgeContainer}>
                         {displayIsoCertifications.map((cert, i) => (
-                            <View key={i} style={styles.isoRow}>
-                                <View style={styles.isoIconCircle}>
-                                    <Ionicons name="checkmark" size={14} color="#5C7268" />
+                            <View key={i} style={styles.isoBlock}>
+                                <View style={styles.isoRow}>
+                                    <View style={styles.isoIconCircle}>
+                                        <Ionicons name="checkmark" size={14} color="#5C7268" />
+                                    </View>
+                                    <Text style={styles.isoText} numberOfLines={1} adjustsFontSizeToFit>
+                                        {cert.label}
+                                    </Text>
                                 </View>
-                                <Text style={styles.isoText} numberOfLines={1} adjustsFontSizeToFit>
-                                    {cert.label}
-                                    {cert.certNumber ? <Text style={styles.isoCertNumber}>{`  ·  ${cert.certNumber}`}</Text> : null}
-                                </Text>
+                                {cert.certNumber ? (
+                                    <Text style={styles.isoCertNumber} numberOfLines={1} adjustsFontSizeToFit>
+                                        {cert.certNumber}
+                                    </Text>
+                                ) : null}
                             </View>
                         ))}
                         <View style={styles.isoDivider} />
@@ -171,11 +177,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         width: '100%',
     },
+    isoBlock: {
+        alignItems: 'center',
+        marginBottom: 2,
+    },
     isoRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 2,
     },
     isoIconCircle: {
         width: 22,
@@ -201,6 +210,8 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         letterSpacing: 0,
         color: '#A8B7A9',
+        textAlign: 'center',
+        marginTop: 3,
     },
     isoDivider: {
         marginTop: 20,

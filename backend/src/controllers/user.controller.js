@@ -734,6 +734,7 @@ const uploadHealthReport = async (req, res, next) => {
                         ocrProcessedAt: new Date(),
                         flagSeverity: ocrResult.flagSeverity || null,
                         flagNote: ocrResult.flagNote || null,
+                        suggestedAllergen: ocrResult.suggestedAllergen || null,
                     },
                 });
 

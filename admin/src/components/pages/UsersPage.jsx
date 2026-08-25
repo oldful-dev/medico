@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, Eye, Ban, UserCheck, RotateCcw, ChevronLeft, ChevronRight, Edit2, Trash, FileDown, X, ExternalLink } from "lucide-react";
+import { Search, Filter, Eye, Ban, UserCheck, RotateCcw, ChevronLeft, ChevronRight, Edit2, Trash, FileDown, X, ExternalLink, UploadCloud, FileText } from "lucide-react";
 import Cookies from "js-cookie";
 import { userAPI, cityAPI, bookingAPI } from "@/lib/api";
 import { formatDate, formatDateTime, showToast } from "@/lib/hooks";
@@ -339,6 +339,7 @@ export default function UsersPage() {
     const [reportTitle, setReportTitle] = useState("");
     const [reportCategory, setReportCategory] = useState("Other");
     const [uploadingReport, setUploadingReport] = useState(false);
+    const [reportDragActive, setReportDragActive] = useState(false);
 
     useEffect(() => {
         cityAPI.getAll().then(r => setCities(r.data?.data || [])).catch(() => { });
@@ -484,6 +485,36 @@ export default function UsersPage() {
         } finally {
             setUploadingReport(false);
         }
+    }
+
+    function pickReportFile(file) {
+        if (!file) return;
+        const isPdf = file.type === 'application/pdf';
+        const isImage = file.type.startsWith('image/');
+        if (!isPdf && !isImage) {
+            showToast('Only PDF, JPG or PNG files are allowed', 'error');
+            return;
+        }
+        setReportFile(file);
+    }
+
+    function handleReportDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setReportDragActive(true);
+    }
+
+    function handleReportDragLeave(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setReportDragActive(false);
+    }
+
+    function handleReportDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setReportDragActive(false);
+        pickReportFile(e.dataTransfer.files?.[0]);
     }
 
     async function handleDeleteReport(reportId) {
@@ -865,16 +896,57 @@ export default function UsersPage() {
                                                 <div className="form-group">
                                                     <label className="form-label" style={{ fontSize: 11 }}>Category</label>
                                                     <select className="form-select" style={{ padding: '6px 10px', fontSize: 12, height: 'auto' }} value={reportCategory} onChange={e => setReportCategory(e.target.value)}>
+                                                        {/* Must match mobile's Medical Logs categories exactly (medical-logs.tsx)
+                                                            — any other value is invisible under every category tab there,
+                                                            reachable only via "All". */}
                                                         <option value="Prescription">Prescription</option>
-                                                        <option value="Lab Report">Lab Report</option>
+                                                        <option value="Blood Work">Blood Work</option>
+                                                        <option value="Scan">Scan</option>
+                                                        <option value="Discharge">Discharge</option>
                                                         <option value="Vaccination">Vaccination</option>
+                                                        <option value="Insurance">Insurance</option>
                                                         <option value="Other">Other</option>
                                                     </select>
                                                 </div>
                                             </div>
                                             <div className="form-group">
                                                 <label className="form-label" style={{ fontSize: 11 }}>Select File (PDF, JPG, PNG)</label>
-                                                <input type="file" accept=".pdf,image/*" onChange={e => setReportFile(e.target.files[0])} required style={{ fontSize: 12 }} />
+                                                <label
+                                                    htmlFor="report-file-dropzone"
+                                                    onDragOver={handleReportDragOver}
+                                                    onDragLeave={handleReportDragLeave}
+                                                    onDrop={handleReportDrop}
+                                                    style={{
+                                                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                                        gap: 4, padding: '18px 12px', borderRadius: 8, cursor: 'pointer',
+                                                        border: `1.5px dashed ${reportDragActive ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                                                        background: reportDragActive ? 'rgba(4, 131, 87, 0.06)' : 'var(--bg-card)',
+                                                        transition: 'all var(--transition-fast)',
+                                                    }}
+                                                >
+                                                    {reportFile ? (
+                                                        <>
+                                                            <FileText size={20} style={{ color: 'var(--accent-primary)' }} />
+                                                            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{reportFile.name}</span>
+                                                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Click or drop to replace</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <UploadCloud size={20} style={{ color: 'var(--text-muted)' }} />
+                                                            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                                                <strong>Drag & drop</strong> a file here, or click to browse
+                                                            </span>
+                                                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>PDF, JPG or PNG</span>
+                                                        </>
+                                                    )}
+                                                    <input
+                                                        id="report-file-dropzone"
+                                                        type="file"
+                                                        accept=".pdf,image/*"
+                                                        onChange={e => pickReportFile(e.target.files[0])}
+                                                        style={{ display: 'none' }}
+                                                    />
+                                                </label>
                                             </div>
                                             <button type="submit" disabled={uploadingReport} className="btn btn-sm btn-primary" style={{ alignSelf: 'flex-start', padding: '6px 16px', fontSize: 12 }}>
                                                 {uploadingReport ? 'Uploading & Processing OCR...' : 'Upload Document'}

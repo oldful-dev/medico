@@ -91,8 +91,8 @@ export default function MyPrescriptionsScreen() {
     };
 
     const getSeverityColor = (severity?: string) => {
-        if (severity === 'Critical') return '#FF3B30';
-        if (severity === 'High') return '#F5A623';
+        if (severity === 'CRITICAL') return '#FF3B30';
+        if (severity === 'HIGH') return '#F5A623';
         return '#048357';
     };
 
