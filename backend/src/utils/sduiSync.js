@@ -143,15 +143,29 @@ const syncConfigsCrossRelation = async (sourceKey, configJson) => {
                 
                 if (essSect && sourceEssentials) {
                     const sortedServices = [...(sourceEssentials.services || [])].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
-                    essSect.items = sortedServices.map(s => ({
-                        id: s.id,
-                        label: s.label?.startsWith('{') ? s.label : JSON.stringify({ en: s.label }),
-                        route: s.route,
-                        visible: s.enabled !== false,
-                        icon_key: s.icon ? `ess_${s.id}` : undefined,
-                        image_url: s.icon?.startsWith('http') ? s.icon : `https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/${s.icon}`,
-                        sort_order: s.sort_order
-                    }));
+                    essSect.items = sortedServices.map(s => {
+                        // s.icon may be a plain emoji, a bare GCS filename, or a
+                        // full URL. Only bare filenames belong under the GCS
+                        // images path — emoji (and any other non-URL, non-plain-
+                        // filename text) must pass through as-is, or it gets
+                        // silently appended onto a GCS URL and 404s on the app
+                        // (e.g. ".../images/🛠️").
+                        const isLikelyFilename = !!s.icon && /^[\w.-]+\.\w{2,5}$/.test(s.icon);
+                        const imageUrl = s.icon?.startsWith('http')
+                            ? s.icon
+                            : isLikelyFilename
+                                ? `https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/${s.icon}`
+                                : s.icon;
+                        return {
+                            id: s.id,
+                            label: s.label?.startsWith('{') ? s.label : JSON.stringify({ en: s.label }),
+                            route: s.route,
+                            visible: s.enabled !== false,
+                            icon_key: s.icon ? `ess_${s.id}` : undefined,
+                            image_url: imageUrl,
+                            sort_order: s.sort_order
+                        };
+                    });
                     await prisma.uIConfig.update({
                         where: { key: 'sdui_app_config' },
                         data: { configJson: sConfig, version: { increment: 1 } }
