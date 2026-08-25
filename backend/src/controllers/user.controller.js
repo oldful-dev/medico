@@ -462,6 +462,10 @@ const activateUser = async (req, res, next) => {
 // POST /api/users/:id/emergency-contacts
 const addEmergencyContact = async (req, res, next) => {
     try {
+        if (req.params.id !== req.user.id) {
+            return sendResponse(res, 403, null, 'Not authorized to add an emergency contact for this user');
+        }
+
         const { name, phone, relationship } = req.body;
         const contact = await prisma.emergencyContact.create({
             data: { userId: req.params.id, name, phone, relationship },
@@ -475,7 +479,16 @@ const addEmergencyContact = async (req, res, next) => {
 // DELETE /api/users/:userId/emergency-contacts/:contactId
 const removeEmergencyContact = async (req, res, next) => {
     try {
-        await prisma.emergencyContact.delete({ where: { id: req.params.contactId } });
+        if (req.params.userId !== req.user.id) {
+            return sendResponse(res, 404, null, 'Emergency contact not found');
+        }
+
+        const result = await prisma.emergencyContact.deleteMany({
+            where: { id: req.params.contactId, userId: req.user.id },
+        });
+        if (result.count === 0) {
+            return sendResponse(res, 404, null, 'Emergency contact not found');
+        }
         sendResponse(res, 200, null, 'Emergency contact removed');
     } catch (error) {
         next(error);
@@ -635,6 +648,10 @@ const deleteAddress = async (req, res, next) => {
 // POST /api/users/:id/medical-card
 const upsertMedicalCard = async (req, res, next) => {
     try {
+        if (req.params.id !== req.user.id) {
+            return sendResponse(res, 403, null, 'Not authorized to update this medical card');
+        }
+
         const { bloodGroup, allergies, chronicConditions, currentMedications } = req.body;
 
         const existing = await prisma.medicalCard.findFirst({ where: { userId: req.params.id } });
@@ -662,6 +679,14 @@ const upsertMedicalCard = async (req, res, next) => {
 // POST /api/users/:id/health-reports (file upload)
 const uploadHealthReport = async (req, res, next) => {
     try {
+        // App users may only upload to their own record. Admins (e.g. the
+        // Media Library / patient-management screens) may upload on a
+        // patient's behalf — that's a real, live workflow (UsersPage.jsx),
+        // so this is an admin-aware check, not a strict equality check.
+        if (req.user?.type !== 'admin' && req.params.id !== req.user.id) {
+            return sendResponse(res, 403, null, 'Not authorized to upload a report for this user');
+        }
+
         if (!req.file) return res.status(400).json({ success: false, message: 'File required' });
 
         const { url, gcsUri } = await uploadFile(req.file.buffer, 'health-reports', req.file.originalname, req.file, req.params.id);
