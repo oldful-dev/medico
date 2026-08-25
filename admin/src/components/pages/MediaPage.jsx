@@ -407,9 +407,13 @@ export default function MediaPage() {
                         </div>
                         <select className="form-select" style={{ minWidth: 160 }} value={clientCategory} onChange={e => setClientCategory(e.target.value)}>
                             <option value="">All Categories</option>
+                            {/* Matches mobile's Medical Logs categories exactly */}
                             <option value="Prescription">Prescription</option>
-                            <option value="Lab Report">Lab Report</option>
+                            <option value="Blood Work">Blood Work</option>
+                            <option value="Scan">Scan</option>
+                            <option value="Discharge">Discharge</option>
                             <option value="Vaccination">Vaccination</option>
+                            <option value="Insurance">Insurance</option>
                             <option value="Other">Other</option>
                         </select>
                         {(clientSearch || clientCategory) && (

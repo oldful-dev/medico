@@ -124,6 +124,22 @@ const HEALTH_KEYWORDS = {
     LIVER:         ['liver', 'sgpt', 'sgot', 'bilirubin', 'alt', 'ast', 'alkaline phosphatase'],
     CARDIAC:       ['cardiac', 'troponin', 'ecg', 'cholesterol', 'ldl', 'hdl', 'triglyceride'],
     ANEMIA:        ['anemia', 'hemoglobin low', 'iron deficiency', 'ferritin'],
+    ALLERGY:       ['allergy', 'allergic', 'allergen', 'ige', 'immunoglobulin e', 'hypersensitivity'],
+};
+
+// Keywords short/ambiguous enough to collide with ordinary English words
+// (e.g. 'ast' inside "Asthma", 'bun' inside nothing medical at all, 't3'/'t4'
+// as generic identifiers) — these require a real word boundary on both
+// sides, not a bare substring match. Everything else in HEALTH_KEYWORDS is
+// distinctive enough that a plain substring match is safe and intentional
+// (e.g. 'creatinine', 'cholesterol').
+const AMBIGUOUS_KEYWORDS = new Set(['ast', 'alt', 'bun', 't3', 't4']);
+
+const keywordMatches = (lowerText, keyword) => {
+    if (AMBIGUOUS_KEYWORDS.has(keyword)) {
+        return new RegExp(`\\b${keyword}\\b`, 'i').test(lowerText);
+    }
+    return lowerText.includes(keyword);
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -242,6 +258,96 @@ const generateFlags = (parsedValues) => {
     return flags;
 };
 
+// ══════════════════════════════════════════════════════════════
+//  GENERIC LAB-FLAG DETECTION
+//
+//  MEDICAL_PATTERNS/THRESHOLDS only cover ~13 known metabolic/cardiac/renal
+//  test types. A report for anything else (allergy panels, IgE, hormones,
+//  tumor markers, etc.) produces medicalValues:{} and generateFlags() never
+//  runs — so analyzeText() silently reports "all values within normal
+//  range" even when the lab printed "High"/"Abnormal" directly on the
+//  result. This scans for the lab's own severity word attached to an
+//  actual numeric result line, independent of whether that specific test
+//  is in the known-pattern list, so an unrecognized-but-flagged test still
+//  surfaces as HIGH rather than being silently swallowed.
+// ══════════════════════════════════════════════════════════════
+
+// A single result line, evaluated per-line. Legend/reference-range rows
+// look like "3.50-17.49  High  Very Common" — the flag word directly
+// follows a hyphenated *range*. Real results look like "5.00  High" — the
+// flag word directly follows a single value. The distinguishing check is
+// local to the matched number itself (is IT the second half of a range?),
+// not "does this line contain a range anywhere" — a result line can
+// legitimately mention an unrelated range elsewhere (e.g. "Test: 1 day
+// (Normal: 1-3 days)" describing turnaround time, not the reference range).
+//
+// Real-world Vision OCR on a table layout emits ONE CELL PER LINE (columns
+// read top-to-bottom, not row-by-row), so "value  High" never share a line:
+//   "52.00" / "High" / "<0.35" / "KUA/L"
+// A legend/range row is also line-shredded, but a severity word there is
+// preceded by a *range* line ("2.00-1600") or another word, never by a lone
+// bare-number line — so "bare number, then bare severity word within 2
+// lines, not itself range-shaped" is the distinguishing signal.
+const BARE_NUMBER_LINE = /^\s*(\d+(?:\.\d+)?)\s*$/;
+const BARE_SEVERITY_LINE = /^\s*(Critical|Abnormal|Very\s+High|Very\s+Low|High|Low|Elevated|Deficient)\s*$/i;
+const RESULT_FLAG_IN_LINE = /(\d+(?:\.\d+)?)\s*(?:[a-zA-Z%\/µ]{0,8})?\s+(Critical|Abnormal|Very\s+High|Very\s+Low|High|Low|Elevated|Deficient)\b/;
+// True when the number just before the match position is immediately
+// preceded by "<number>-" (i.e. the matched value is the tail of a range).
+const isTailOfRange = (line, matchIndex) => /\d+(?:\.\d+)?\s*[-–—]\s*$/.test(line.slice(0, matchIndex));
+const RANGE_LINE = /\d+(?:\.\d+)?\s*[-–—]\s*\d/;
+
+// Report boilerplate sections that legitimately contain severity words in
+// prose (legends, explanatory notes) rather than as a result flag.
+const NON_RESULT_LINE = /^\s*(?:interpretation|note[s]?|comment[s]?|quantitative\s*result)\b/i;
+
+const detectGenericLabFlags = (fullText, knownFlags) => {
+    // Don't duplicate — if generateFlags() already found this via a known
+    // pattern, the generic scan doesn't need to add a second flag for it.
+    if (knownFlags.length > 0) return [];
+
+    const lines = fullText.split('\n');
+    const candidates = [];
+
+    // Pass 1: same-line match (clean OCR / plain-text reports).
+    for (const line of lines) {
+        if (NON_RESULT_LINE.test(line)) continue;
+        const m = line.match(RESULT_FLAG_IN_LINE);
+        if (m && !isTailOfRange(line, m.index) && !RANGE_LINE.test(line.slice(0, m.index))) {
+            candidates.push({ value: m[1], severityWord: m[2] });
+        }
+    }
+
+    // Pass 2: line-shredded table cells — bare number line immediately
+    // followed (within 2 lines, skipping blanks) by a bare severity line,
+    // with no range line in between.
+    for (let i = 0; i < lines.length; i++) {
+        const numMatch = lines[i].match(BARE_NUMBER_LINE);
+        if (!numMatch) continue;
+        for (let j = i + 1; j <= Math.min(i + 2, lines.length - 1); j++) {
+            if (lines[j].trim() === '') continue;
+            if (RANGE_LINE.test(lines[j])) break; // a range came first — this is a legend row
+            const sevMatch = lines[j].match(BARE_SEVERITY_LINE);
+            if (sevMatch) candidates.push({ value: numMatch[1], severityWord: sevMatch[1] });
+            break;
+        }
+    }
+
+    if (candidates.length === 0) return [];
+
+    // Cap at 3 — this is a coarse fallback signal, not per-test extraction,
+    // so surfacing every match on a long panel would be noisy rather than useful.
+    return candidates.slice(0, 3).map(c => {
+        const severity = c.severityWord.toLowerCase().includes('critical') ? 'CRITICAL' : 'HIGH';
+        return {
+            type: 'lab_flagged_abnormal',
+            severity,
+            message: `Lab report flags a result as "${c.severityWord}" (value: ${c.value}) — a test type Ayuxa doesn't recognize by name. Please review the original document.`,
+            value: parseFloat(c.value),
+            threshold: null,
+        };
+    });
+};
+
 /**
  * Detect health tags from OCR text.
  */
@@ -249,7 +355,7 @@ const detectHealthTags = (fullText) => {
     const lower = fullText.toLowerCase();
     const tags = [];
     for (const [tag, keywords] of Object.entries(HEALTH_KEYWORDS)) {
-        if (keywords.some(kw => lower.includes(kw))) {
+        if (keywords.some(kw => keywordMatches(lower, kw))) {
             tags.push(tag);
         }
     }
@@ -293,11 +399,32 @@ const determineSeverity = (flags) => {
  * @param {string} fullText - Raw OCR text
  * @returns {Object} Complete structured result
  */
+// Matches lab test-name lines of the form "ALLERGY, HOUSE DUST, IgE" (Vision
+// OCR sometimes garbles "IgE" to "E") and pulls out just the allergen name.
+// Only extracted, never auto-saved — the caller must ask the user to confirm
+// before writing to their medical card (see uploadHealthReport / mobile UI).
+const ALLERGEN_NAME_LINE = /allergy,\s*([a-z0-9 .'-]{2,40}?),\s*(?:ige|e)\b/i;
+const extractSuggestedAllergen = (fullText, flags) => {
+    if (flags.length === 0) return null; // only suggest when the report actually flagged something abnormal
+    const m = fullText.match(ALLERGEN_NAME_LINE);
+    if (!m) return null;
+    return m[1]
+        .split(' ')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+};
+
 const analyzeText = (fullText) => {
     const medicalValues = extractMedicalValues(fullText);
-    const flags = generateFlags(medicalValues);
+    let flags = generateFlags(medicalValues);
+    // Fallback: catches lab-flagged abnormal results for test types outside
+    // the ~13 known patterns (allergy/IgE panels, hormones, tumor markers,
+    // etc.) so they don't silently read as "normal" just because Ayuxa
+    // doesn't have a dedicated regex for that specific test.
+    flags = flags.concat(detectGenericLabFlags(fullText, flags));
     const healthTags = detectHealthTags(fullText);
     const { flagSeverity, flagNote } = determineSeverity(flags);
+    const suggestedAllergen = healthTags.includes('ALLERGY') ? extractSuggestedAllergen(fullText, flags) : null;
 
     return {
         medicalValues,
@@ -305,6 +432,7 @@ const analyzeText = (fullText) => {
         healthTags,
         flagSeverity,
         flagNote,
+        suggestedAllergen,
         valueCount: Object.keys(medicalValues).length,
         flagCount: flags.length,
     };
