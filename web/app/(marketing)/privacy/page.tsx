@@ -10,10 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'h
 
 async function getLegalDoc() {
   try {
-    const res = await fetch(
-      `${API_URL}/legal/published/PRIVACY_POLICY`,
-      { cache: 'no-store' }
-    );
+    const res = await fetch(`${API_URL}/legal/published/PRIVACY_POLICY`);
     if (!res.ok) {
       console.error(`[privacy] fetch non-OK: ${res.status} ${res.statusText} for ${API_URL}/legal/published/PRIVACY_POLICY`);
       return null;
