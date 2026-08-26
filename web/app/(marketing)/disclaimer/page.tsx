@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "General Legal Disclaimer for the Ayuxa platform and its services.",
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxa.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://api.ayuxacare.com/api';
 
 async function getLegalDoc() {
   try {

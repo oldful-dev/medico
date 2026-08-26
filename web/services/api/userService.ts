@@ -131,7 +131,7 @@ export const userService = {
         const form = new FormData();
         form.append('avatar', file);
         const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/users/profile/avatar`,
+            `${process.env.NEXT_PUBLIC_API_URL || 'https://api.ayuxacare.com/api'}/users/profile/avatar`,
             {
                 method: 'PUT',
                 headers: { Authorization: `Bearer ${apiClient.getToken()}` },
@@ -179,7 +179,7 @@ export const userService = {
         form.append('file', file);
         form.append('title', title);
         const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/users/${userId}/health-reports`,
+            `${process.env.NEXT_PUBLIC_API_URL || 'https://api.ayuxacare.com/api'}/users/${userId}/health-reports`,
             {
                 method: 'POST',
                 headers: { 

@@ -84,7 +84,7 @@ export const testPushNotification = async () => {
     // Step 5: Check API Connection
     console.log("Step 5: Checking API Connection...");
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.ayuxacare.com/api";
         const response = await fetch(`${apiUrl}/users/profile`, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,

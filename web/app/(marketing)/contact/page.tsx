@@ -44,7 +44,7 @@ export default function ContactPage() {
   const [dynamicFaqs, setDynamicFaqs] = useState<FAQItem[] | null>(null);
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
 
     const fetchSettings = async () => {
       try {

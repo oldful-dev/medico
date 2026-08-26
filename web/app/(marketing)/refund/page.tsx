@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Official Refund and Cancellation Policy for Ayuxa Elder Care Subscription Plans and Services.",
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxa.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://api.ayuxacare.com/api';
 
 async function getLegalDoc() {
   try {
