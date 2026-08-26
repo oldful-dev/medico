@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ScrollText, ShieldCheck, Banknote, AlertTriangle, Cookie, Landmark, Download } from 'lucide-react';
+import { ScrollText, ShieldCheck, Banknote, AlertTriangle, Cookie, Landmark, Download, FileText } from 'lucide-react';
 
 const FALLBACK_SETTINGS = {
   company_name: "Ayuxa Health Tech Platforms Pvt. Ltd.",
@@ -141,6 +141,9 @@ export function Footer() {
           </Link>
           <Link href="/cookie-policy" className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2">
             <Cookie className="w-4 h-4 shrink-0" /> Cookie Policy
+          </Link>
+          <Link href="/statutory-disclosures" className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2">
+            <FileText className="w-4 h-4 shrink-0" /> Statutory Disclosures
           </Link>
           <Link href="/legal" className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2">
             <Landmark className="w-4 h-4 shrink-0" /> Legal Information

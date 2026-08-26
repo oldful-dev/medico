@@ -729,8 +729,6 @@ export default function AccountScreen() {
                             );
                         })
                     )}
-                    <MenuRow icon="checkmark-done-circle-outline" iconBg={isDarkMode ? '#1E1340' : '#F3E5F5'} iconColor="#6A1B9A"
-                        title={t('account.consent_forms')} onPress={() => router.push('/profile/consent-forms' as any)} colors={colors} />
                     <MenuRow icon="eye-outline" iconBg={isDarkMode ? '#001A18' : '#EFF7F6'} iconColor="#004D40"
                         title={t('account.view_documents')} onPress={() => router.push('/profile/view-documents' as any)} colors={colors} />
                     <MenuRow icon="download-outline" iconBg={isDarkMode ? '#0A1A00' : '#F1F8E9'} iconColor="#558B2F"
