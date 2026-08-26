@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "How to request and download your complete personal data from Ayuxa.",
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxa.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://api.ayuxacare.com/api';
 
 async function getLegalDoc() {
   try {

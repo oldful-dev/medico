@@ -109,7 +109,7 @@ export const diagnosePushNotifications = async () => {
 
     // 10. Check API Connectivity
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
         const response = await fetch(`${apiUrl}/users/profile`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`,

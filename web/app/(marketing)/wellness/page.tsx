@@ -16,7 +16,7 @@ import Link from "next/link";
 import WellnessProductDetail from "./WellnessProductDetail";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://Ayuxa.onrender.com/api";
+  process.env.NEXT_PUBLIC_API_URL || "https://api.ayuxacare.com/api";
 
 interface Product {
   id: string;

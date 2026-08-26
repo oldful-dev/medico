@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.BACKEND_URL ||
-  "https://Ayuxa.onrender.com/api";
+  "https://api.ayuxacare.com/api";
 
 async function getLegalDoc() {
   try {

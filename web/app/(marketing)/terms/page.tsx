@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Terms and Conditions for using the Ayuxa elder care platform.",
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxa.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://api.ayuxacare.com/api';
 
 async function getLegalDoc() {
   try {

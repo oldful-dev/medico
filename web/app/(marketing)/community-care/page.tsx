@@ -26,7 +26,7 @@ export default function CommunityCarePage() {
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
         const res = await fetch(`${apiUrl}/ui-config/published?t=${Date.now()}`, { cache: 'no-store' });
         const json = await res.json();
         let resolved = FALLBACK_CONTENT;
