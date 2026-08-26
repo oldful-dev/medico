@@ -73,7 +73,7 @@ export default function PrivacyPolicyScreen() {
                     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                         {document.publishedAt && (
                             <Text style={styles.lastUpdated}>
-                                Last {t('legal.last_updated', { date: new Date(document.publishedAt).toLocaleDateString('en-IN') })}
+                                {t('legal.last_updated', { date: new Date(document.publishedAt).toLocaleDateString('en-IN') })}
                             </Text>
                         )}
 
