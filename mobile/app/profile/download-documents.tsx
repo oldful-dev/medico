@@ -34,10 +34,10 @@ export default function DownloadDocumentsScreen() {
             if (res.success && res.data) {
                 setDocument(res.data);
             } else {
-                Alert.alert('Error', res.message || 'Failed to load document');
+                Alert.alert(t('common.error'), res.message || t('legal.failed_load'));
             }
         } catch (error) {
-            Alert.alert('Error', 'Failed to load document');
+            Alert.alert(t('common.error'), t('legal.failed_load'));
         } finally {
             setLoading(false);
         }
@@ -94,9 +94,9 @@ export default function DownloadDocumentsScreen() {
         } catch (err) {
             console.error('[DownloadDocuments] PDF generation failed:', err);
             Alert.alert(
-                'Download Failed',
-                'Could not generate PDF. Please try again.',
-                [{ text: 'OK' }]
+                t('legal.download_failed_title'),
+                t('legal.download_failed_msg'),
+                [{ text: t('common.ok') }]
             );
         } finally {
             setDownloading(false);
@@ -137,7 +137,7 @@ export default function DownloadDocumentsScreen() {
                         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                             {document.publishedAt && (
                                 <Text style={styles.lastUpdated}>
-                                    Last {t('legal.last_updated', { date: new Date(document.publishedAt).toLocaleDateString('en-IN') }) || `Updated: ${new Date(document.publishedAt).toLocaleDateString('en-IN')}`}
+                                    {t('legal.last_updated', { date: new Date(document.publishedAt).toLocaleDateString('en-IN') })}
                                 </Text>
                             )}
 

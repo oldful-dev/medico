@@ -146,7 +146,7 @@ export default function LegalDetailScreen() {
                                     <Ionicons name="download-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
                                 )}
                                 <Text style={styles.downloadButtonText}>
-                                    {downloadingData ? (t('legal.generating_pdf') || 'Preparing...') : 'Download My Data'}
+                                    {downloadingData ? t('legal.generating_pdf') : t('legal.download_my_data')}
                                 </Text>
                             </TouchableOpacity>
                         )}

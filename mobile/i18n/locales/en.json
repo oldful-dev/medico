@@ -1384,9 +1384,12 @@
     "statutory_disclosures": "Statutory Disclosures",
     "cookie_policy": "Cookie Policy",
     "download_pdf": "Download PDF",
+    "download_my_data": "Download My Data",
     "generating_pdf": "Generating PDF...",
     "download_title": "Download Documents",
-    "download_started": "Your document download has started successfully."
+    "download_started": "Your document download has started successfully.",
+    "download_failed_title": "Download Failed",
+    "download_failed_msg": "Could not generate PDF. Please try again."
   },
   "privacy_policy": {
     "header_title": "Privacy Policy"
