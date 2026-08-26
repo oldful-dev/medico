@@ -14,9 +14,7 @@ const API_URL =
 
 async function getLegalDoc() {
   try {
-    const res = await fetch(`${API_URL}/legal/published/MASTER_POLICY`, {
-      cache: "no-store",
-    });
+    const res = await fetch(`${API_URL}/legal/published/MASTER_POLICY`);
     if (!res.ok) {
       console.error(`[legal] fetch non-OK: ${res.status} ${res.statusText} for ${API_URL}/legal/published/MASTER_POLICY`);
       return null;
