@@ -17,10 +17,14 @@ async function getLegalDoc() {
     const res = await fetch(`${API_URL}/legal/published/MASTER_POLICY`, {
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[legal] fetch non-OK: ${res.status} ${res.statusText} for ${API_URL}/legal/published/MASTER_POLICY`);
+      return null;
+    }
     const json = await res.json();
     return json.data ?? null;
-  } catch {
+  } catch (err) {
+    console.error(`[legal] fetch threw for ${API_URL}/legal/published/MASTER_POLICY:`, err);
     return null;
   }
 }

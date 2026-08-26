@@ -15,10 +15,14 @@ async function getLegalDoc() {
       `${API_URL}/legal/published/RIGHTS_TO_ACCESS_DATA`,
       { cache: 'no-store' }
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[right-to-access-data] fetch non-OK: ${res.status} ${res.statusText} for ${API_URL}/legal/published/RIGHTS_TO_ACCESS_DATA`);
+      return null;
+    }
     const json = await res.json();
     return json.data ?? null;
-  } catch {
+  } catch (err) {
+    console.error(`[right-to-access-data] fetch threw for ${API_URL}/legal/published/RIGHTS_TO_ACCESS_DATA:`, err);
     return null;
   }
 }

@@ -15,10 +15,14 @@ async function getLegalDoc() {
       `${API_URL}/legal/published/REFUND_POLICY`,
       { cache: 'no-store' }
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[refund] fetch non-OK: ${res.status} ${res.statusText} for ${API_URL}/legal/published/REFUND_POLICY`);
+      return null;
+    }
     const json = await res.json();
     return json.data ?? null;
-  } catch {
+  } catch (err) {
+    console.error(`[refund] fetch threw for ${API_URL}/legal/published/REFUND_POLICY:`, err);
     return null;
   }
 }

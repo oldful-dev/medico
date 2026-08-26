@@ -14,10 +14,14 @@ async function getLegalDoc() {
       `${API_URL}/legal/published/COOKIE_POLICY`,
       { cache: 'no-store' }
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[cookie-policy] fetch non-OK: ${res.status} ${res.statusText} for ${API_URL}/legal/published/COOKIE_POLICY`);
+      return null;
+    }
     const json = await res.json();
     return json.data ?? null;
-  } catch {
+  } catch (err) {
+    console.error(`[cookie-policy] fetch threw for ${API_URL}/legal/published/COOKIE_POLICY:`, err);
     return null;
   }
 }

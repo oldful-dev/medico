@@ -14,10 +14,14 @@ async function getLegalDoc() {
       `${API_URL}/legal/published/TERMS_AND_CONDITIONS`,
       { cache: 'no-store' }
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[terms] fetch non-OK: ${res.status} ${res.statusText} for ${API_URL}/legal/published/TERMS_AND_CONDITIONS`);
+      return null;
+    }
     const json = await res.json();
     return json.data ?? null;
-  } catch {
+  } catch (err) {
+    console.error(`[terms] fetch threw for ${API_URL}/legal/published/TERMS_AND_CONDITIONS:`, err);
     return null;
   }
 }

@@ -15,10 +15,14 @@ async function getLegalDoc() {
       `${API_URL}/legal/published/DISCLAIMER`,
       { cache: 'no-store' }
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[disclaimer] fetch non-OK: ${res.status} ${res.statusText} for ${API_URL}/legal/published/DISCLAIMER`);
+      return null;
+    }
     const json = await res.json();
     return json.data ?? null;
-  } catch {
+  } catch (err) {
+    console.error(`[disclaimer] fetch threw for ${API_URL}/legal/published/DISCLAIMER:`, err);
     return null;
   }
 }
