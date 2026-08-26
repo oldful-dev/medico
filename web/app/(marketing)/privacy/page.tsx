@@ -14,10 +14,14 @@ async function getLegalDoc() {
       `${API_URL}/legal/published/PRIVACY_POLICY`,
       { cache: 'no-store' }
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[privacy] fetch non-OK: ${res.status} ${res.statusText} for ${API_URL}/legal/published/PRIVACY_POLICY`);
+      return null;
+    }
     const json = await res.json();
     return json.data ?? null;
-  } catch {
+  } catch (err) {
+    console.error(`[privacy] fetch threw for ${API_URL}/legal/published/PRIVACY_POLICY:`, err);
     return null;
   }
 }

@@ -14,10 +14,14 @@ async function getLegalDoc() {
       `${API_URL}/legal/published/STATUTORY_DISCLOSURES`,
       { cache: 'no-store' }
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[statutory-disclosures] fetch non-OK: ${res.status} ${res.statusText} for ${API_URL}/legal/published/STATUTORY_DISCLOSURES`);
+      return null;
+    }
     const json = await res.json();
     return json.data ?? null;
-  } catch {
+  } catch (err) {
+    console.error(`[statutory-disclosures] fetch threw for ${API_URL}/legal/published/STATUTORY_DISCLOSURES:`, err);
     return null;
   }
 }
