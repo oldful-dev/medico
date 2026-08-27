@@ -10,7 +10,14 @@ export default {
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ayuxacare.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Ayuxa needs camera access to let you take photos of prescriptions, lab reports, and your profile picture.",
+        "NSPhotoLibraryUsageDescription": "Ayuxa needs photo library access to let you upload prescriptions, lab reports, and your profile picture.",
+        "NSLocationWhenInUseUsageDescription": "Allow ayuxacare to access your location for emergency SOS alerts and address auto-fill.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow ayuxacare to access your location for emergency SOS alerts and address auto-fill."
+      }
     },
     "android": {
       "package": "com.ayuxacare.app",
@@ -68,7 +75,7 @@ export default {
         }
       ],
       "@react-native-community/datetimepicker",
-      "@react-native-google-signin/google-signin",
+      "./plugins/withGoogleSigninAndroidOnly.js",
       [
         "expo-location",
         {

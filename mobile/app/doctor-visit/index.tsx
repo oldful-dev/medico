@@ -32,6 +32,7 @@ const postSurgeryIcon = require('@/assets/images/cc303b4d8fc2cc0ba55dc7a7b0eaaee
 const strokeIcon = require('@/assets/images/9c25016906e38b6b999adf0f9fb6cb2adb589322.png');
 const frozenShoulderIcon = require('@/assets/images/05879295a9b69201cfab443f22bf9218402f1522.png');
 const otherIcon = require('@/assets/images/34a78d011624199a5541b871a68bb218b41e5aba.png');
+const geriatricCareIcon = require('@/assets/images/geriatrician.png');
 
 // Doctor Type Icons
 const gpDoctorIcon = require('@/assets/images/9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png');
@@ -46,9 +47,7 @@ const PROBLEMS: { label: string; icon?: any; empty?: boolean }[] = [
     { label: 'Poster-surgery Rehab', icon: postSurgeryIcon },
     { label: 'Stroke Recovery', icon: strokeIcon },
     { label: 'Frozen shoulder', icon: frozenShoulderIcon },
-    // TODO: swap for a dedicated Geriatric Care icon asset when available — reusing
-    // generalWeaknessIcon as a placeholder so the option isn't blocked on asset design.
-    { label: 'Geriatric Care', icon: generalWeaknessIcon },
+    { label: 'Geriatric Care', icon: geriatricCareIcon },
     { label: 'Other', icon: otherIcon },
 ];
 

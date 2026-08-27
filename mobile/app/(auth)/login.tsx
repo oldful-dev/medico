@@ -17,10 +17,16 @@ import { useTranslation } from 'react-i18next';
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '351969749690-lgbb5emsvvjsmtegnf44vvebd7lcna1k.apps.googleusercontent.com';
 
-GoogleSignin.configure({
-    webClientId: WEB_CLIENT_ID,
-    offlineAccess: true,
-});
+// Google Sign-In's iOS native module isn't configured yet (needs a real
+// GoogleService-Info.plist from Firebase Console) — skip on iOS so it
+// doesn't crash at launch. Android is unaffected. Remove this guard once
+// the iOS Firebase app is registered and the plugin is wired in.
+if (Platform.OS !== 'ios') {
+    GoogleSignin.configure({
+        webClientId: WEB_CLIENT_ID,
+        offlineAccess: true,
+    });
+}
 
 // Figma-exported assets
 const logoImage = require('@/assets/images/nameandlogo.png');
@@ -338,18 +344,20 @@ export default function LoginScreen() {
 
                     {/* ─── Social Login Icons ─── */}
                     <View style={styles.socialButtonsRow}>
-                        <TouchableOpacity
-                            style={[styles.socialIconButton, isGoogleLoading && { opacity: 0.6 }]}
-                            activeOpacity={0.7}
-                            onPress={handleGoogleSignIn}
-                            disabled={isGoogleLoading}
-                        >
-                            {isGoogleLoading ? (
-                                <ActivityIndicator size="small" color={colors.primary} />
-                            ) : (
-                                <GoogleIcon size={24} />
-                            )}
-                        </TouchableOpacity>
+                        {Platform.OS !== 'ios' && (
+                            <TouchableOpacity
+                                style={[styles.socialIconButton, isGoogleLoading && { opacity: 0.6 }]}
+                                activeOpacity={0.7}
+                                onPress={handleGoogleSignIn}
+                                disabled={isGoogleLoading}
+                            >
+                                {isGoogleLoading ? (
+                                    <ActivityIndicator size="small" color={colors.primary} />
+                                ) : (
+                                    <GoogleIcon size={24} />
+                                )}
+                            </TouchableOpacity>
+                        )}
 
                         <TouchableOpacity style={styles.socialIconButton} activeOpacity={0.7}>
                             <Ionicons name="logo-apple" size={24} color={colors.textDark} />
