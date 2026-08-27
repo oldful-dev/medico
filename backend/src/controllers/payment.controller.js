@@ -413,16 +413,30 @@ const initiateRefund = async (req, res, next) => {
         const finalType = type || refundType;
         const refundAmount = amount || bodyRefundAmount || payment.amount;
 
-        // Razorpay refund
-        let refund;
-        try {
-            refund = await razorpay.razorpay.payments.refund(payment.razorpayPaymentId, {
-                amount: Math.round(refundAmount * 100),
+        if (!payment.razorpayPaymentId) {
+            // No real Razorpay charge to refund (e.g. CASH/manually-recorded
+            // payment) — record it as a manual refund, but never silently
+            // pretend a Razorpay refund happened when it didn't.
+            const updated = await prisma.payment.update({
+                where: { id: paymentId },
+                data: {
+                    status: 'REFUND_INITIATED',
+                    refundId: `manual_${Date.now()}`,
+                    refundType: finalType,
+                    refundReason: finalReason,
+                    refundAmount,
+                },
             });
-        } catch (rzpErr) {
-            logger.warn(`Razorpay refund API failed: ${rzpErr.message} — recording refund locally`);
-            refund = { id: `refund_${Date.now()}` };
+            return sendResponse(res, 200, updated, 'Refund recorded (no Razorpay payment on this record — manual refund only, no money moved via Razorpay)');
         }
+
+        // Razorpay refund — a failure here must surface as an error, not a
+        // fake success. Silently marking REFUND_INITIATED when the actual
+        // API call failed means the customer's money never moves while the
+        // admin panel shows the refund as done.
+        const refund = await razorpay.razorpay.payments.refund(payment.razorpayPaymentId, {
+            amount: Math.round(refundAmount * 100),
+        });
 
         const updated = await prisma.payment.update({
             where: { id: paymentId },
