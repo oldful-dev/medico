@@ -10,6 +10,7 @@ import { useUser } from '@/context/UserContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import * as ImagePicker from 'expo-image-picker';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 
 
 interface HealthReport {
@@ -25,6 +26,7 @@ interface HealthReport {
 }
 
 export default function MyPrescriptionsScreen() {
+    usePreventScreenCapture('my-prescriptions'); // uploaded prescription documents shown here
     const router = useRouter();
     const { profile } = useUser();
     const { isDarkMode } = useTheme();

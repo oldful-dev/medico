@@ -81,6 +81,7 @@ class ApiClient {
         const url = `${this.baseUrl}${config.endpoint}`;
 
         const headers: Record<string, string> = {
+            'X-Client-Info': `app; platform=${Platform.OS}; version=${Platform.Version}`,
             ...(config.headers || {}),
         };
 

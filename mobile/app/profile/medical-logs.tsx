@@ -17,6 +17,7 @@ import { useUser } from '@/context/UserContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 
 // Same key medical-card.tsx uses — the user picks a save folder once and it's
 // reused across every "download to device" action in the app.
@@ -129,6 +130,7 @@ function ReportCard({ item, onOpen, onDownload, onDelete, downloadingId }: {
 
 // ─── Screen ───────────────────────────────────────────────
 export default function MedicalLogsScreen() {
+    usePreventScreenCapture('medical-logs'); // vault of prescriptions/lab reports/scans — no screenshots/recordings
     const router = useRouter();
     const { profile } = useUser();
     const colors = useThemeColors();

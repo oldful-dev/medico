@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
@@ -6,6 +6,10 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import JailMonkey from 'jail-monkey';
+import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import 'react-native-reanimated';
 import '@/i18n/i18n';
 
@@ -109,8 +113,34 @@ export default function RootLayout() {
   );
 }
 
+// Warn-only per the elder-care/healthcare context: a false positive on a
+// legitimate patient's device (some detectors misfire on custom ROMs/OEM
+// software) must never lock them out of their care. Shown once per app
+// install (persisted via AsyncStorage), not on every launch — a user who
+// already acknowledged it shouldn't be nagged every time they open the app.
+const ROOTED_WARNING_SEEN_KEY = 'ayuxa_rooted_warning_seen';
+
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
+  const { t } = useTranslation();
+  const [showRootedWarning, setShowRootedWarning] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!JailMonkey.isJailBroken()) return;
+        const alreadySeen = await AsyncStorage.getItem(ROOTED_WARNING_SEEN_KEY);
+        if (!alreadySeen) setShowRootedWarning(true);
+      } catch {
+        // Detection failing shouldn't ever block app usage.
+      }
+    })();
+  }, []);
+
+  const dismissRootedWarning = () => {
+    setShowRootedWarning(false);
+    AsyncStorage.setItem(ROOTED_WARNING_SEEN_KEY, 'true').catch(() => {});
+  };
 
   return (
     <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -193,6 +223,14 @@ function RootLayoutContent() {
         <Stack.Screen name="tech-helper" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
+      <CustomAlertModal
+        visible={showRootedWarning}
+        title={t('security.rooted_device_title')}
+        message={t('security.rooted_device_msg')}
+        iconName="shield-outline"
+        buttonText={t('common.ok')}
+        onClose={dismissRootedWarning}
+      />
     </NavigationThemeProvider>
   );
 }

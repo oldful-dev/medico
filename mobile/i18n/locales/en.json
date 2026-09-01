@@ -1,4 +1,8 @@
 {
+  "security": {
+    "rooted_device_title": "Device Security Notice",
+    "rooted_device_msg": "This device appears to be rooted or jailbroken, which can reduce the security of the data stored on it. You can continue using the app, but we recommend using a standard, unmodified device for accessing your health information."
+  },
   "common": {
     "ok": "OK",
     "cancel": "Cancel",

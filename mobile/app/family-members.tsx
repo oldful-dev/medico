@@ -12,6 +12,7 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 
 const RELATIONS = ['Father', 'Mother', 'Spouse', 'Son', 'Daughter', 'Sibling', 'Dependent', 'Other'];
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-', 'Unknown'];
@@ -29,6 +30,7 @@ const RELATION_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function FamilyMembersScreen() {
+    usePreventScreenCapture('family-members'); // blood group, allergies, chronic conditions shown per member
     const router = useRouter();
     const { profile } = useUser();
     const { isDarkMode } = useTheme();

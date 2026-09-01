@@ -12,10 +12,12 @@ import { userService } from '@/services/api/userService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function EditMedicalCardScreen() {
+    usePreventScreenCapture('edit-medical-card'); // same PHI as medical-card.tsx, being edited
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const { isDarkMode } = useTheme();

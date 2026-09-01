@@ -51,6 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // and avoid split-second white flashes before the state takes over.
                 await new Promise(resolve => setTimeout(resolve, 500));
 
+                // One-time migration from plaintext AsyncStorage (pre-SecureStore
+                // app versions) — must run before getAuthTokens() so an existing
+                // session survives the update instead of forcing a re-login.
+                await storageService.migrateAuthTokensToSecureStore();
+
                 const { accessToken, refreshToken } = await storageService.getAuthTokens();
                 const userId = await storageService.getItem(STORAGE_KEYS.USER_ID);
 
@@ -132,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // ─── Register callback: when apiClient refreshes the token, persist it ──
     useEffect(() => {
         apiClient.setTokenRefreshedCallback(async (newAccessToken: string) => {
-            await storageService.setItem(STORAGE_KEYS.AUTH_TOKEN, newAccessToken);
+            await storageService.setSecureItem(STORAGE_KEYS.AUTH_TOKEN, newAccessToken);
             setState(prev => ({ ...prev, token: newAccessToken }));
         });
 

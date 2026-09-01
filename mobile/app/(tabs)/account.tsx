@@ -18,6 +18,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { userService, ApiError } from '@/services/api/userService';
 import { getAssetUrl } from '@/utils/getAssetUrl';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { legalService, LegalDocument } from '@/services/api/legalService';
@@ -91,6 +92,7 @@ const getDocStyle = (type: string, isDarkMode: boolean) => {
 };
 
 export default function AccountScreen() {
+    usePreventScreenCapture('account-tab'); // shows a blood-group/allergies preview in the Medical & Health section
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const { logout } = useAuth();

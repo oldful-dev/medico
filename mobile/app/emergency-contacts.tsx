@@ -11,6 +11,7 @@ import { userService } from '@/services/api/userService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 
 interface EmergencyContact {
     id?: string;
@@ -22,6 +23,7 @@ interface EmergencyContact {
 const RELATIONSHIPS = ['Son', 'Daughter', 'Spouse', 'Neighbour', 'Sibling', 'Friend', 'Other'];
 
 export default function EmergencyContactsScreen() {
+    usePreventScreenCapture('emergency-contacts'); // names/numbers used for medical emergencies
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const { isDarkMode } = useTheme();

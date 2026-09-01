@@ -76,6 +76,13 @@ export default {
       ],
       "@react-native-community/datetimepicker",
       "./plugins/withGoogleSigninAndroidOnly.js",
+      "./plugins/withAndroidHardening.js",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       [
         "expo-location",
         {
