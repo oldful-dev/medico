@@ -12,6 +12,7 @@ export default {
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ayuxacare.app",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSCameraUsageDescription": "Ayuxa needs camera access to let you take photos of prescriptions, lab reports, and your profile picture.",
         "NSPhotoLibraryUsageDescription": "Ayuxa needs photo library access to let you upload prescriptions, lab reports, and your profile picture.",
@@ -75,7 +76,7 @@ export default {
         }
       ],
       "@react-native-community/datetimepicker",
-      "./plugins/withGoogleSigninAndroidOnly.js",
+      "@react-native-google-signin/google-signin",
       "./plugins/withAndroidHardening.js",
       [
         "expo-secure-store",

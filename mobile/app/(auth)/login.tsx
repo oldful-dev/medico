@@ -1,13 +1,14 @@
 // Login Screen — Mobile OTP + Social Login (no password)
 // Flow: Enter mobile → Request OTP → Inline OTP boxes → Login → Home
 import React, { useState, useEffect, useCallback, useRef, type Ref } from 'react';
-import { View, Text, TextInput, Image, TouchableOpacity, ScrollView, StyleSheet, Animated, Keyboard, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, ScrollView, StyleSheet, Animated, Keyboard, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { OTPInput, GoogleIcon, type OTPInputRef } from '@/components/common';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { Colors, Fonts, FontSize, Radius } from '@/constants/theme';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
@@ -17,16 +18,10 @@ import { useTranslation } from 'react-i18next';
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '351969749690-lgbb5emsvvjsmtegnf44vvebd7lcna1k.apps.googleusercontent.com';
 
-// Google Sign-In's iOS native module isn't configured yet (needs a real
-// GoogleService-Info.plist from Firebase Console) — skip on iOS so it
-// doesn't crash at launch. Android is unaffected. Remove this guard once
-// the iOS Firebase app is registered and the plugin is wired in.
-if (Platform.OS !== 'ios') {
-    GoogleSignin.configure({
-        webClientId: WEB_CLIENT_ID,
-        offlineAccess: true,
-    });
-}
+GoogleSignin.configure({
+    webClientId: WEB_CLIENT_ID,
+    offlineAccess: true,
+});
 
 // Figma-exported assets
 const logoImage = require('@/assets/images/nameandlogo.png');
@@ -48,6 +43,19 @@ export default function LoginScreen() {
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const isVerifyingRef = useRef(false);
     const otpRef = useRef<OTPInputRef>(null);
+
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx) —
+    // every error/success message on this screen was silently going
+    // nowhere until this was wired to CustomAlertModal instead.
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'alert-circle-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'alert-circle-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
 
     // Animation for OTP section reveal
@@ -92,7 +100,7 @@ export default function LoginScreen() {
             }).start();
         } catch (error) {
             const apiError = error as ApiError;
-            Alert.alert('Error', apiError.message || 'Failed to request OTP');
+            triggerAlert(t('common.error'), apiError.message || 'Failed to request OTP');
         } finally {
             setIsLoading(false);
         }
@@ -105,10 +113,10 @@ export default function LoginScreen() {
             await authService.requestOTP({ phoneNumber: formattedPhone });
             setTimer(30);
             setCanResend(false);
-            Alert.alert('Success', 'OTP resent successfully');
+            triggerAlert(t('common.success'), 'OTP resent successfully', 'checkmark-circle-outline');
         } catch (error) {
             const apiError = error as ApiError;
-            Alert.alert('Error', apiError.message || 'Failed to resend OTP');
+            triggerAlert(t('common.error'), apiError.message || 'Failed to resend OTP');
         } finally {
             setIsLoading(false);
         }
@@ -145,7 +153,7 @@ export default function LoginScreen() {
                 }
             } catch (error) {
                 const apiError = error as ApiError;
-                Alert.alert('Error', apiError.message || 'Invalid or expired OTP');
+                triggerAlert(t('common.error'), apiError.message || 'Invalid or expired OTP');
                 otpRef.current?.clear();
             } finally {
                 setIsLoading(false);
@@ -167,7 +175,7 @@ export default function LoginScreen() {
             const user = userInfo.data?.user;
 
             if (!idToken || !user) {
-                Alert.alert('Error', 'Google sign-in failed — no token received.');
+                triggerAlert(t('common.error'), 'Google sign-in failed — no token received.');
                 return;
             }
 
@@ -194,7 +202,7 @@ export default function LoginScreen() {
                 await login(response.data.accessToken, response.data.refreshToken, response.data.user.id);
                 router.replace('/(tabs)');
             } else {
-                Alert.alert('Error', 'Google sign-in failed. Please try again.');
+                triggerAlert(t('common.error'), 'Google sign-in failed. Please try again.');
             }
         } catch (error: any) {
             if (error.code === statusCodes.SIGN_IN_CANCELLED) {
@@ -202,7 +210,7 @@ export default function LoginScreen() {
             } else if (error.code === statusCodes.IN_PROGRESS) {
                 // already in progress — silent
             } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-                Alert.alert('Error', 'Google Play Services not available or outdated.');
+                triggerAlert(t('common.error'), 'Google Play Services not available or outdated.');
             } else {
                 console.error('Google sign-in error:', JSON.stringify(error, null, 2));
 
@@ -215,7 +223,7 @@ export default function LoginScreen() {
                     errorMessage = 'Network error. Please check your internet connection.';
                 }
 
-                Alert.alert('Login Failed', errorMessage);
+                triggerAlert('Login Failed', errorMessage);
             }
         } finally {
             setIsGoogleLoading(false);
@@ -344,22 +352,26 @@ export default function LoginScreen() {
 
                     {/* ─── Social Login Icons ─── */}
                     <View style={styles.socialButtonsRow}>
-                        {Platform.OS !== 'ios' && (
-                            <TouchableOpacity
-                                style={[styles.socialIconButton, isGoogleLoading && { opacity: 0.6 }]}
-                                activeOpacity={0.7}
-                                onPress={handleGoogleSignIn}
-                                disabled={isGoogleLoading}
-                            >
-                                {isGoogleLoading ? (
-                                    <ActivityIndicator size="small" color={colors.primary} />
-                                ) : (
-                                    <GoogleIcon size={24} />
-                                )}
-                            </TouchableOpacity>
-                        )}
+                        <TouchableOpacity
+                            style={[styles.socialIconButton, isGoogleLoading && { opacity: 0.6 }]}
+                            activeOpacity={0.7}
+                            onPress={Platform.OS === 'ios'
+                                ? () => triggerAlert(t('common.coming_soon'), 'Google sign-in on iOS is coming soon.', 'time-outline')
+                                : handleGoogleSignIn}
+                            disabled={isGoogleLoading}
+                        >
+                            {isGoogleLoading ? (
+                                <ActivityIndicator size="small" color={colors.primary} />
+                            ) : (
+                                <GoogleIcon size={24} />
+                            )}
+                        </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.socialIconButton} activeOpacity={0.7}>
+                        <TouchableOpacity
+                            style={styles.socialIconButton}
+                            activeOpacity={0.7}
+                            onPress={() => triggerAlert(t('common.coming_soon'), 'Sign in with Apple is coming soon.', 'time-outline')}
+                        >
                             <Ionicons name="logo-apple" size={24} color={colors.textDark} />
                         </TouchableOpacity>
                     </View>
@@ -373,6 +385,14 @@ export default function LoginScreen() {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </SafeAreaView>
     );
 }

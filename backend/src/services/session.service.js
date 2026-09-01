@@ -192,19 +192,25 @@ const recordUserSession = async ({ userId, req }) => {
             }
         }
 
-        const session = await prisma.userSession.create({
-            data: {
-                userId,
-                deviceType: info.deviceType,
-                os: info.os,
-                browser: info.browser,
-                ipAddress: info.ipAddress,
-                city: finalCity || 'Delhi NCR',
-                state: finalState || 'Delhi',
-                isActive: true,
-                lastActiveAt: new Date(),
-            },
+        // Re-login from the same device shouldn't spawn a new "active" row.
+        // No stable device id from the app yet, so key on userId + platform.
+        const sessionData = {
+            userId,
+            deviceType: info.deviceType,
+            os: info.os,
+            browser: info.browser,
+            ipAddress: info.ipAddress,
+            city: finalCity || 'Delhi NCR',
+            state: finalState || 'Delhi',
+            isActive: true,
+            lastActiveAt: new Date(),
+        };
+        const existing = await prisma.userSession.findFirst({
+            where: { userId, deviceType: info.deviceType, os: info.os },
         });
+        const session = existing
+            ? await prisma.userSession.update({ where: { id: existing.id }, data: sessionData })
+            : await prisma.userSession.create({ data: sessionData });
 
         try {
             const { emitToAdmins } = require('./socket.service');
@@ -234,8 +240,11 @@ const recordUserSession = async ({ userId, req }) => {
  * Get active sessions for real-time Super Admin monitoring dashboard
  */
 const getActiveSessions = async ({ type = 'all', state }) => {
-    const adminWhere = { isActive: true };
-    const userWhere = { isActive: true };
+    // "Active" for the dashboard = flagged active AND seen in the last 7 days.
+    // Guards against stale rows before the reaper cron catches them.
+    const recentlySeen = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+    const adminWhere = { isActive: true, lastActiveAt: recentlySeen };
+    const userWhere = { isActive: true, lastActiveAt: recentlySeen };
 
     if (state) {
         adminWhere.state = { contains: state, mode: 'insensitive' };

@@ -39,16 +39,14 @@ const authenticate = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
         if (decoded.sessionId) {
-            if (decoded.type === 'admin') {
-                const activeSession = await prisma.adminSession.findUnique({ where: { id: decoded.sessionId } });
-                if (!activeSession || !activeSession.isActive) {
-                    return res.status(401).json({ success: false, message: 'Session terminated' });
-                }
-            } else {
-                const activeSession = await prisma.userSession.findUnique({ where: { id: decoded.sessionId } });
-                if (!activeSession || !activeSession.isActive) {
-                    return res.status(401).json({ success: false, message: 'Session terminated' });
-                }
+            const model = decoded.type === 'admin' ? prisma.adminSession : prisma.userSession;
+            const activeSession = await model.findUnique({ where: { id: decoded.sessionId } });
+            if (!activeSession || !activeSession.isActive) {
+                return res.status(401).json({ success: false, message: 'Session terminated' });
+            }
+            // Keep "Last Active" fresh — throttled to one write / 5 min / session.
+            if (Date.now() - new Date(activeSession.lastActiveAt).getTime() > 5 * 60 * 1000) {
+                model.update({ where: { id: decoded.sessionId }, data: { lastActiveAt: new Date() } }).catch(() => {});
             }
         }
 
@@ -151,6 +149,9 @@ const authenticateUser = async (req, res, next) => {
             const activeSession = await prisma.userSession.findUnique({ where: { id: decoded.sessionId } });
             if (!activeSession || !activeSession.isActive) {
                 return res.status(401).json({ success: false, message: 'Session terminated. Please login again.' });
+            }
+            if (Date.now() - new Date(activeSession.lastActiveAt).getTime() > 5 * 60 * 1000) {
+                prisma.userSession.update({ where: { id: decoded.sessionId }, data: { lastActiveAt: new Date() } }).catch(() => {});
             }
         }
 

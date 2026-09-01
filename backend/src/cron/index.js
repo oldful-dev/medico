@@ -360,6 +360,23 @@ const initCronJobs = () => {
         }
     });
 
+    // ─── 9. Stale Session Reaper (Daily at 3 AM) ──────────
+    // Logout doesn't always fire (app killed, uninstalled, token expired), so
+    // sessions idle > 30 days are treated as dead and marked inactive.
+    cron.schedule('0 3 * * *', async () => {
+        logger.info('⏰ CRON: Running stale session reaper...');
+        try {
+            const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const [u, a] = await Promise.all([
+                prisma.userSession.updateMany({ where: { isActive: true, lastActiveAt: { lt: cutoff } }, data: { isActive: false } }),
+                prisma.adminSession.updateMany({ where: { isActive: true, lastActiveAt: { lt: cutoff } }, data: { isActive: false } }),
+            ]);
+            logger.info(`⏰ CRON: Reaped ${u.count} user + ${a.count} admin stale sessions`);
+        } catch (error) {
+            logger.error('CRON stale session reaper error:', error);
+        }
+    });
+
     logger.info('✅ All cron jobs registered');
 };
 

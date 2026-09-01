@@ -391,6 +391,12 @@ const logout = async (req, res, next) => {
                 where: { id: req.user.id },
                 data: { refreshToken: null },
             });
+            if (req.user.sessionId) {
+                await prisma.adminSession.updateMany({
+                    where: { id: req.user.sessionId },
+                    data: { isActive: false },
+                });
+            }
             // Mobile app users authenticate via bearer token only (no
             // cookies); only admins have HttpOnly auth cookies to clear.
             clearAdminAuthCookies(res);
@@ -399,6 +405,12 @@ const logout = async (req, res, next) => {
                 where: { id: req.user.id },
                 data: { refreshToken: null },
             });
+            if (req.user.sessionId) {
+                await prisma.userSession.updateMany({
+                    where: { id: req.user.sessionId },
+                    data: { isActive: false },
+                });
+            }
         }
 
         res.json({ success: true, message: 'Logged out successfully' });

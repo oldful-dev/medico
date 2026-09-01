@@ -213,6 +213,13 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
 
   // Set base charge dynamically for pricing card
   const getPricingLabel = () => {
+    // Admin's "Display Pricing Text" is a per-service override — if set,
+    // it wins over the generic per-checkout-group text below (which was
+    // built before that admin field existed and never got wired to it).
+    if (dbService?.pricingText) {
+      return dbService.pricingText;
+    }
+
     const baseFee = dbService?.basePrice !== undefined && dbService?.basePrice !== null ? dbService.basePrice : (checkoutGroup === 'C' ? 499 : 299);
     if (checkoutGroup === 'A') {
       return t('service_detail.pricing_a', '₹299 Service Charge + Vendor Bill')

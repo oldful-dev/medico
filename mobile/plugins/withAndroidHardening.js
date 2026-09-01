@@ -36,6 +36,15 @@ const NETWORK_SECURITY_CONFIG_XML = `<?xml version="1.0" encoding="utf-8"?>
   those are separate services whose certificate rotation this app does
   not control, and pinning them would only add risk without benefit.
 
+  Note the explicit <base-config cleartextTrafficPermitted="true">: a
+  network_security_config.xml existing at all makes Android's IMPLICIT
+  base config default cleartextTrafficPermitted to false on API 28+,
+  regardless of the manifest's usesCleartextTraffic flag — without this,
+  a RELEASE build (which doesn't get the src/debug override below) would
+  silently break any legitimate http:// call the app makes. Pinning only
+  applies within the domain-config below; this base default is otherwise
+  unchanged from stock Android behavior on older API levels.
+
   expiration is set ~9 months out (well past this cert's Oct 2026 leaf
   renewal, which doesn't affect this root-level pin anyway) as a safety
   valve: if this file is never revisited, pinning silently STOPS being
@@ -48,6 +57,7 @@ const NETWORK_SECURITY_CONFIG_XML = `<?xml version="1.0" encoding="utf-8"?>
   before ever touching this file again.
 -->
 <network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
     <domain-config>
         <domain includeSubdomains="false">api.ayuxacare.com</domain>
         <pin-set expiration="2027-06-01">
@@ -57,6 +67,25 @@ const NETWORK_SECURITY_CONFIG_XML = `<?xml version="1.0" encoding="utf-8"?>
             <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
         </pin-set>
     </domain-config>
+</network-security-config>
+`;
+
+// Debug builds additionally need to reach the local Metro dev server over
+// plain http:// on a LAN IP (e.g. 10.x.x.x) — cleartextTrafficPermitted
+// alone doesn't scope pinning away from that traffic, it just allows
+// cleartext in general (which debug builds already need for Metro
+// regardless of pinning). Resource merging prefers this debug-variant file
+// over the main one automatically, same as the existing
+// android:usesCleartextTraffic override in src/debug/AndroidManifest.xml.
+const NETWORK_SECURITY_CONFIG_DEBUG_XML = `<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-only override: no pinning at all, cleartext allowed everywhere.
+  This file is NEVER included in a release build (Android resource
+  merging: src/debug/res only applies to the debug variant) — see the
+  main network_security_config.xml for the real production config.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>
 `;
 
@@ -160,9 +189,14 @@ const withNetworkSecurityConfigFile = (config) => {
     return withDangerousMod(config, [
         'android',
         async (config) => {
-            const xmlDir = path.join(config.modRequest.platformProjectRoot, 'app/src/main/res/xml');
-            fs.mkdirSync(xmlDir, { recursive: true });
-            fs.writeFileSync(path.join(xmlDir, 'network_security_config.xml'), NETWORK_SECURITY_CONFIG_XML);
+            const mainXmlDir = path.join(config.modRequest.platformProjectRoot, 'app/src/main/res/xml');
+            fs.mkdirSync(mainXmlDir, { recursive: true });
+            fs.writeFileSync(path.join(mainXmlDir, 'network_security_config.xml'), NETWORK_SECURITY_CONFIG_XML);
+
+            const debugXmlDir = path.join(config.modRequest.platformProjectRoot, 'app/src/debug/res/xml');
+            fs.mkdirSync(debugXmlDir, { recursive: true });
+            fs.writeFileSync(path.join(debugXmlDir, 'network_security_config.xml'), NETWORK_SECURITY_CONFIG_DEBUG_XML);
+
             return config;
         },
     ]);

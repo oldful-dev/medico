@@ -1,12 +1,13 @@
 // OTP Verification Screen — Pixel-matched to Figma frame "OTP Verifiication" (4:4)
 // Layout: Back arrow + Help header, title/phone, OTP boxes, resend row
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { OTPInput, OTPInputRef } from '@/components/common';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { authService } from '@/services/api/authService';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +27,18 @@ export default function OtpVerificationScreen() {
     const [timer, setTimer] = useState(RESEND_TIMEOUT);
     const [canResend, setCanResend] = useState(false);
     const otpRef = useRef<OTPInputRef>(null);
+
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx) —
+    // wired to CustomAlertModal instead, same pattern as login.tsx.
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'alert-circle-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'alert-circle-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     // Mask phone: +91 9876XXXX78 → +91 9876***078
     const maskedPhone = phoneNumber
@@ -51,7 +64,7 @@ export default function OtpVerificationScreen() {
         try {
             const res = await authService.verifyOTP({ phoneNumber, otp });
             if (!res.success || !res.data) {
-                Alert.alert('Invalid OTP', res.message ?? 'Please check the code and try again.');
+                triggerAlert('Invalid OTP', res.message ?? 'Please check the code and try again.');
                 return;
             }
             if (res.data.isNewUser) {
@@ -66,7 +79,7 @@ export default function OtpVerificationScreen() {
                 router.replace('/(tabs)');
             }
         } catch {
-            Alert.alert('Error', 'Something went wrong. Please try again.');
+            triggerAlert(t('common.error'), 'Something went wrong. Please try again.');
             otpRef.current?.clear();
         } finally {
             setIsVerifying(false);
@@ -81,7 +94,7 @@ export default function OtpVerificationScreen() {
             setTimer(RESEND_TIMEOUT);
             setCanResend(false);
         } catch {
-            Alert.alert('Error', 'Could not resend OTP. Please try again.');
+            triggerAlert(t('common.error'), 'Could not resend OTP. Please try again.');
         }
     }, [canResend, phoneNumber]);
 
@@ -132,6 +145,14 @@ export default function OtpVerificationScreen() {
                 {!canResend && <Text style={[styles.timerText, { color: isDarkMode ? '#909090' : '#9C9C9C' }]}>{timerLabel}</Text>}
             </View>
 
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </SafeAreaView>
     );
 }
