@@ -11,6 +11,11 @@ const api = axios.create({
 });
 
 // ── Request interceptor: Inject auth token ──
+// The backend now sets the admin token as an HttpOnly cookie (js-cookie
+// physically cannot read it — that's the point of HttpOnly), and
+// withCredentials: true above makes the browser attach it automatically.
+// Cookies.get('adminToken') only returns something here for an admin still
+// on a cached pre-hardening frontend build with the old readable cookie.
 api.interceptors.request.use(
     (config) => {
         const token = Cookies.get('adminToken');
@@ -27,15 +32,25 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         if (error.response?.status === 401) {
-            // Try refresh token
-            const refreshToken = Cookies.get('adminRefreshToken');
-            if (refreshToken && !error.config._retry) {
+            if (!error.config._retry) {
                 error.config._retry = true;
                 try {
-                    const res = await axios.post(`${API_URL}/auth/admin/refresh`, { refreshToken });
+                    // No body needed — the browser sends the HttpOnly
+                    // adminRefreshToken cookie automatically via
+                    // withCredentials. The body fallback only matters for
+                    // an admin on a cached old build with a readable cookie.
+                    const legacyRefreshToken = Cookies.get('adminRefreshToken');
+                    const res = await axios.post(
+                        `${API_URL}/auth/admin/refresh`,
+                        legacyRefreshToken ? { refreshToken: legacyRefreshToken } : {},
+                        { withCredentials: true }
+                    );
                     if (res.data.success) {
+                        // Kept for the same legacy-build fallback as above —
+                        // does nothing useful once cookies are HttpOnly, but
+                        // is harmless to leave in place during rollout.
                         Cookies.set('adminToken', res.data.data.accessToken, { expires: 1 });
-                        
+
                         try {
                             getSocket().then(socket => {
                                 if (socket) {
@@ -45,6 +60,7 @@ api.interceptors.response.use(
                         } catch (_) {}
 
                         error.config.headers.Authorization = `Bearer ${res.data.data.accessToken}`;
+                        error.config.withCredentials = true;
                         return api(error.config);
                     }
                 } catch (_) { }
@@ -68,6 +84,7 @@ export const authAPI = {
     login: (email, password) => api.post('/auth/admin/login', { email, password }),
     register: (data) => api.post('/auth/admin/register', data),
     refresh: (refreshToken) => api.post('/auth/admin/refresh', { refreshToken }),
+    me: () => api.get('/auth/admin/me'),
     logout: () => api.post('/auth/logout'),
 };
 
@@ -144,6 +161,13 @@ export const bookingAPI = {
     updateServicePerson: (id, data) => api.put(`/bookings/${id}/service-person`, data),
     escalate: (id) => api.put(`/bookings/${id}/escalate`),
     getInvoiceDownloadUrl: (id) => {
+        // The ?token= param only ever mattered for a link navigation to
+        // authenticate before HttpOnly cookies existed. Cookies.get now
+        // returns undefined for a current-build admin (expected — HttpOnly
+        // isn't JS-readable), leaving an empty param, which is fine: the
+        // backend also accepts the HttpOnly adminToken cookie, which the
+        // browser attaches automatically on this same top-level navigation
+        // (sameSite: 'none' in production allows it cross-subdomain).
         const token = Cookies.get('adminToken') || '';
         return `${api.defaults.baseURL || '/api'}/bookings/admin/${id}/invoice?token=${token}`;
     }
@@ -345,6 +369,7 @@ export const labAPI = {
     // Body: { reason? } — admin-only, also notifies Redcliffe + emits socket/FCM push
     adminCancel: (id, data) => api.post(`/labs/booking/${id}/admin-cancel`, data),
     getInvoiceDownloadUrl: (id) => {
+        // See bookingAPI.getInvoiceDownloadUrl above — same HttpOnly note.
         const token = Cookies.get('adminToken') || '';
         return `${api.defaults.baseURL || '/api'}/labs/admin/booking/${id}/invoice?token=${token}`;
     },
@@ -399,4 +424,3 @@ export const analyticsAPI = {
 };
 
 export default api;
-

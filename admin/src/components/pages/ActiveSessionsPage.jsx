@@ -3,9 +3,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Monitor, Smartphone, Tablet, Globe, Shield, RefreshCw, XCircle, AlertCircle, ArrowLeft, Radio } from "lucide-react";
-import { sessionAPI } from "@/lib/api";
+import { sessionAPI, authAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
-import Cookies from "js-cookie";
 
 export default function ActiveSessionsPage({ lockType, title }) {
     const router = useRouter();
@@ -40,22 +39,15 @@ export default function ActiveSessionsPage({ lockType, title }) {
         }
     };
 
-    // Decode JWT from cookie to find the current active session ID
+    // Find the current active session ID (to highlight "this device") — the
+    // adminToken cookie is now HttpOnly and can't be decoded client-side,
+    // so ask the backend instead, same as useAuthStore's checkAuth.
     useEffect(() => {
-        try {
-            const token = Cookies.get("adminToken");
-            if (token) {
-                const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                }).join(''));
-                const decoded = JSON.parse(jsonPayload);
-                setCurrentSessionId(decoded.sessionId);
-            }
-        } catch (e) {
-            console.error('Failed to decode adminToken cookie:', e);
-        }
+        authAPI.me()
+            .then((res) => {
+                if (res.data?.success) setCurrentSessionId(res.data.data.sessionId);
+            })
+            .catch((e) => console.error('Failed to fetch current session:', e));
     }, []);
 
     // Initial load + filter change trigger

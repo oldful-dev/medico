@@ -11,9 +11,12 @@ const useAuthStore = create((set) => ({
         try {
             const res = await authAPI.login(email, password);
             if (res.data.success) {
-                const { accessToken, refreshToken, admin } = res.data.data;
-                Cookies.set('adminToken', accessToken, { expires: 1 });
-                Cookies.set('adminRefreshToken', refreshToken, { expires: 7 });
+                const { admin } = res.data.data;
+                // Tokens are now set as HttpOnly cookies by the backend
+                // (Set-Cookie on the login response) — nothing to store
+                // here. res.data.data.accessToken/refreshToken are still
+                // present in the body only as a fallback for a cached old
+                // frontend build; a current build never reads them.
                 set({ user: admin, isAuthenticated: true });
                 return { success: true };
             }
@@ -32,30 +35,30 @@ const useAuthStore = create((set) => ({
         try {
             await authAPI.logout();
         } catch (e) { }
+        // Legacy cookies from a pre-hardening session, if any — harmless
+        // no-op once the real HttpOnly cookies are already backend-cleared.
         Cookies.remove('adminToken');
         Cookies.remove('adminRefreshToken');
         set({ user: null, isAuthenticated: false });
     },
 
-    checkAuth: () => {
-        const token = Cookies.get('adminToken');
-        if (token) {
-            try {
-                // Decode JWT payload to get user info
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                set({
-                    user: { id: payload.id, role: payload.role, cityId: payload.cityId },
-                    isAuthenticated: true,
-                    loading: false
-                });
-            } catch (e) {
-                Cookies.remove('adminToken');
-                set({ user: null, isAuthenticated: false, loading: false });
+    // Restores session state on page load. The auth token is now an
+    // HttpOnly cookie the frontend can't decode itself, so this asks the
+    // backend who's logged in instead of reading a local JWT. The browser
+    // attaches the cookie automatically (withCredentials in lib/api.js);
+    // a 401 here means "not logged in" just like before.
+    checkAuth: async () => {
+        try {
+            const res = await authAPI.me();
+            if (res.data.success) {
+                set({ user: res.data.data, isAuthenticated: true, loading: false });
+                return;
             }
-        } else {
+            set({ user: null, isAuthenticated: false, loading: false });
+        } catch (e) {
             set({ user: null, isAuthenticated: false, loading: false });
         }
-    }
+    },
 }));
 
 export default useAuthStore;
