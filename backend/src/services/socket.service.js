@@ -19,6 +19,9 @@ const init = (httpServer) => {
                     'https://ayuxa.com',
                     'https://www.ayuxa.com',
                     'https://admin.ayuxa.com',
+                    'https://ayuxacare.com',
+                    'https://www.ayuxacare.com',
+                    'https://admin.ayuxacare.com',
                     'https://oldful-admin.vercel.app',
                     process.env.ADMIN_FRONTEND_URL,
                     process.env.APP_FRONTEND_URL,
@@ -34,9 +37,12 @@ const init = (httpServer) => {
                 if (isAllowed) {
                     callback(null, true);
                 } else {
-                    // Mobile apps don't have traditional origins; allow with debug log
-                    logger.debug(`[Socket] Non-standard origin: ${origin} (allowing for mobile)`);
-                    callback(null, true);
+                    // Mobile apps send no Origin header at all and are already
+                    // handled by the `!origin` check above — anything that
+                    // reaches here IS a browser origin that failed the
+                    // allowlist, so it must be rejected, not waved through.
+                    logger.warn(`[Socket] CORS blocked: ${origin}`);
+                    callback(null, false);
                 }
             },
             methods: ['GET', 'POST'],
@@ -49,7 +55,19 @@ const init = (httpServer) => {
 
     // Authentication middleware
     io.use((socket, next) => {
-        const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+        let token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+
+        // admin.ayuxacare.com now sends the admin token as an HttpOnly
+        // cookie (withCredentials: true on the socket client) rather than
+        // in the `auth` payload — parse it out of the raw handshake cookie
+        // header, same fallback pattern as the HTTP authenticateAdmin
+        // middleware.
+        if (!token && socket.handshake.headers.cookie) {
+            try {
+                const cookies = require('cookie').parse(socket.handshake.headers.cookie);
+                token = cookies.adminToken;
+            } catch { /* fall through to unauthenticated */ }
+        }
 
         if (!token) {
             logger.debug('[Socket] No token provided, allowing unauthenticated connection for now');

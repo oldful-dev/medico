@@ -2,7 +2,7 @@
 const router = require('express').Router();
 const { authenticate, authenticateAdmin, authenticateUser } = require('../middleware/auth');
 const { authorize, cityRestriction } = require('../middleware/rbac');
-const { auditMiddleware } = require('../middleware/audit');
+const { auditMiddleware, auditReadMiddleware } = require('../middleware/audit');
 const upload = require('../middleware/upload');
 const ctrl = require('../controllers/user.controller');
 
@@ -17,10 +17,10 @@ router.get('/profile/export-data', authenticateUser, ctrl.exportMyData);
 router.get('/profile/export-data-pdf', authenticateUser, ctrl.exportMyDataPDF);
 router.post('/profile/email-my-data', authenticateUser, ctrl.emailMyData);
 
-router.get('/admin/health-reports', authenticateAdmin, ctrl.getAllHealthReports);
-router.get('/health-reports/:reportId/view-url', authenticateAdmin, ctrl.getHealthReportViewUrl);
+router.get('/admin/health-reports', authenticateAdmin, cityRestriction, auditReadMiddleware('HealthReport'), ctrl.getAllHealthReports);
+router.get('/health-reports/:reportId/view-url', authenticateAdmin, cityRestriction, auditReadMiddleware('HealthReport'), ctrl.getHealthReportViewUrl);
 router.get('/', authenticateAdmin, cityRestriction, ctrl.getUsers);
-router.get('/:id', authenticateAdmin, ctrl.getUserById);
+router.get('/:id', authenticateAdmin, cityRestriction, auditReadMiddleware('User'), ctrl.getUserById);
 router.post('/', ctrl.createUser);  // Can be called post-OTP or by admin
 router.put('/:id', authenticateAdmin, auditMiddleware('User'), ctrl.updateUser);
 router.put('/:id/block', authenticateAdmin, authorize('SUPER_ADMIN', 'CITY_ADMIN'), ctrl.blockUser);

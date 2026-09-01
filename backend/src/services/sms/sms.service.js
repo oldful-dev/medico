@@ -36,6 +36,13 @@ const buildVariablesString = (variables) => {
     return variables.map(String).join('|') + '|';
 };
 
+// OTP_USER/ADMIN_LOGIN_OTP's first variable is always the OTP code itself —
+// never persist or print it in plaintext (DB rows and console/host logs are
+// both a credential-leak surface: anyone with log/DB read access could
+// otherwise authenticate as any user).
+const maskVariablesForLog = (templateName, variables) =>
+    OTP_TEMPLATES.has(templateName) ? ['[REDACTED]', ...variables.slice(1)] : variables;
+
 /**
  * Check and set idempotency key. Returns true if duplicate.
  */
@@ -113,7 +120,7 @@ const sendSMS = async ({ template, mobile, variables = [], userId = null }) => {
                 channel: 'SMS',
                 recipientId: userId,
                 recipientType: userId ? 'user' : 'anonymous',
-                body: `[${template}] vars: ${JSON.stringify(variables)}`,
+                body: `[${template}] vars: ${JSON.stringify(maskVariablesForLog(template, variables))}`,
                 isSent: result.success,
                 sentAt: result.success ? new Date() : null,
                 errorMessage: result.success ? null : (result.error || 'Unknown error'),
@@ -129,7 +136,7 @@ const sendSMS = async ({ template, mobile, variables = [], userId = null }) => {
             `[SMS ✅] ${template}` +
             ` | sender: ${tmpl.senderId}` +
             ` | to: +91${cleanMobile}` +
-            ` | vars: [${variables.map(v => String(v).substring(0, 40)).join(', ')}]` +
+            ` | vars: [${maskVariablesForLog(template, variables).map(v => String(v).substring(0, 40)).join(', ')}]` +
             ` | reqId: ${result.requestId || 'n/a'}`
         );
     } else {

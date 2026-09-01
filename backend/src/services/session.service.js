@@ -59,6 +59,17 @@ function extractClientInfo(req) {
 
     let state = rawState && STATE_MAP[rawState.toUpperCase()] ? STATE_MAP[rawState.toUpperCase()] : rawState;
 
+    // Native apps set no browser UA, so they'd fall through to PC/Windows/Chrome.
+    // The mobile client sends X-Client-Info: "app; platform=ios; version=17.4" —
+    // trust that first, fall back to UA sniffing for web/admin.
+    const clientInfo = (req?.headers?.['x-client-info'] || '').toLowerCase();
+    if (clientInfo.startsWith('app;')) {
+        const platform = /platform=(\w+)/.exec(clientInfo)?.[1] || '';
+        const os = platform === 'ios' ? 'iOS' : platform === 'android' ? 'Android' : 'Mobile';
+        const deviceType = platform === 'ipados' ? 'Tablet' : 'Mobile';
+        return { ipAddress, city, state, deviceType, os, browser: 'Ayuxa App' };
+    }
+
     const uaString = (req?.get?.('user-agent') || req?.headers?.['user-agent'] || '').toLowerCase();
     let deviceType = 'PC';
     if (uaString.includes('mobile') || uaString.includes('android') || uaString.includes('iphone')) {

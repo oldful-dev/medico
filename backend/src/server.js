@@ -116,7 +116,7 @@ app.use(cors({
             callback(null, true);
         } else {
             logger.warn(`🚫 CORS blocked: ${origin}`);
-            callback(null, true); // Temporarily allow while debugging, but log it
+            callback(null, false);
         }
     },
     credentials: true,

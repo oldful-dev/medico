@@ -65,4 +65,33 @@ const auditMiddleware = (entity) => {
     };
 };
 
-module.exports = { createAuditLog, auditMiddleware };
+/**
+ * Middleware that logs admin READS of PHI/sensitive records — the plain
+ * auditMiddleware above deliberately skips GET requests (it's a mutation
+ * logger), so viewing/downloading a patient's health data left no trail at
+ * all. This is that missing read-audit: without it, an admin viewing or
+ * downloading a patient's medical records is undetectable after the fact.
+ */
+const auditReadMiddleware = (entity) => {
+    return (req, res, next) => {
+        const originalJson = res.json.bind(res);
+
+        res.json = (body) => {
+            if (req.user && req.user.type === 'admin' && res.statusCode < 400) {
+                createAuditLog({
+                    adminId: req.user.id,
+                    action: `VIEW_${entity.toUpperCase()}`,
+                    entity,
+                    entityId: req.params.id || req.params.reportId || null,
+                    ipAddress: req.ip,
+                    userAgent: req.get('user-agent'),
+                });
+            }
+            return originalJson(body);
+        };
+
+        next();
+    };
+};
+
+module.exports = { createAuditLog, auditMiddleware, auditReadMiddleware };

@@ -1,7 +1,8 @@
 // Report Routes
 const router = require('express').Router();
 const { authenticateAdmin } = require('../middleware/auth');
-const { blockPaymentModulesForNonBilling } = require('../middleware/rbac');
+const { blockPaymentModulesForNonBilling, cityRestriction } = require('../middleware/rbac');
+const { auditReadMiddleware } = require('../middleware/audit');
 const ctrl = require('../controllers/report.controller');
 
 router.use(authenticateAdmin);
@@ -13,7 +14,7 @@ router.get('/service-usage', ctrl.serviceUsage);
 router.get('/caregiver-performance', ctrl.caregiverPerformance);
 router.get('/refund-analysis', blockPaymentModulesForNonBilling, ctrl.refundAnalysis);
 router.get('/customer-retention', ctrl.customerRetention);
-router.get('/csv/:type', ctrl.exportCSV);
+router.get('/csv/:type', cityRestriction, auditReadMiddleware('CSVExport'), ctrl.exportCSV);
 router.get('/alerts', ctrl.getAlertFeed);
 
 module.exports = router;

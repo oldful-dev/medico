@@ -15,6 +15,37 @@ const { sendWhatsApp, requestOTP: requestSmsOTP, verifyOTP: verifySmsOTP } = req
 const { auth: firebaseAuth } = require('../config/firebase');
 const sessionService = require('../services/session.service');
 
+// ─── Admin auth cookies (HttpOnly) ───────────────────────
+// admin.ayuxacare.com is a fully static export (no server), so it can't
+// read/set HttpOnly cookies itself — the backend sets them here, scoped to
+// the shared parent domain so both admin.ayuxacare.com and
+// api.ayuxacare.com receive them. Tokens are ALSO still returned in the
+// JSON body during rollout (see admin/src/lib/api.js) as a fallback for an
+// admin still on a cached old frontend build that expects a body token —
+// remove that once the new cookie-based flow is confirmed stable.
+const ADMIN_COOKIE_DOMAIN = process.env.ADMIN_COOKIE_DOMAIN || '.ayuxacare.com';
+const isProd = process.env.NODE_ENV === 'production';
+
+// SameSite=None is REQUIRED to be paired with Secure (browsers silently
+// drop the cookie otherwise) — so this can only be "none"+secure together
+// in production (real HTTPS + cross-subdomain), or "lax"+not-secure for
+// local HTTP dev (admin/api both effectively localhost, no cross-site need).
+const cookieBaseOptions = () => isProd
+    ? { httpOnly: true, secure: true, sameSite: 'none', domain: ADMIN_COOKIE_DOMAIN, path: '/' }
+    : { httpOnly: true, secure: false, sameSite: 'lax', path: '/' };
+
+const setAdminAuthCookies = (res, accessToken, refreshToken) => {
+    const base = cookieBaseOptions();
+    res.cookie('adminToken', accessToken, { ...base, maxAge: 15 * 60 * 1000 }); // 15m, matches JWT_ACCESS_EXPIRY
+    res.cookie('adminRefreshToken', refreshToken, { ...base, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7d, matches JWT_REFRESH_EXPIRY
+};
+
+const clearAdminAuthCookies = (res) => {
+    const base = cookieBaseOptions();
+    res.clearCookie('adminToken', base);
+    res.clearCookie('adminRefreshToken', base);
+};
+
 // ═══════════════════════════════════════════
 //  ADMIN AUTH
 // ═══════════════════════════════════════════
@@ -66,6 +97,8 @@ const adminLogin = async (req, res, next) => {
             userAgent: req.get('user-agent'),
         });
 
+        setAdminAuthCookies(res, accessToken, refreshToken);
+
         res.json({
             success: true,
             data: {
@@ -80,6 +113,33 @@ const adminLogin = async (req, res, next) => {
                 },
             },
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * GET /api/auth/admin/me
+ * Restores admin session state on page load. Needed because the admin
+ * token is now an HttpOnly cookie — the frontend can no longer decode it
+ * itself (see admin/src/store/useAuthStore.js checkAuth), so it asks the
+ * backend instead. Returns fresh DB data rather than echoing the JWT
+ * payload, in case the admin's role/name/city changed since the token
+ * was issued.
+ */
+const getAdminMe = async (req, res, next) => {
+    try {
+        const admin = await prisma.admin.findUnique({
+            where: { id: req.user.id },
+            select: { id: true, name: true, email: true, role: true, cityId: true, isActive: true },
+        });
+        if (!admin || !admin.isActive) {
+            return res.status(401).json({ success: false, message: 'Account not found or deactivated' });
+        }
+        // sessionId comes from the JWT (req.user), not the DB — used by the
+        // admin frontend's Active Sessions page to highlight "this device"
+        // now that it can no longer decode the HttpOnly cookie itself.
+        res.json({ success: true, data: { ...admin, sessionId: req.user.sessionId || null } });
     } catch (error) {
         next(error);
     }
@@ -122,7 +182,9 @@ const adminRegister = async (req, res, next) => {
  */
 const adminRefreshToken = async (req, res, next) => {
     try {
-        const { refreshToken } = req.body;
+        // Prefer the HttpOnly cookie; fall back to the body for an admin
+        // still on a cached old frontend build (see setAdminAuthCookies).
+        const refreshToken = req.cookies?.adminRefreshToken || req.body?.refreshToken;
         if (!refreshToken) {
             return res.status(400).json({ success: false, message: 'Refresh token required' });
         }
@@ -137,6 +199,9 @@ const adminRefreshToken = async (req, res, next) => {
 
         const payload = { id: admin.id, role: admin.role, type: 'admin', cityId: admin.cityId, sessionId: decoded.sessionId };
         const newAccessToken = generateAccessToken(payload);
+
+        const base = cookieBaseOptions();
+        res.cookie('adminToken', newAccessToken, { ...base, maxAge: 15 * 60 * 1000 });
 
         res.json({ success: true, data: { accessToken: newAccessToken } });
     } catch (error) {
@@ -326,15 +391,15 @@ const logout = async (req, res, next) => {
                 where: { id: req.user.id },
                 data: { refreshToken: null },
             });
+            // Mobile app users authenticate via bearer token only (no
+            // cookies); only admins have HttpOnly auth cookies to clear.
+            clearAdminAuthCookies(res);
         } else {
             await prisma.user.update({
                 where: { id: req.user.id },
                 data: { refreshToken: null },
             });
         }
-
-        res.clearCookie('auth-token');
-        res.clearCookie('refresh-token');
 
         res.json({ success: true, message: 'Logged out successfully' });
     } catch (error) {
@@ -484,6 +549,7 @@ module.exports = {
     adminLogin,
     adminRegister,
     adminRefreshToken,
+    getAdminMe,
     requestOTP,
     verifyOTP,
     userRefreshToken,

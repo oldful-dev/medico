@@ -19,9 +19,15 @@ const authenticate = async (req, res, next) => {
         const authHeader = req.headers.authorization;
         if (authHeader && authHeader.startsWith('Bearer ')) {
             token = authHeader.split(' ')[1];
-        } 
-        
-        // 2. Fallback to httpOnly Cookie (for web)
+        }
+
+        // 2. HttpOnly admin cookie (admin.ayuxacare.com is a static site,
+        // relies on the backend-set cookie rather than a header it can't set)
+        if (!token && req.cookies) {
+            token = req.cookies.adminToken;
+        }
+
+        // 3. Fallback to httpOnly Cookie (for web)
         if (!token && req.signedCookies) {
             token = req.signedCookies['auth-token'];
         }
@@ -66,8 +72,16 @@ const authenticateAdmin = async (req, res, next) => {
         const authHeader = req.headers.authorization;
         if (authHeader && authHeader.startsWith('Bearer ')) {
             token = authHeader.split(' ')[1];
-        } 
-        
+        }
+
+        // HttpOnly cookie set by adminLogin/adminRefreshToken — the primary
+        // path now that admin.ayuxacare.com is a static site with no
+        // server-side auth of its own. The Authorization header above stays
+        // as a fallback for an admin still on a cached old frontend build.
+        if (!token && req.cookies) {
+            token = req.cookies.adminToken;
+        }
+
         if (!token && req.signedCookies) {
             token = req.signedCookies['auth-token'];
         }

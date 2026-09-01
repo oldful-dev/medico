@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const prisma = require('../config/database');
 const { paginate, sendResponse, sendPaginatedResponse, generateUserId } = require('../utils/helpers');
 const { sendWelcomeNotifications } = require('../utils/notifications');
@@ -6,6 +7,18 @@ const { uploadFile, toCDNUrl, refreshSignedUrl } = require('../utils/storage.ser
 const { analyzeMedicalReportFromGCS, analyzeMedicalReportFromBuffer } = require('../utils/ocr.service');
 const { createAuditLog } = require('../middleware/audit');
 const { logger } = require('../config/logger');
+
+// Genuinely irreversible redaction for account deletion. The previous
+// `deleted_${userId}_${phone}` format preserved the original phone/email
+// verbatim inside the string — anyone with DB access (or the string itself)
+// could read it straight back out. This hashes it one-way instead, while
+// still keying on userId so the result stays unique per deleted account
+// (User.phone has a @unique constraint in schema.prisma).
+const redactPII = (userId, value) => {
+    if (!value) return value;
+    const hash = crypto.createHash('sha256').update(`${userId}:${value}`).digest('hex').slice(0, 16);
+    return `deleted_${hash}`;
+};
 
 // Transform GCS URL to CDN URL for profile images
 const transformProfileImageToCDN = (url) => {
@@ -206,6 +219,12 @@ const getUserById = async (req, res, next) => {
 
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
+        // City-scoped admins (e.g. CITY_ADMIN) can't pull a full PHI dossier
+        // for a patient outside their assigned city just by knowing the ID.
+        if (req.cityFilter && user.cityId !== req.cityFilter) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
         const { otpCode, otpExpiresAt, refreshToken, ...safeUser } = user;
 
         // Dynamically sign health report private download URLs
@@ -250,6 +269,20 @@ const createUser = async (req, res, next) => {
         if (!name || name.trim().length < 3) return sendResponse(res, 400, null, 'name is required (min 3 characters)');
         if (!phone) return sendResponse(res, 400, null, 'phone is required');
         if (!cityId) return sendResponse(res, 400, null, 'cityId is required');
+
+        // Terms & Conditions state a minimum age of 18 to register — enforce
+        // it rather than just claiming it. Only validated when provided;
+        // signup doesn't currently require DOB up front, so this only
+        // blocks someone who explicitly declares themselves under 18.
+        if (dateOfBirth) {
+            const dob = new Date(dateOfBirth);
+            if (!isNaN(dob.getTime())) {
+                const age = (Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+                if (age < 18) {
+                    return sendResponse(res, 400, null, 'You must be at least 18 years of age to register.');
+                }
+            }
+        }
 
         const uniqueUserId = await generateUserId(cityId);
 
@@ -846,7 +879,7 @@ const exportMyData = async (req, res, next) => {
                 labOrders: true,
                 productOrders: true,
                 insuranceApps: true,
-                payments: true,
+                payments: { include: { invoice: true } },
                 savedCards: { select: { id: true, cardBrand: true, cardLast4: true, cardType: true, isDefault: true, createdAt: true } },
                 sosAlerts: true,
                 subscriptions: { include: { plan: true } },
@@ -881,7 +914,7 @@ const exportMyDataPDF = async (req, res, next) => {
                 labOrders: true,
                 productOrders: true,
                 insuranceApps: true,
-                payments: true,
+                payments: { include: { invoice: true } },
                 savedCards: { select: { id: true, cardBrand: true, cardLast4: true, cardType: true, isDefault: true, createdAt: true } },
                 sosAlerts: true,
                 subscriptions: { include: { plan: true } },
@@ -919,7 +952,7 @@ const emailMyData = async (req, res, next) => {
                 labOrders: true,
                 productOrders: true,
                 insuranceApps: true,
-                payments: true,
+                payments: { include: { invoice: true } },
                 savedCards: { select: { id: true, cardBrand: true, cardLast4: true, cardType: true, isDefault: true, createdAt: true } },
                 sosAlerts: true,
                 subscriptions: { include: { plan: true } },
@@ -1138,8 +1171,8 @@ const deleteProfile = async (req, res, next) => {
         }
 
         // Anonymize user details but keep records in the DB
-        const redactedPhone = `deleted_${userId}_${user.phone}`;
-        const redactedEmail = user.email ? `deleted_${userId}_${user.email}` : null;
+        const redactedPhone = redactPII(userId, user.phone);
+        const redactedEmail = redactPII(userId, user.email);
 
         // Perform soft delete, clean up tokens, and set status to DELETED
         await prisma.user.update({
@@ -1185,8 +1218,8 @@ const deleteProfileByAdmin = async (req, res, next) => {
         }
 
         // Anonymize user details but keep records in the DB
-        const redactedPhone = `deleted_${userId}_${user.phone}`;
-        const redactedEmail = user.email ? `deleted_${userId}_${user.email}` : null;
+        const redactedPhone = redactPII(userId, user.phone);
+        const redactedEmail = redactPII(userId, user.email);
 
         // Perform soft delete, clean up tokens, and set status to DELETED
         await prisma.user.update({
@@ -1223,8 +1256,15 @@ const getAllHealthReports = async (req, res, next) => {
         if (category) {
             where.category = category;
         }
+        // City-scoped admins (e.g. CITY_ADMIN) only see reports for patients
+        // in their assigned city. All-India roles are unaffected — see
+        // middleware/rbac.js cityRestriction.
+        if (req.cityFilter) {
+            where.user = { ...where.user, cityId: req.cityFilter };
+        }
         if (search) {
             where.user = {
+                ...where.user,
                 OR: [
                     { name: { contains: search, mode: 'insensitive' } },
                     { uniqueUserId: { contains: search, mode: 'insensitive' } },
@@ -1255,9 +1295,15 @@ const getHealthReportViewUrl = async (req, res, next) => {
     try {
         const report = await prisma.healthReport.findUnique({
             where: { id: req.params.reportId },
-            select: { fileUrl: true },
+            select: { fileUrl: true, user: { select: { cityId: true } } },
         });
         if (!report) {
+            return res.status(404).json({ success: false, message: 'Health report not found' });
+        }
+        // City-scoped admins can't mint a signed download URL for a
+        // patient's report outside their assigned city just by knowing
+        // (or guessing) the report ID.
+        if (req.cityFilter && report.user?.cityId !== req.cityFilter) {
             return res.status(404).json({ success: false, message: 'Health report not found' });
         }
         const freshUrl = await refreshSignedUrl(report.fileUrl);

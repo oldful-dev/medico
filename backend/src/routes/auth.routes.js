@@ -39,6 +39,11 @@ router.post('/admin/register',
 
 router.post('/admin/refresh', ctrl.adminRefreshToken);
 
+// Restores admin session state on page load — needed now that the auth
+// token is an HttpOnly cookie the frontend can no longer decode itself
+// (see admin/src/store/useAuthStore.js checkAuth).
+router.get('/admin/me', authenticateAdmin, ctrl.getAdminMe);
+
 // App User Auth
 router.post('/request-otp', otpLimiter, [
     body('phoneNumber').notEmpty().withMessage('Phone number required'),

@@ -345,6 +345,9 @@ const exportCSV = async (req, res, next) => {
         switch (type) {
             case 'users':
                 data = await prisma.user.findMany({
+                    // City-scoped admins (e.g. CITY_ADMIN) only export patients
+                    // in their assigned city — see middleware/rbac.js cityRestriction.
+                    where: req.cityFilter ? { cityId: req.cityFilter } : undefined,
                     select: { uniqueUserId: true, name: true, phone: true, email: true, status: true, healthTag: true, createdAt: true },
                 });
                 headers = ['User ID', 'Name', 'Phone', 'Email', 'Status', 'Health Tag', 'Created At'];
@@ -352,6 +355,7 @@ const exportCSV = async (req, res, next) => {
 
             case 'bookings':
                 data = await prisma.booking.findMany({
+                    where: req.cityFilter ? { cityId: req.cityFilter } : undefined,
                     select: { bookingCode: true, status: true, amount: true, scheduledDate: true, createdAt: true },
                     include: { user: { select: { name: true } }, service: { select: { name: true } } },
                 });

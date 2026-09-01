@@ -40,11 +40,14 @@ const dispatchSMS = async ({ mobile, senderId, templateId, variables }) => {
         payload.entity_id = process.env.FAST2SMS_DLT_ENTITY_ID;
     }
 
+    // Never log variables_values — this is the actual message content and
+    // for OTP templates that means the OTP code itself. This module has no
+    // visibility into which templates are OTP vs not (it only sees a DLT
+    // template ID string), so treat all message content as sensitive here.
     logger.info('[Fast2SMS] Request payload:', {
         route: payload.route,
         sender_id: payload.sender_id,
         message: payload.message,
-        variables_values: payload.variables_values,
         numbers: payload.numbers,
         timestamp: new Date().toISOString(),
     });
