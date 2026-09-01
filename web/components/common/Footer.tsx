@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ScrollText, ShieldCheck, Banknote, AlertTriangle, Cookie, Landmark, Download, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
+import { fetchPublishedList, typeToSlug, type LegalDoc } from '@/lib/legal';
 
 const FALLBACK_SETTINGS = {
   company_name: "Ayuxa Health Tech Platforms Pvt. Ltd.",
@@ -26,6 +27,11 @@ function TextSkeleton({ width }: { width: string }) {
 export function Footer() {
   const [settings, setSettings] = useState<typeof FALLBACK_SETTINGS | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [legalDocs, setLegalDocs] = useState<LegalDoc[]>([]);
+
+  useEffect(() => {
+    fetchPublishedList().then(setLegalDocs).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -127,30 +133,17 @@ export function Footer() {
         {/* Legal Policies */}
         <div className="flex flex-col gap-3">
           <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-2">Legal</h3>
-          <Link href="/privacy" className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 shrink-0" /> Privacy Policy
-          </Link>
-          <Link href="/terms" className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2">
-            <ScrollText className="w-4 h-4 shrink-0" /> Terms & Conditions
-          </Link>
-          <Link href="/refund" className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2">
-            <Banknote className="w-4 h-4 shrink-0" /> Refund & Cancellation Policy
-          </Link>
-          <Link href="/disclaimer" className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0" /> Disclaimer
-          </Link>
-          <Link href="/cookie-policy" className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2">
-            <Cookie className="w-4 h-4 shrink-0" /> Cookie Policy
-          </Link>
-          <Link href="/statutory-disclosures" className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2">
-            <FileText className="w-4 h-4 shrink-0" /> Statutory Disclosures
-          </Link>
-          <Link href="/legal" className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2">
-            <Landmark className="w-4 h-4 shrink-0" /> Legal Information
-          </Link>
-          <Link href="/right-to-access-data" className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2">
-            <Download className="w-4 h-4 shrink-0" /> Right to Access Data
-          </Link>
+          {legalDocs.length === 0
+            ? <TextSkeleton width="150px" />
+            : legalDocs.map((doc) => (
+                <Link
+                  key={doc.id}
+                  href={`/${typeToSlug(doc.type)}`}
+                  className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4 shrink-0" /> {doc.title}
+                </Link>
+              ))}
         </div>
 
         {/* Contact Info */}

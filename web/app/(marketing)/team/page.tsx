@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, ArrowRight, X, MapPin } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 const LinkedInIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -169,9 +170,9 @@ export default function TeamPage() {
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/10 rounded-full blur-[100px]" />
         <div className="container mx-auto px-6 text-center relative z-10">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-8">Building the future of Senior Care.</h2>
-          <a href="/careers" className="inline-flex items-center gap-3 px-10 py-5 bg-white text-[var(--color-primary-deep)] rounded-[20px] font-bold hover:bg-emerald-50 transition-all active:scale-95 shadow-xl">
+          <Link href="/careers" className="inline-flex items-center gap-3 px-10 py-5 bg-white text-[var(--color-primary-deep)] rounded-[20px] font-bold hover:bg-emerald-50 transition-all active:scale-95 shadow-xl">
             View Careers <ArrowRight className="w-5 h-5" />
-          </a>
+          </Link>
         </div>
       </section>
     </div>
@@ -324,9 +325,9 @@ function FullProfileModal({ member, onClose }: { member: TeamMember; onClose: ()
              </div>
 
              <div className="mt-16 pt-8 border-t border-gray-100">
-                <a href="/contact" className="inline-flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[var(--color-primary)] transition-colors">
+                <Link href="/contact" className="inline-flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[var(--color-primary)] transition-colors">
                   Contact for Corporate Inquiries <ArrowRight className="w-4 h-4" />
-                </a>
+                </Link>
              </div>
           </div>
         </div>
