@@ -27,24 +27,47 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
+// Serializes concurrent refresh attempts — without this, two requests that
+// 401 at the same time (e.g. AdminLayout's checkAuth() and a page's own
+// /me call both firing on mount) each independently call /auth/admin/refresh,
+// and each independent failure below redirects again, which can re-fire
+// this whole handler before the browser finishes navigating away. One
+// in-flight refresh is shared by every 401 that arrives while it's pending.
+let refreshPromise = null;
+
+const isNoSessionAtAll = (refreshError) =>
+    refreshError?.response?.status === 400; // "Refresh token required" — no session to recover, don't retry
+
 // ── Response interceptor: Handle 401 / auto-refresh ──
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         if (error.response?.status === 401) {
+            // Already redirecting (or already on /login) — every further
+            // 401 from other in-flight requests should just fail quietly
+            // instead of piling on more refresh attempts.
+            if (typeof window !== 'undefined' && window.location.pathname === '/login') {
+                return Promise.reject(error);
+            }
+
             if (!error.config._retry) {
                 error.config._retry = true;
                 try {
-                    // No body needed — the browser sends the HttpOnly
-                    // adminRefreshToken cookie automatically via
-                    // withCredentials. The body fallback only matters for
-                    // an admin on a cached old build with a readable cookie.
-                    const legacyRefreshToken = Cookies.get('adminRefreshToken');
-                    const res = await axios.post(
-                        `${API_URL}/auth/admin/refresh`,
-                        legacyRefreshToken ? { refreshToken: legacyRefreshToken } : {},
-                        { withCredentials: true }
-                    );
+                    if (!refreshPromise) {
+                        // No body needed — the browser sends the HttpOnly
+                        // adminRefreshToken cookie automatically via
+                        // withCredentials. The body fallback only matters
+                        // for an admin on a cached old build with a
+                        // readable cookie.
+                        const legacyRefreshToken = Cookies.get('adminRefreshToken');
+                        refreshPromise = axios.post(
+                            `${API_URL}/auth/admin/refresh`,
+                            legacyRefreshToken ? { refreshToken: legacyRefreshToken } : {},
+                            { withCredentials: true }
+                        ).finally(() => { refreshPromise = null; });
+                    }
+
+                    const res = await refreshPromise;
                     if (res.data.success) {
                         // Kept for the same legacy-build fallback as above —
                         // does nothing useful once cookies are HttpOnly, but
@@ -63,11 +86,18 @@ api.interceptors.response.use(
                         error.config.withCredentials = true;
                         return api(error.config);
                     }
-                } catch (_) { }
+                } catch (refreshError) {
+                    // 400 here means "no refresh token at all" — there was
+                    // never a session to recover, so redirecting below is
+                    // correct and there's nothing more to log.
+                    if (!isNoSessionAtAll(refreshError)) {
+                        console.error('[Auth] Token refresh failed:', refreshError?.message);
+                    }
+                }
             }
             Cookies.remove('adminToken');
             Cookies.remove('adminRefreshToken');
-            if (typeof window !== 'undefined') {
+            if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
                 window.location.href = '/login';
             }
         }

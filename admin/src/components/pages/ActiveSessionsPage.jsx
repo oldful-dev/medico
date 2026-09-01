@@ -3,8 +3,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Monitor, Smartphone, Tablet, Globe, Shield, RefreshCw, XCircle, AlertCircle, ArrowLeft, Radio } from "lucide-react";
-import { sessionAPI, authAPI } from "@/lib/api";
+import { sessionAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
+import useAuthStore from "@/store/useAuthStore";
 
 export default function ActiveSessionsPage({ lockType, title }) {
     const router = useRouter();
@@ -14,7 +15,10 @@ export default function ActiveSessionsPage({ lockType, title }) {
     const [filterType, setFilterType] = useState(lockType || "all");
     const [autoSync, setAutoSync] = useState(true);
     const [lastSyncTime, setLastSyncTime] = useState(null);
-    const [currentSessionId, setCurrentSessionId] = useState(null);
+    // This page only renders inside AdminLayout, which has already
+    // authenticated and fetched the current admin (including sessionId) via
+    // checkAuth() — reuse that instead of a second /auth/admin/me call.
+    const currentSessionId = useAuthStore((s) => s.user?.sessionId) ?? null;
 
     const fetchSessions = async (isBackground = false) => {
         try {
@@ -38,17 +42,6 @@ export default function ActiveSessionsPage({ lockType, title }) {
             if (!isBackground) setLoading(false);
         }
     };
-
-    // Find the current active session ID (to highlight "this device") — the
-    // adminToken cookie is now HttpOnly and can't be decoded client-side,
-    // so ask the backend instead, same as useAuthStore's checkAuth.
-    useEffect(() => {
-        authAPI.me()
-            .then((res) => {
-                if (res.data?.success) setCurrentSessionId(res.data.data.sessionId);
-            })
-            .catch((e) => console.error('Failed to fetch current session:', e));
-    }, []);
 
     // Initial load + filter change trigger
     useEffect(() => {
