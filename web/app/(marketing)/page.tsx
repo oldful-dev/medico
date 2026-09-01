@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Hero } from '@/components/home/Hero';
 import { LogoMarquee } from '@/components/home/LogoMarquee';
 import { ServicesPreview } from '@/components/home/ServicesPreview';
@@ -57,12 +58,12 @@ export default function LandingPage() {
       <section className="w-full bg-[var(--color-bg-screen)] py-20 px-8 flex flex-col items-center justify-center text-center">
          <h2 className="text-4xl font-bold tracking-tight text-[var(--color-primary-deep)] mb-6">Ready to support your loved ones?</h2>
          <p className="text-gray-600 mb-10 max-w-2xl text-lg">Contact our team to learn more about our caregivers, doctors, and elder care platform.</p>
-         <a
+         <Link
            href="/contact"
            className="bg-[var(--color-primary)] text-white font-bold text-lg px-8 py-4 rounded-full shadow-xl hover:scale-105 transition-transform active:scale-95 inline-block"
          >
            Contact Us
-         </a>
+         </Link>
       </section>
     </div>
   );
