@@ -354,7 +354,7 @@ function ProfileSetupForm() {
            <div className="flex-1 text-[11px] leading-snug text-gray-500 font-medium">
               I have read and agreed to the{' '}
               <Link 
-                href="/legal" 
+                href="/master-policy"
                 onClick={(e) => e.stopPropagation()} 
                 className="text-[var(--color-primary-deep)] font-black underline decoration-emerald-200/50 underline-offset-2"
               >
