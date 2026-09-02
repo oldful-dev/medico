@@ -2708,6 +2708,7 @@
     "coupon_placeholder": "குறியீடு",
     "apply": "பயன்படுத்து",
     "payment_method": "கட்டண முறை",
+    "membership_upgrade_note": "உடனடி சலுகைகளுக்கு ஆன்லைன் பணம் (UPI/கார்டு) அவசியம்.",
     "confirm_booking": "முன்பதிவை உறுதிப்படுத்தவும்",
     "confirm_pay": "உறுதி & ₹{{amount}} செலுத்து",
     "invalid_data": "தவறான தரவு",
@@ -3438,5 +3439,31 @@
     "choose_duration": "திட்ட கால அளவு தேர்வு",
     "cta": "இப்போது சந்தா செய்யுங்கள் · ₹{{amount}}",
     "helper": "இப்போது தவிர்க்கவும் — கட்டணம் போருந்தும்"
+  },
+  "quota": {
+    "exceeded_title": "இலவச கோட்டா முடிந்தது",
+    "exceeded_message": "இந்த மாதம் உங்கள் இலவச பதிவுகள் அனைத்தும் பயன்படுத்தப்பட்டன.\n\nநீங்கள் நிலையான கட்டணத்தில் (₹{{price}}) பதிவு செய்யலாம், அல்லது மேலும் இலவச விசிட்டுகளுக்கு திட்டத்தை மேம்படுத்தவும்.",
+    "book_standard_rate": "நிலையான கட்டணத்தில் பதிவு செய்யவும் (₹{{price}})",
+    "upgrade_plan": "திட்டத்தை மேம்படுத்தவும்",
+    "cancel": "ரத்து செய்",
+    "not_now": "இப்போது வேண்டாம்"
+  },
+  "family_member_form": {
+    "full_name": "முழு பெயர்",
+    "enter_name_placeholder": "பெயரை உள்ளிடவும்",
+    "relation": "உறவு",
+    "cancel": "ரத்து செய்",
+    "save": "சேமி",
+    "required_title": "அவசியம்",
+    "name_required_msg": "பெயரை உள்ளிடவும்.",
+    "success_title": "வெற்றி",
+    "member_added_msg": "குடும்ப உறுப்பினர் சேர்க்கப்பட்டார்!",
+    "error_title": "பிழை",
+    "add_failed_msg": "உறுப்பினரை சேர்க்க முடியவில்லை.",
+    "limit_reached_title": "வரம்பு எட்டியது",
+    "limit_reached_msg": "நீங்கள் அதிகபட்சம் {{max}} கோப்புகளை பதிவேற்றலாம்.",
+    "permission_required_title": "அனுமதி தேவை",
+    "camera_permission_msg": "கேமரா அனுமதி தேவை.",
+    "gallery_permission_msg": "கேலரி அனுமதி தேவை."
   }
 }

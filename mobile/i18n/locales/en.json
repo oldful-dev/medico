@@ -2643,6 +2643,7 @@
     "coupon_placeholder": "Enter coupon code",
     "apply": "Apply",
     "payment_method": "Payment Method",
+    "membership_upgrade_note": "Membership upgrades require online payment (UPI/Card) to activate instant benefits.",
     "confirm_booking": "Confirm Booking",
     "confirm_pay": "Confirm & Pay ₹{{amount}}",
     "invalid_data": "Invalid booking data",
@@ -3466,5 +3467,31 @@
     "choose_duration": "Choose Plan Duration",
     "cta": "Subscribe Now · ₹{{amount}}",
     "helper": "Skip for now — fees apply on this booking"
+  },
+  "quota": {
+    "exceeded_title": "Free Quota Used Up",
+    "exceeded_message": "You've used all your free bookings for this service this month.\n\nYou can still book at the standard rate (₹{{price}}), or upgrade your plan for more free visits.",
+    "book_standard_rate": "Book at Standard Rate (₹{{price}})",
+    "upgrade_plan": "Upgrade Plan",
+    "cancel": "Cancel",
+    "not_now": "Not Now"
+  },
+  "family_member_form": {
+    "full_name": "Full Name",
+    "enter_name_placeholder": "Enter name",
+    "relation": "Relation",
+    "cancel": "Cancel",
+    "save": "Save",
+    "required_title": "Required",
+    "name_required_msg": "Please enter a name.",
+    "success_title": "Success",
+    "member_added_msg": "Family member added!",
+    "error_title": "Error",
+    "add_failed_msg": "Failed to add family member.",
+    "limit_reached_title": "Limit Reached",
+    "limit_reached_msg": "You can upload up to {{max}} files.",
+    "permission_required_title": "Permission Required",
+    "camera_permission_msg": "Camera permission is required.",
+    "gallery_permission_msg": "Gallery permission is required."
   }
 }

@@ -54,17 +54,17 @@ function channelToIcon(channel: NotificationChannel, templateId?: string | null)
     }
 }
 
-function formatRelativeTime(date: Date): string {
+function formatRelativeTime(date: Date, t: (key: string, opts?: any) => string): string {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMin = Math.floor(diffMs / 60000);
-    if (diffMin < 1) return 'Just now';
-    if (diffMin < 60) return `${diffMin} min ago`;
+    if (diffMin < 1) return t('notifications.just_now');
+    if (diffMin < 60) return t('notifications.min_ago', { count: diffMin });
     const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
+    if (diffHr < 24) return diffHr > 1 ? t('notifications.hours_ago', { count: diffHr }) : t('notifications.hour_ago', { count: diffHr });
     const diffDays = Math.floor(diffHr / 24);
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays === 1) return t('notifications.yesterday');
+    if (diffDays < 7) return t('notifications.days_ago', { count: diffDays });
     return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
@@ -74,18 +74,18 @@ function cleanText(text: string | null | undefined): string {
     return cleanNotificationText(text);
 }
 
-function mapRaw(raw: RawNotification): NotificationItem {
+function mapRaw(raw: RawNotification, t: (key: string, opts?: any) => string): NotificationItem {
     const { icon, color } = channelToIcon(raw.channel, raw.templateId);
     const createdAt = new Date(raw.createdAt);
-    
-    const cleanedTitle = cleanText(raw.subject ?? raw.templateId ?? 'Notification');
+
+    const cleanedTitle = cleanText(raw.subject ?? raw.templateId ?? t('notifications.default_title'));
     const cleanedMessage = cleanText(raw.body ?? '');
-    
+
     return {
         id: raw.id,
-        title: cleanedTitle || 'Notification',
+        title: cleanedTitle || t('notifications.default_title'),
         message: cleanedMessage,
-        time: formatRelativeTime(createdAt),
+        time: formatRelativeTime(createdAt, t),
         read: raw.isRead,
         icon,
         iconColor: color,
@@ -125,7 +125,7 @@ export default function NotificationsScreen() {
                         : Array.isArray((res as any).data)
                             ? (res as any).data
                             : [];
-                    setNotifications(rawList.map(mapRaw));
+                    setNotifications(rawList.map(raw => mapRaw(raw, t)));
                 }
             } catch {
                 // silently degrade — show empty state

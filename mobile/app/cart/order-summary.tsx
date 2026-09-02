@@ -12,6 +12,7 @@ import { useCart } from '@/context/CartContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -20,12 +21,13 @@ const CARD_BORDER = '#E5E7EB';
 const LIGHT_GREEN_BG = '#F0FDF4';
 
 const PAYMENT_METHODS = [
-    { type: 'UPI',  label: 'UPI (GPay / PhonePe / Paytm)', icon: 'phone-portrait-outline' },
-    { type: 'CARD', label: 'Credit / Debit Card',         icon: 'card-outline' },
-    { type: 'CASH', label: 'Cash on Delivery',             icon: 'cash-outline' },
+    { type: 'UPI',  labelKey: 'checkout.upi',  icon: 'phone-portrait-outline' },
+    { type: 'CARD', labelKey: 'checkout.card', icon: 'card-outline' },
+    { type: 'CASH', labelKey: 'checkout.cod',  icon: 'cash-outline' },
 ] as const;
 
 export default function CartOrderSummaryScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { profile } = useUser();
@@ -321,7 +323,7 @@ export default function CartOrderSummaryScreen() {
                     {PAYMENT_METHODS.map(m => (
                         <TouchableOpacity key={m.type} style={[dynamicStyles.methodRow, selectedMethod === m.type && dynamicStyles.methodRowActive]} onPress={() => setSelectedMethod(m.type)} activeOpacity={0.8}>
                             <Ionicons name={m.icon as any} size={20} color={selectedMethod === m.type ? colors.primary : (isDarkMode ? '#94A3B8' : TEXT_MUTED)} />
-                            <Text style={[dynamicStyles.methodLabel, selectedMethod === m.type && dynamicStyles.methodLabelActive]}>{m.label}</Text>
+                            <Text style={[dynamicStyles.methodLabel, selectedMethod === m.type && dynamicStyles.methodLabelActive]}>{t(m.labelKey)}</Text>
                             <Ionicons name={selectedMethod === m.type ? 'radio-button-on' : 'radio-button-off'} size={20} color={selectedMethod === m.type ? colors.primary : (isDarkMode ? '#94A3B8' : TEXT_MUTED)} />
                         </TouchableOpacity>
                     ))}

@@ -2708,6 +2708,7 @@
     "coupon_placeholder": "కూపన్ కోడ్‌ని నమోదు చేయండి",
     "apply": "వర్తించు",
     "payment_method": "చెల్లింపు పద్ధతి",
+    "membership_upgrade_note": "తక్షణ ప్రయోజనాలకు ఆన్‌లైన్ చెల్లింపు (UPI/కార్డ్) అవసరం.",
     "confirm_booking": "బుకింగ్ నిర్ధారించు",
     "confirm_pay": "నిర్ధారించి, ₹{{amount}} చెల్లించండి",
     "invalid_data": "చెల్లని బుకింగ్ డేటా",
@@ -3438,5 +3439,31 @@
     "choose_duration": "ప్లాన్ వ్యవధి ఎంచుకోండి",
     "cta": "ఇప్పుడు సబ్‌స్క్రైబ్ చేయండి · ₹{{amount}}",
     "helper": "ఇప్పుడు దాటవేయండి — రుసుము వర్తిస్తుంది"
+  },
+  "quota": {
+    "exceeded_title": "ఉచిత కోటా అయిపోయింది",
+    "exceeded_message": "ఈ నెలలో మీ ఉచిత బుకింగ్‌లు అన్నీ వాడేశారు.\n\nమీరు ప్రామాణిక రేటుకు (₹{{price}}) బుక్ చేసుకోవచ్చు, లేదా మరిన్ని ఉచిత విజిట్‌ల కోసం ప్లాన్ అప్‌గ్రేడ్ చేసుకోండి.",
+    "book_standard_rate": "ప్రామాణిక రేటుకు బుక్ చేయండి (₹{{price}})",
+    "upgrade_plan": "ప్లాన్ అప్‌గ్రేడ్ చేయండి",
+    "cancel": "రద్దు చేయండి",
+    "not_now": "ఇప్పుడు వద్దు"
+  },
+  "family_member_form": {
+    "full_name": "పూర్తి పేరు",
+    "enter_name_placeholder": "పేరు నమోదు చేయండి",
+    "relation": "సంబంధం",
+    "cancel": "రద్దు చేయండి",
+    "save": "సేవ్ చేయండి",
+    "required_title": "అవసరం",
+    "name_required_msg": "దయచేసి పేరు నమోదు చేయండి.",
+    "success_title": "విజయవంతం",
+    "member_added_msg": "కుటుంబ సభ్యుడు జోడించబడ్డారు!",
+    "error_title": "లోపం",
+    "add_failed_msg": "సభ్యుడిని జోడించడంలో విఫలమైంది.",
+    "limit_reached_title": "పరిమితి చేరుకుంది",
+    "limit_reached_msg": "మీరు గరిష్టంగా {{max}} ఫైళ్లను అప్‌లోడ్ చేయవచ్చు.",
+    "permission_required_title": "అనుమతి అవసరం",
+    "camera_permission_msg": "కెమెరా అనుమతి అవసరం.",
+    "gallery_permission_msg": "గ్యాలరీ అనుమతి అవసరం."
   }
 }

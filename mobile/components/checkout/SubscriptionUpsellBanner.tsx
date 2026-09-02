@@ -34,11 +34,17 @@ interface SubscriptionUpsellBannerProps {
 
 // ─── Billing cycle options ─────────────────────────────────────────────────────
 
-const CYCLES: { key: BillingCycle; label: string; months: number }[] = [
-    { key: 'QUARTERLY', label: '3 months', months: 3 },
-    { key: 'BIANNUAL',  label: '6 months', months: 6 },
-    { key: 'YEARLY',    label: '12 months', months: 12 },
+const CYCLES: { key: BillingCycle; months: number }[] = [
+    { key: 'QUARTERLY', months: 3 },
+    { key: 'BIANNUAL',  months: 6 },
+    { key: 'YEARLY',    months: 12 },
 ];
+
+const CYCLE_LABEL_KEY: Partial<Record<BillingCycle, string>> = {
+    QUARTERLY: 'subscription.cycles.quarterly',
+    BIANNUAL: 'subscription.cycles.biannual',
+    YEARLY: 'subscription.cycles.yearly',
+};
 
 function getPriceForCycle(plan: Plan, cycle: BillingCycle): number {
     switch (cycle) {
@@ -113,7 +119,8 @@ export default function SubscriptionUpsellBanner({
                 return; // silently ignore — user can try from Plans tab
             }
 
-            const cycleLabel = CYCLES.find(c => c.key === selectedCycle)?.label ?? selectedCycle;
+            const cycleLabelKey = CYCLE_LABEL_KEY[selectedCycle];
+            const cycleLabel = cycleLabelKey ? t(cycleLabelKey) : selectedCycle;
             router.push({
                 pathname: '/payment/checkout',
                 params: {
@@ -192,7 +199,7 @@ export default function SubscriptionUpsellBanner({
                                 activeOpacity={0.8}
                             >
                                 <Text style={[S.cycleChipText, active && S.cycleChipTextActive]}>
-                                    {c.label}
+                                    {CYCLE_LABEL_KEY[c.key] ? t(CYCLE_LABEL_KEY[c.key]!) : c.key}
                                 </Text>
                                 <Text style={[S.cycleChipPrice, active && S.cycleChipPriceActive]}>
                                     ₹{cyclePrice.toLocaleString('en-IN')}

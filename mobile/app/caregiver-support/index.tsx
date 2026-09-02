@@ -75,7 +75,7 @@ export default function BookCaregiverSupportScreen() {
     const handleAddFamilyMember = async () => {
         if (!profile?.id) return;
         if (!newMemberName.trim()) {
-            triggerAlert('Required', 'Please enter a name.');
+            triggerAlert(t('family_member_form.required_title'), t('family_member_form.name_required_msg'));
             return;
         }
         try {
@@ -84,30 +84,30 @@ export default function BookCaregiverSupportScreen() {
                 relation: newMemberRelation,
             });
             if (res.success && res.data) {
-                triggerAlert('Success', 'Family member added!', 'checkmark-circle-outline');
+                triggerAlert(t('family_member_form.success_title'), t('family_member_form.member_added_msg'), 'checkmark-circle-outline');
                 const newMember = res.data;
                 setFamilyMembers(prev => [...prev, newMember]);
                 setSelectedFamilyMemberId(newMember.id);
                 setNewMemberName('');
                 setShowAddFamilyModal(false);
             } else {
-                triggerAlert('Error', res.message || 'Failed to add family member.');
+                triggerAlert(t('family_member_form.error_title'), res.message || t('family_member_form.add_failed_msg'));
             }
         } catch (error) {
             console.error('Add family member error:', error);
-            triggerAlert('Error', 'Failed to add family member.');
+            triggerAlert(t('family_member_form.error_title'), t('family_member_form.add_failed_msg'));
         }
     };
 
     const handlePickReport = async (source: 'camera' | 'gallery') => {
         if (selectedImages.length >= 5) {
-            triggerAlert('Limit Reached', 'You can upload up to 5 files.');
+            triggerAlert(t('family_member_form.limit_reached_title'), t('family_member_form.limit_reached_msg', { max: 5 }));
             return;
         }
         if (source === 'camera') {
             const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
             if (permissionResult.granted === false) {
-                triggerAlert('Permission Required', 'Camera permission is required.');
+                triggerAlert(t('family_member_form.permission_required_title'), t('family_member_form.camera_permission_msg'));
                 return;
             }
             const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
@@ -117,7 +117,7 @@ export default function BookCaregiverSupportScreen() {
         } else {
             const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (permissionResult.granted === false) {
-                triggerAlert('Permission Required', 'Gallery permission is required.');
+                triggerAlert(t('family_member_form.permission_required_title'), t('family_member_form.gallery_permission_msg'));
                 return;
             }
             const result = await ImagePicker.launchImageLibraryAsync({
@@ -398,24 +398,24 @@ export default function BookCaregiverSupportScreen() {
                                         onPress={() => setShowAddFamilyModal(true)}
                                     >
                                         <Ionicons name="add" size={14} color="#02743F" />
-                                        <Text style={dynamicStyles.addFamilyBtnText}>Add Family Member</Text>
+                                        <Text style={dynamicStyles.addFamilyBtnText}>{t('family_members.add')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             )}
 
                             {selectedWho === 'Family' && showAddFamilyModal && (
                                 <View style={dynamicStyles.addFamilyForm}>
-                                    <Text style={dynamicStyles.formLabel}>Full Name</Text>
+                                    <Text style={dynamicStyles.formLabel}>{t('family_member_form.full_name')}</Text>
                                     <TextInput
                                         style={dynamicStyles.formInputInline}
-                                        placeholder="Enter name"
+                                        placeholder={t('family_member_form.enter_name_placeholder')}
                                         value={newMemberName}
                                         onChangeText={setNewMemberName}
                                     />
 
-                                    <Text style={dynamicStyles.formLabel}>Relation</Text>
+                                    <Text style={dynamicStyles.formLabel}>{t('family_member_form.relation')}</Text>
                                     <View style={dynamicStyles.relationRow}>
-                                        {['Father', 'Mother', 'Spouse', 'Son', 'Daughter', 'Sibling', 'Other'].map((rel) => (
+                                        {(['Father', 'Mother', 'Spouse', 'Son', 'Daughter', 'Sibling', 'Other'] as const).map((rel) => (
                                             <TouchableOpacity
                                                 key={rel}
                                                 style={[
@@ -428,7 +428,7 @@ export default function BookCaregiverSupportScreen() {
                                                     dynamicStyles.relationChipText,
                                                     newMemberRelation === rel && dynamicStyles.relationChipTextActive
                                                 ]}>
-                                                    {rel}
+                                                    {t('family_members.relations.' + rel.toLowerCase())}
                                                 </Text>
                                             </TouchableOpacity>
                                         ))}
@@ -442,13 +442,13 @@ export default function BookCaregiverSupportScreen() {
                                                 setNewMemberName('');
                                             }}
                                         >
-                                            <Text style={dynamicStyles.cancelFormBtnText}>Cancel</Text>
+                                            <Text style={dynamicStyles.cancelFormBtnText}>{t('family_member_form.cancel')}</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity
                                             style={dynamicStyles.saveFormBtn}
                                             onPress={handleAddFamilyMember}
                                         >
-                                            <Text style={dynamicStyles.saveFormBtnText}>Save</Text>
+                                            <Text style={dynamicStyles.saveFormBtnText}>{t('family_member_form.save')}</Text>
                                         </TouchableOpacity>
                                     </View>
                                 </View>

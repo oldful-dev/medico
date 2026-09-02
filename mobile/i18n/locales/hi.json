@@ -2708,6 +2708,7 @@
     "coupon_placeholder": "कोड डालें",
     "apply": "लागू करें",
     "payment_method": "भुगतान विधि",
+    "membership_upgrade_note": "तुरंत लाभ पाने के लिए ऑनलाइन भुगतान (UPI/कार्ड) ज़रूरी है।",
     "confirm_booking": "बुकिंग की पुष्टि करें",
     "confirm_pay": "पुष्टि और ₹{{amount}} भुगतान",
     "invalid_data": "गलत डेटा",
@@ -3438,5 +3439,31 @@
     "choose_duration": "प्लान अवधि चुनें",
     "cta": "अभी सब्सक्राइब करें · ₹{{amount}}",
     "helper": "अभी छोड़ें — इस बुकिंग पर शुल्क लागू होगा"
+  },
+  "quota": {
+    "exceeded_title": "फ्री कोटा खत्म",
+    "exceeded_message": "इस महीने आपके सभी फ्री बुकिंग इस्तेमाल हो चुके हैं।\n\nआप मानक दर (₹{{price}}) पर बुक कर सकते हैं, या ज़्यादा फ्री विज़िट के लिए प्लान अपग्रेड करें।",
+    "book_standard_rate": "मानक दर पर बुक करें (₹{{price}})",
+    "upgrade_plan": "प्लान अपग्रेड करें",
+    "cancel": "रद्द करें",
+    "not_now": "अभी नहीं"
+  },
+  "family_member_form": {
+    "full_name": "पूरा नाम",
+    "enter_name_placeholder": "नाम डालें",
+    "relation": "संबंध",
+    "cancel": "रद्द करें",
+    "save": "सेव करें",
+    "required_title": "ज़रूरी",
+    "name_required_msg": "कृपया नाम डालें।",
+    "success_title": "सफल",
+    "member_added_msg": "परिवार सदस्य जोड़ा गया!",
+    "error_title": "त्रुटि",
+    "add_failed_msg": "सदस्य जोड़ने में विफल।",
+    "limit_reached_title": "सीमा पूरी",
+    "limit_reached_msg": "आप अधिकतम {{max}} फ़ाइलें अपलोड कर सकते हैं।",
+    "permission_required_title": "अनुमति ज़रूरी",
+    "camera_permission_msg": "कैमरा अनुमति ज़रूरी है।",
+    "gallery_permission_msg": "गैलरी अनुमति ज़रूरी है।"
   }
 }

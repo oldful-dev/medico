@@ -27,12 +27,12 @@ import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 // ─── Payment Flow States (for debugging & recovery) ──────
 type PaymentFlowState = 'idle' | 'creating_booking' | 'initiating_order' | 'checkout_opened' | 'verifying' | 'success' | 'failed' | 'cancelled';
 
-type MethodOption = { type: PaymentMethod; label: string; icon: keyof typeof Ionicons.glyphMap };
+type MethodOption = { type: PaymentMethod; labelKey: string; icon: keyof typeof Ionicons.glyphMap };
 
 const PAYMENT_METHODS: MethodOption[] = [
-    { type: 'UPI',  label: 'UPI (GPay / PhonePe / Paytm)', icon: 'phone-portrait-outline' },
-    { type: 'CARD', label: 'Credit / Debit Card',         icon: 'card-outline' },
-    { type: 'CASH', label: 'Cash on Delivery',             icon: 'cash-outline' },
+    { type: 'UPI',  labelKey: 'checkout.upi',  icon: 'phone-portrait-outline' },
+    { type: 'CARD', labelKey: 'checkout.card', icon: 'card-outline' },
+    { type: 'CASH', labelKey: 'checkout.cod',  icon: 'cash-outline' },
 ];
 
 const mapLabelToCategory = (label: string): string => {
@@ -826,15 +826,15 @@ export default function CheckoutScreen() {
                         setFlowState('failed');
                         setActionModal({
                             visible: true,
-                            title: 'Free Quota Used Up',
-                            message: `You've used all your free bookings for this service this month.\n\nYou can still book at the standard rate (₹${standardRateAmount.toLocaleString('en-IN')}), or wait until your quota resets.`,
-                            primaryText: `Book at Standard Rate (₹${standardRateAmount.toLocaleString('en-IN')})`,
+                            title: t('quota.exceeded_title'),
+                            message: t('quota.exceeded_message', { price: standardRateAmount.toLocaleString('en-IN') }),
+                            primaryText: t('quota.book_standard_rate', { price: standardRateAmount.toLocaleString('en-IN') }),
                             onPrimary: () => {
                                 closeActionModal();
                                 setIsPaidBookingOverride(true);
                                 handlePay(true);
                             },
-                            secondaryText: 'Cancel',
+                            secondaryText: t('quota.cancel'),
                             onSecondary: closeActionModal,
                         });
                         return;
@@ -1587,9 +1587,9 @@ export default function CheckoutScreen() {
                                 <Text style={styles.durationSelectorLabel}>Select Plan Duration:</Text>
                                 <View style={styles.durationSelector}>
                                     {[
-                                        { key: 'QUARTERLY' as BillingCycle, label: '3 Months', price: selectedUpgradePlan?.quarterlyPrice },
-                                        { key: 'BIANNUAL' as BillingCycle, label: '6 Months', price: selectedUpgradePlan?.biannualPrice },
-                                        { key: 'YEARLY' as BillingCycle, label: '12 Months', price: selectedUpgradePlan?.yearlyPrice },
+                                        { key: 'QUARTERLY' as BillingCycle, label: t('subscription.cycles.quarterly'), price: selectedUpgradePlan?.quarterlyPrice },
+                                        { key: 'BIANNUAL' as BillingCycle, label: t('subscription.cycles.biannual'), price: selectedUpgradePlan?.biannualPrice },
+                                        { key: 'YEARLY' as BillingCycle, label: t('subscription.cycles.yearly'), price: selectedUpgradePlan?.yearlyPrice },
                                     ].map(dur => (
                                         <TouchableOpacity
                                             key={dur.key}
@@ -1762,7 +1762,7 @@ export default function CheckoutScreen() {
                         >
                             <Ionicons name={m.icon} size={20} color={selectedMethod === m.type ? colors.primary : colors.textMuted} />
                             <Text style={[styles.methodLabel, selectedMethod === m.type && styles.methodLabelActive]}>
-                                {m.type === 'UPI' ? t('checkout.upi') : m.type === 'CARD' ? t('checkout.card') : t('checkout.cod')}
+                                {t(m.labelKey)}
                             </Text>
                             <Ionicons
                                 name={selectedMethod === m.type ? 'radio-button-on' : 'radio-button-off'}
@@ -1776,7 +1776,7 @@ export default function CheckoutScreen() {
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingHorizontal: 4 }}>
                             <Ionicons name="information-circle-outline" size={14} color={colors.primary} />
                             <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '500' }}>
-                                Membership upgrades require online payment (UPI/Card) to activate instant benefits.
+                                {t('checkout.membership_upgrade_note')}
                             </Text>
                         </View>
                     )}

@@ -2708,6 +2708,7 @@
     "coupon_placeholder": "कूपन कोड टाका",
     "apply": "लागू करा",
     "payment_method": "पेमेंट पद्धत",
+    "membership_upgrade_note": "त्वरित लाभासाठी ऑनलाइन पेमेंट (UPI/कार्ड) आवश्यक आहे.",
     "confirm_booking": "बुकिंग निश्चित करा",
     "confirm_pay": "निश्चित करा आणि ₹{{amount}} भरा",
     "invalid_data": "अवैध बुक्यिंग डेटा",
@@ -3438,5 +3439,31 @@
     "choose_duration": "प्लान कालावधी निवडा",
     "cta": "आता सदस्ध्यत्व घ्या · ₹{{amount}}",
     "helper": "आता वगळा — शुल्क लागू होईल"
+  },
+  "quota": {
+    "exceeded_title": "फ्री कोटा संपला",
+    "exceeded_message": "या महिन्यात तुमच्या सर्व फ्री बुकिंग वापरल्या गेल्या आहेत.\n\nतुम्ही मानक दराने (₹{{price}}) बुक करू शकता, किंवा अधिक फ्री व्हिजिटसाठी प्लान अपग्रेड करा.",
+    "book_standard_rate": "मानक दराने बुक करा (₹{{price}})",
+    "upgrade_plan": "प्लान अपग्रेड करा",
+    "cancel": "रद्द करा",
+    "not_now": "आत्ता नाही"
+  },
+  "family_member_form": {
+    "full_name": "पूर्ण नाव",
+    "enter_name_placeholder": "नाव टाका",
+    "relation": "नाते",
+    "cancel": "रद्द करा",
+    "save": "सेव्ह करा",
+    "required_title": "आवश्यक",
+    "name_required_msg": "कृपया नाव टाका.",
+    "success_title": "यशस्वी",
+    "member_added_msg": "कुटुंब सदस्य जोडला!",
+    "error_title": "त्रुटी",
+    "add_failed_msg": "सदस्य जोडण्यात अयशस्वी.",
+    "limit_reached_title": "मर्यादा गाठली",
+    "limit_reached_msg": "तुम्ही जास्तीत जास्त {{max}} फाईल्स अपलोड करू शकता.",
+    "permission_required_title": "परवानगी आवश्यक",
+    "camera_permission_msg": "कॅमेरा परवानगी आवश्यक आहे.",
+    "gallery_permission_msg": "गॅलरी परवानगी आवश्यक आहे."
   }
 }

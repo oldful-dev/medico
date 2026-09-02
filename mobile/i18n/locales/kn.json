@@ -2615,6 +2615,7 @@
     "coupon_placeholder": "ಕೂಪನ್ ಕೋಡ್ ಹಾಕಿ",
     "apply": "ಅನ್ವಯಿಸು",
     "payment_method": "ಪಾವತಿ ವಿಧಾನ",
+    "membership_upgrade_note": "ತಕ್ಷಣದ ಪ್ರಯೋಜನಗಳಿಗೆ ಆನ್‌ಲೈನ್ ಪಾವತಿ (UPI/ಕಾರ್ಡ್) ಅಗತ್ಯ.",
     "confirm_booking": "ಬುಕಿಂಗ್ ಖಚಿತಪಡಿಸಿ",
     "confirm_pay": "ಖಚಿತಪಡಿಸಿ ಪಾವತಿಸಿ ₹{{amount}}",
     "invalid_data": "ತಪ್ಪು ಮಾಹಿತಿ",
@@ -3438,5 +3439,31 @@
     "choose_duration": "ಪ್ಲಾನ್ ಅವಧಿ ಆಯ್ಕೆ ಮಾಡಿ",
     "cta": "ಈಗ ಸಬ್‌ಸ್ಕ್ರೈಬ್ ಮಾಡಿ · ₹{{amount}}",
     "helper": "ಈಗ ಬಿಟ್ಟುಬಿಡಿ — ಈ ಬುಕಿಂಗ್‌ಗೆ ಶುಲ್ಕ ಅನ್ವಯಿಸುತ್ತದೆ"
+  },
+  "quota": {
+    "exceeded_title": "ಉಚಿತ ಕೋಟಾ ಮುಗಿದಿದೆ",
+    "exceeded_message": "ಈ ತಿಂಗಳು ನಿಮ್ಮ ಎಲ್ಲಾ ಉಚಿತ ಬುಕಿಂಗ್‌ಗಳನ್ನು ಬಳಸಲಾಗಿದೆ.\n\nನೀವು ಪ್ರಮಾಣಿತ ದರದಲ್ಲಿ (₹{{price}}) ಬುಕ್ ಮಾಡಬಹುದು, ಅಥವಾ ಹೆಚ್ಚಿನ ಉಚಿತ ವಿಸಿಟ್‌ಗಳಿಗಾಗಿ ಪ್ಲಾನ್ ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿ.",
+    "book_standard_rate": "ಪ್ರಮಾಣಿತ ದರದಲ್ಲಿ ಬುಕ್ ಮಾಡಿ (₹{{price}})",
+    "upgrade_plan": "ಪ್ಲಾನ್ ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿ",
+    "cancel": "ರದ್ದುಮಾಡಿ",
+    "not_now": "ಈಗ ಬೇಡ"
+  },
+  "family_member_form": {
+    "full_name": "ಪೂರ್ಣ ಹೆಸರು",
+    "enter_name_placeholder": "ಹೆಸರು ನಮೂದಿಸಿ",
+    "relation": "ಸಂಬಂಧ",
+    "cancel": "ರದ್ದುಮಾಡಿ",
+    "save": "ಉಳಿಸಿ",
+    "required_title": "ಅಗತ್ಯ",
+    "name_required_msg": "ದಯವಿಟ್ಟು ಹೆಸರು ನಮೂದಿಸಿ.",
+    "success_title": "ಯಶಸ್ವಿ",
+    "member_added_msg": "ಕುಟುಂಬ ಸದಸ್ಯರನ್ನು ಸೇರಿಸಲಾಗಿದೆ!",
+    "error_title": "ದೋಷ",
+    "add_failed_msg": "ಸದಸ್ಯರನ್ನು ಸೇರಿಸಲು ವಿಫಲವಾಗಿದೆ.",
+    "limit_reached_title": "ಮಿತಿ ತಲುಪಿದೆ",
+    "limit_reached_msg": "ನೀವು ಗರಿಷ್ಠ {{max}} ಫೈಲ್‌ಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಬಹುದು.",
+    "permission_required_title": "ಅನುಮತಿ ಅಗತ್ಯ",
+    "camera_permission_msg": "ಕ್ಯಾಮೆರಾ ಅನುಮತಿ ಅಗತ್ಯ.",
+    "gallery_permission_msg": "ಗ್ಯಾಲರಿ ಅನುಮತಿ ಅಗತ್ಯ."
   }
 }

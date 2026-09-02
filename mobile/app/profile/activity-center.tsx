@@ -39,15 +39,16 @@ const EVENT_CONFIG_BASE: Record<string, {
 
 // ─── Helpers ──────────────────────────────────────────────
 
-function formatRelativeTime(iso: string): string {
+function formatRelativeTime(iso: string, t: (key: string, opts?: any) => string): string {
     try {
         const diff = Date.now() - new Date(iso).getTime();
         const mins = Math.floor(diff / 60000);
-        if (mins < 1) return 'Just now';
-        if (mins < 60) return `${mins}m ago`;
+        if (mins < 1) return t('notifications.just_now');
+        if (mins < 60) return t('notifications.min_ago', { count: mins });
         const hrs = Math.floor(mins / 60);
-        if (hrs < 24) return `${hrs}h ago`;
-        return `${Math.floor(hrs / 24)}d ago`;
+        if (hrs < 24) return hrs > 1 ? t('notifications.hours_ago', { count: hrs }) : t('notifications.hour_ago', { count: hrs });
+        const days = Math.floor(hrs / 24);
+        return days === 1 ? t('notifications.yesterday') : t('notifications.days_ago', { count: days });
     } catch { return ''; }
 }
 
@@ -74,7 +75,7 @@ function UpdateCard({ item }: { item: ActivityUpdate }) {
                         <Ionicons name={cfg.icon} size={12} color={isDarkMode ? colors.primary : cfg.accentColor} />
                         <Text style={[styles.eventLabel, { color: isDarkMode ? colors.textDark : cfg.accentColor }]}>{cfg.label}</Text>
                     </View>
-                    <Text style={styles.timestamp}>{formatRelativeTime(item.createdAt)}</Text>
+                    <Text style={styles.timestamp}>{formatRelativeTime(item.createdAt, t)}</Text>
                 </View>
 
                 {/* ── Row 2: service type ── */}

@@ -57,18 +57,18 @@ type PaymentFlowState =
 
 type MethodOption = {
   type: PaymentMethod;
-  label: string;
+  labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
 };
 
 const PAYMENT_METHODS: MethodOption[] = [
   {
     type: "UPI",
-    label: "UPI (GPay / PhonePe / Paytm)",
+    labelKey: "service_checkout.upi",
     icon: "phone-portrait-outline",
   },
-  { type: "CARD", label: "Credit / Debit Card", icon: "card-outline" },
-  { type: "CASH", label: "Cash on Delivery", icon: "cash-outline" },
+  { type: "CARD", labelKey: "service_checkout.card", icon: "card-outline" },
+  { type: "CASH", labelKey: "service_checkout.cod", icon: "cash-outline" },
 ];
 
 const mapLabelToCategory = (label: string): string => {
@@ -1872,7 +1872,7 @@ export default function ServiceCheckoutScreen() {
                           selectedMethod === m.type && styles.methodLabelActive,
                         ]}
                       >
-                        {m.label}
+                        {t(m.labelKey)}
                       </Text>
                       <Ionicons
                         name={
@@ -1894,7 +1894,7 @@ export default function ServiceCheckoutScreen() {
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, paddingHorizontal: 4 }}>
                       <Ionicons name="information-circle-outline" size={14} color={colors.primary} />
                       <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "500" }}>
-                        Membership upgrades require online payment (UPI/Card) to activate instant benefits.
+                        {t("checkout.membership_upgrade_note")}
                       </Text>
                     </View>
                   )}
@@ -2125,10 +2125,9 @@ export default function ServiceCheckoutScreen() {
               <View style={styles.quotaIconBox}>
                 <Ionicons name="alert-circle" size={30} color={colors.primary} />
               </View>
-              <Text style={styles.quotaTitle}>Free Quota Used Up</Text>
+              <Text style={styles.quotaTitle}>{t("quota.exceeded_title")}</Text>
               <Text style={styles.quotaMessage}>
-                You&apos;ve used all your free bookings for this service this month.{"\n\n"}
-                You can still book — standard rates apply, or upgrade your plan for more free visits.
+                {t("quota.exceeded_message", { price: standardRateAmount.toLocaleString("en-IN") })}
               </Text>
 
               <TouchableOpacity
@@ -2146,7 +2145,7 @@ export default function ServiceCheckoutScreen() {
                 }}
               >
                 <Text style={styles.quotaPrimaryBtnText}>
-                  Book at Standard Rate (₹{standardRateAmount.toLocaleString("en-IN")})
+                  {t("quota.book_standard_rate", { price: standardRateAmount.toLocaleString("en-IN") })}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -2157,14 +2156,14 @@ export default function ServiceCheckoutScreen() {
                   router.push("/plans");
                 }}
               >
-                <Text style={styles.quotaOutlineBtnText}>Upgrade Plan</Text>
+                <Text style={styles.quotaOutlineBtnText}>{t("quota.upgrade_plan")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.quotaCancelBtn}
                 activeOpacity={0.7}
                 onPress={() => setQuotaExceededVisible(false)}
               >
-                <Text style={styles.quotaCancelBtnText}>Not Now</Text>
+                <Text style={styles.quotaCancelBtnText}>{t("quota.not_now")}</Text>
               </TouchableOpacity>
             </View>
           </View>

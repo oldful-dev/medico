@@ -2708,6 +2708,7 @@
     "coupon_placeholder": "കോഡ്",
     "apply": "പ്രയോഗിക്കുക",
     "payment_method": "പേയ്മെന്റ് രീതി",
+    "membership_upgrade_note": "തൽക്ഷണ ആനുകൂല്യങ്ങൾക്ക് ഓൺലൈൻ പേയ്‌മെന്റ് (UPI/കാർഡ്) ആവശ്യമാണ്.",
     "confirm_booking": "ബുക്കിംഗ് ഉറപ്പാക്കുക",
     "confirm_pay": "ഉറപ്പാക്കി ₹{{amount}} അടയ്ക്കുക",
     "invalid_data": "അസാധുവായ ഡാറ്റ",
@@ -3438,5 +3439,31 @@
     "choose_duration": "പ്ലാന് കാലാവധി തിരഞ്ഞെടുക്കൂ",
     "cta": "ഇപ്പോള്‍ സബ്‍സ്ക്രൈബ് ചെയ്യുക · ₹{{amount}}",
     "helper": "ഇപ്പോള്‍ \\u0d12ഴിവാക്കൂ — ഫീ ബാധകം"
+  },
+  "quota": {
+    "exceeded_title": "ഫ്രീ ക്വാട്ട തീർന്നു",
+    "exceeded_message": "ഈ മാസത്തെ നിങ്ങളുടെ എല്ലാ ഫ്രീ ബുക്കിംഗുകളും ഉപയോഗിച്ചു.\n\nനിങ്ങൾക്ക് സ്റ്റാൻഡേർഡ് നിരക്കിൽ (₹{{price}}) ബുക്ക് ചെയ്യാം, അല്ലെങ്കിൽ കൂടുതൽ ഫ്രീ വിസിറ്റുകൾക്കായി പ്ലാൻ അപ്‌ഗ്രേഡ് ചെയ്യുക.",
+    "book_standard_rate": "സ്റ്റാൻഡേർഡ് നിരക്കിൽ ബുക്ക് ചെയ്യുക (₹{{price}})",
+    "upgrade_plan": "പ്ലാൻ അപ്‌ഗ്രേഡ് ചെയ്യുക",
+    "cancel": "റദ്ദാക്കുക",
+    "not_now": "ഇപ്പോൾ വേണ്ട"
+  },
+  "family_member_form": {
+    "full_name": "മുഴുവൻ പേര്",
+    "enter_name_placeholder": "പേര് നൽകുക",
+    "relation": "ബന്ധം",
+    "cancel": "റദ്ദാക്കുക",
+    "save": "സേവ് ചെയ്യുക",
+    "required_title": "ആവശ്യമാണ്",
+    "name_required_msg": "ദയവായി പേര് നൽകുക.",
+    "success_title": "വിജയം",
+    "member_added_msg": "കുടുംബാംഗത്തെ ചേർത്തു!",
+    "error_title": "പിശക്",
+    "add_failed_msg": "അംഗത്തെ ചേർക്കുന്നതിൽ പരാജയപ്പെട്ടു.",
+    "limit_reached_title": "പരിധി എത്തി",
+    "limit_reached_msg": "നിങ്ങൾക്ക് പരമാവധി {{max}} ഫയലുകൾ അപ്‌ലോഡ് ചെയ്യാം.",
+    "permission_required_title": "അനുമതി ആവശ്യമാണ്",
+    "camera_permission_msg": "ക്യാമറ അനുമതി ആവശ്യമാണ്.",
+    "gallery_permission_msg": "ഗാലറി അനുമതി ആവശ്യമാണ്."
   }
 }
