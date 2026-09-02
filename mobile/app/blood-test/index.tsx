@@ -129,6 +129,9 @@ export default function BloodTestScreen() {
 
     const [packages, setPackages] = useState<LabPackage[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const pageRef = React.useRef(1);
+    const hasMoreRef = React.useRef(true);
     const [activeCategory, setActiveCategory] = useState('all');
     const [sortBy, setSortBy] = useState<'popular' | 'price_asc' | 'price_desc' | 'discount'>('popular');
     const [detailModalVisible, setDetailModalVisible] = useState(false);
@@ -145,22 +148,49 @@ export default function BloodTestScreen() {
     useEffect(() => { fetchPackages(); }, []);
 
     useEffect(() => {
-        if (isRebook && rebookPackageCode && packages.length > 0) {
-            const pkg = packages.find(p => p.code === rebookPackageCode);
-            if (pkg) {
-                addItem({ id: pkg.code, serviceType: 'Bloodwork', title: pkg.name, price: pkg.discounted_cost || pkg.cost, quantity: 1, details: pkg });
-                router.push('/cart' as any);
-            }
-        }
-    }, [isRebook, rebookPackageCode, packages]);
+        // Rebook: the package may not be on the first loaded page, so search
+        // for it directly instead of scanning the in-memory list.
+        if (!isRebook || !rebookPackageCode) return;
+        (async () => {
+            try {
+                const { items } = await labService.getPackages(rebookPackageCode);
+                const pkg = items.find(p => p.code === rebookPackageCode) || items[0];
+                if (pkg) {
+                    addItem({ id: pkg.code, serviceType: 'Bloodwork', title: pkg.name, price: pkg.discounted_cost || pkg.cost, quantity: 1, details: pkg });
+                    router.push('/cart' as any);
+                }
+            } catch { /* silent */ }
+        })();
+    }, [isRebook, rebookPackageCode]);
 
     const fetchPackages = async () => {
         setLoading(true);
+        pageRef.current = 1;
+        hasMoreRef.current = true;
         try {
-            const pkgs = await labService.getPackages();
-            setPackages(pkgs || []);
+            const { items, hasMore } = await labService.getPackages();
+            setPackages(items);
+            hasMoreRef.current = hasMore;
         } catch { /* silent */ } finally { setLoading(false); }
     };
+
+    const loadMorePackages = useCallback(async () => {
+        // Server-side pages only make sense for the unfiltered catalog; when the
+        // user is searching or has a category chip active, we filter the already
+        // loaded set client-side and don't page further.
+        if (loadingMore || loading || !hasMoreRef.current || searchText.trim() || activeCategory !== 'all') return;
+        setLoadingMore(true);
+        try {
+            const next = pageRef.current + 1;
+            const { items, hasMore } = await labService.getPackages('', next);
+            setPackages(prev => {
+                const seen = new Set(prev.map(p => p.code));
+                return [...prev, ...items.filter(p => !seen.has(p.code))];
+            });
+            pageRef.current = next;
+            hasMoreRef.current = hasMore;
+        } catch { /* silent */ } finally { setLoadingMore(false); }
+    }, [loadingMore, loading, searchText, activeCategory]);
 
     const handleViewDetails = useCallback((code: string) => {
         setDetailModalCode(code);
@@ -374,6 +404,15 @@ export default function BloodTestScreen() {
                         columnWrapperStyle={styles.gridRow}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
+                        onEndReached={loadMorePackages}
+                        onEndReachedThreshold={0.5}
+                        ListFooterComponent={
+                            loadingMore ? (
+                                <View style={{ paddingVertical: Spacing.lg }}>
+                                    <ActivityIndicator size="small" color={colors.primary} />
+                                </View>
+                            ) : null
+                        }
                         ListEmptyComponent={
                             <View style={styles.emptyBox}>
                                 <Ionicons name="search-outline" size={42} color={themeColors.textMuted} style={{ opacity: 0.35, marginBottom: 10 }} />

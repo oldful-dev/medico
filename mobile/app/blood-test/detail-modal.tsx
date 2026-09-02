@@ -72,14 +72,16 @@ export function BloodTestDetailModal({
         setParamGroups([]);
         setExpandedGroups(new Set());
 
-        // Run both fetches in parallel — package list (for price/meta) + details (for parameters)
+        // Run both fetches in parallel — search by code for price/meta (the
+        // catalog is paginated, so a bare list won't contain every package) +
+        // details for the parameter groups.
         Promise.all([
-            labService.getPackages(),
+            labService.getPackages(packageCode),
             labService.getPackageDetails(packageCode),
         ])
-            .then(([pkgList, detailRes]) => {
+            .then(([pkgRes, detailRes]) => {
                 // Resolve basic package info
-                const found = (pkgList || []).find((p: LabPackage) => p.code === packageCode);
+                const found = pkgRes.items.find((p: LabPackage) => p.code === packageCode) || pkgRes.items[0];
                 if (found) setPkg(found);
 
                 // Resolve parameter groups — detailRes shape: { status, data: ParameterGroup[] }

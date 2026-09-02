@@ -166,23 +166,32 @@ exports.fetchTimeSlots = async (date, lat, long) => {
     }
 };
 
-exports.getPackages = async (search = '') => {
+// Redcliffe center-package-data is paginated: ~1732 items, page_size 15.
+// Pass through page; return { data, count, page_size } so the caller can page.
+exports.getPackages = async (search = '', page = 1) => {
     try {
         const response = await client.get(`/api/external/v2/center-package-data/`, {
-            params: { search }
+            params: { search, page }
         });
+        const { status, data, count, page_size } = response.data;
 
-        // If API returns success but empty data, and it's an empty search, provide fallbacks
-        if (response.data.status === 'success' && (!response.data.data || response.data.data.length === 0) && !search) {
-            return { status: 'success', data: getFallbackPackages() };
+        // Empty first page on an empty search → partner account has nothing mapped.
+        if (status === 'success' && (!data || data.length === 0) && !search && page === 1) {
+            const fb = getFallbackPackages();
+            return { status: 'success', data: fb, count: fb.length, page_size: fb.length };
         }
 
-        return response.data;
+        return { status, data: data || [], count: count ?? (data || []).length, page_size: page_size ?? 15 };
     } catch (error) {
-        // Handle 400 "No package found" as a fallback trigger for empty search
-        if (error.response?.status === 400 && !search) {
+        if (error.response?.status === 400 && !search && page === 1) {
             logger.info('[Redcliffe] Using fallback packages due to empty partner account.');
-            return { status: 'success', data: getFallbackPackages() };
+            const fb = getFallbackPackages();
+            return { status: 'success', data: fb, count: fb.length, page_size: fb.length };
+        }
+        // Past the last page Redcliffe replies 404 "Invalid page." (or 400) —
+        // that's end-of-list, not a failure.
+        if ([400, 404].includes(error.response?.status) && page > 1) {
+            return { status: 'success', data: [], count: 0, page_size: 15 };
         }
         logger.error(`[Redcliffe] getPackages error: ${error.message}`);
         throw error;

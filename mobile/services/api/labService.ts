@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import { apiClient, PaginatedApiResponse } from './apiClient';
 
 export interface LabPackage {
     code: string;
@@ -112,13 +112,19 @@ export interface DigitalReportEntry {
 }
 
 export const labService = {
-    getPackages: async (search = '') => {
-        const response = await apiClient.request<LabPackage[]>({
+    // Paginated — Redcliffe has ~1700 packages, 15/page. Returns the page plus
+    // whether more pages exist, for infinite scroll on the blood-test list.
+    getPackages: async (search = '', page = 1): Promise<{ items: LabPackage[]; hasMore: boolean; page: number }> => {
+        const res = await apiClient.request<any>({
             method: 'GET',
-            endpoint: `/labs/packages?search=${search}`,
+            endpoint: `/labs/packages?search=${encodeURIComponent(search)}&page=${page}`,
             timeout: 15000
-        });
-        return response.data;
+        }) as unknown as PaginatedApiResponse<LabPackage>;
+        return {
+            items: res.data || [],
+            hasMore: res.pagination?.hasMore ?? false,
+            page: res.pagination?.page ?? page,
+        };
     },
 
     getPackageDetails: async (code: string) => {

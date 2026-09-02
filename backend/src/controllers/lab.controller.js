@@ -71,22 +71,24 @@ const getTimeSlots = async (req, res, next) => {
     }
 };
 
-const groupsCache = new Map(); // key: code -> { packages_count, tests_count, timestamp }
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-
-// GET /api/labs/packages?search=
+// GET /api/labs/packages?search=&page=
+// Paginated pass-through of Redcliffe center-package-data (~1732 items, 15/page).
+// The Redcliffe list row already carries `parameter` (param count) and
+// `category_for_web`; per-package detail (grouped parameters) is fetched
+// on-demand by the detail screen, so no N+1 enrichment here.
 const getPackages = async (req, res, next) => {
     try {
         const { search } = req.query;
-        const result = await rc.getPackages(search || '');
-        // Redcliffe returns { status: 'success', data: [...] }
-        // We only want to send the array [...] to the frontend
-        const packages = (result.data || []).filter(pkg => pkg.code).map(pkg => ({
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const { data, count, page_size } = await rc.getPackages(search || '', page);
+
+        const packages = (data || []).filter(pkg => pkg.code).map(pkg => ({
             code: pkg.code,
             name: pkg.name,
             cost: pkg.package_center_prices?.package_price ?? pkg.cost ?? 0,
             discounted_cost: pkg.package_center_prices?.offer_price ?? pkg.discounted_cost ?? null,
             tests_count: pkg.parameter ?? pkg.tests_count ?? null,
+            packages_count: pkg.packages_count ?? 1,
             fasting: !!(pkg.fasting_time ?? pkg.fasting ?? pkg.is_fasting),
             type: pkg.type ?? null,
             description: pkg.description ?? null,
@@ -97,60 +99,10 @@ const getPackages = async (req, res, next) => {
             category_for_web: pkg.category_for_web ?? [],
         }));
 
-        // Enrich with packages_count and verified tests_count
-        const enriched = await Promise.all(packages.map(async (pkg) => {
-            const now = Date.now();
-            const cached = groupsCache.get(pkg.code);
-            if (cached && (now - cached.timestamp < CACHE_TTL)) {
-                return {
-                    ...pkg,
-                    packages_count: cached.packages_count,
-                    tests_count: cached.tests_count,
-                };
-            }
-
-            try {
-                const details = await rc.getPackageDetails(pkg.code);
-                const groupsCount = details?.data?.length || 1;
-                let totalTests = 0;
-                if (details?.data && Array.isArray(details.data)) {
-                    const groupMap = new Map();
-                    for (const g of details.data) {
-                        if (!g.package_details) continue;
-                        const existing = groupMap.get(g.name) || new Set();
-                        for (const p of g.package_details) {
-                            existing.add(p.name);
-                        }
-                        groupMap.set(g.name, existing);
-                    }
-                    totalTests = Array.from(groupMap.values()).reduce((sum, set) => sum + set.size, 0);
-                }
-
-                const data = {
-                    packages_count: groupsCount,
-                    tests_count: totalTests || pkg.tests_count || 1,
-                    timestamp: now,
-                };
-                groupsCache.set(pkg.code, data);
-
-                return {
-                    ...pkg,
-                    packages_count: data.packages_count,
-                    tests_count: data.tests_count,
-                };
-            } catch (err) {
-                logger.warn(`[LabCtrl] Failed to fetch details for enriched package ${pkg.code}: ${err.message}`);
-                return {
-                    ...pkg,
-                    packages_count: 1, // Fallback
-                };
-            }
-        }));
-
-        sendResponse(res, 200, enriched);
+        sendPaginatedResponse(res, packages, count || packages.length, page, page_size || 15);
     } catch (error) {
         if (error.response?.status === 400) {
-            return sendResponse(res, 200, [], 'No packages found');
+            return sendPaginatedResponse(res, [], 0, 1, 15);
         }
         logger.error('getPackages error:', error.message);
         next(error);
