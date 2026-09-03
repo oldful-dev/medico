@@ -3513,5 +3513,19 @@
     "permission_required_title": "অনুমতি প্রয়োজন",
     "camera_permission_msg": "ক্যামেরা অনুমতি প্রয়োজন।",
     "gallery_permission_msg": "গ্যালারি অনুমতি প্রয়োজন।"
+  },
+  "cart_success": {
+    "order_confirmed": "অর্ডার নিশ্চিত হয়েছে!",
+    "payment_successful": "পেমেন্ট সফল!",
+    "order_placed_cod": "আপনার {{category}} ক্যাশ অন ডেলিভারিতে বুক হয়েছে।",
+    "booking_confirmed_msg": "আপনার {{category}} নিশ্চিত হয়েছে।",
+    "default_category_order": "অর্ডার",
+    "default_category_booking": "বুকিং",
+    "booking_id": "বুকিং ID",
+    "confirmed_fallback": "নিশ্চিত",
+    "payable_on_delivery": "ডেলিভারিতে প্রদেয় (COD)",
+    "amount_paid": "প্রদত্ত পরিমাণ",
+    "view_my_bookings": "আমার বুকিং দেখুন",
+    "back_to_home": "হোমে ফিরুন"
   }
 }

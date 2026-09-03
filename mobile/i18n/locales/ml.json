@@ -3513,5 +3513,19 @@
     "permission_required_title": "അനുമതി ആവശ്യമാണ്",
     "camera_permission_msg": "ക്യാമറ അനുമതി ആവശ്യമാണ്.",
     "gallery_permission_msg": "ഗാലറി അനുമതി ആവശ്യമാണ്."
+  },
+  "cart_success": {
+    "order_confirmed": "ഓർഡർ സ്ഥിരീകരിച്ചു!",
+    "payment_successful": "പേയ്‌മെന്റ് വിജയകരം!",
+    "order_placed_cod": "നിങ്ങളുടെ {{category}} ക്യാഷ് ഓൺ ഡെലിവറി വഴി ബുക്ക് ചെയ്തു.",
+    "booking_confirmed_msg": "നിങ്ങളുടെ {{category}} സ്ഥിരീകരിച്ചു.",
+    "default_category_order": "ഓർഡർ",
+    "default_category_booking": "ബുക്കിംഗ്",
+    "booking_id": "ബുക്കിംഗ് ID",
+    "confirmed_fallback": "സ്ഥിരീകരിച്ചു",
+    "payable_on_delivery": "ഡെലിവറിയിൽ അടയ്ക്കേണ്ടത് (COD)",
+    "amount_paid": "അടച്ച തുക",
+    "view_my_bookings": "എന്റെ ബുക്കിംഗുകൾ",
+    "back_to_home": "ഹോമിലേക്ക് പോകുക"
   }
 }

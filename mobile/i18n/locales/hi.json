@@ -3513,5 +3513,19 @@
     "permission_required_title": "अनुमति ज़रूरी",
     "camera_permission_msg": "कैमरा अनुमति ज़रूरी है।",
     "gallery_permission_msg": "गैलरी अनुमति ज़रूरी है।"
+  },
+  "cart_success": {
+    "order_confirmed": "ऑर्डर पुष्टि हुई!",
+    "payment_successful": "भुगतान सफल!",
+    "order_placed_cod": "आपका {{category}} कैश ऑन डिलीवरी से बुक हुआ।",
+    "booking_confirmed_msg": "आपका {{category}} पुष्टि हो गया।",
+    "default_category_order": "ऑर्डर",
+    "default_category_booking": "बुकिंग",
+    "booking_id": "बुकिंग ID",
+    "confirmed_fallback": "पुष्टि हुई",
+    "payable_on_delivery": "डिलीवरी पर देय (COD)",
+    "amount_paid": "भुगतान राशि",
+    "view_my_bookings": "मेरी बुकिंग देखें",
+    "back_to_home": "होम पर जाएं"
   }
 }

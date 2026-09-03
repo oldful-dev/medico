@@ -3513,5 +3513,19 @@
     "permission_required_title": "అనుమతి అవసరం",
     "camera_permission_msg": "కెమెరా అనుమతి అవసరం.",
     "gallery_permission_msg": "గ్యాలరీ అనుమతి అవసరం."
+  },
+  "cart_success": {
+    "order_confirmed": "ఆర్డర్ నిర్ధారించబడింది!",
+    "payment_successful": "చెల్లింపు విజయవంతం!",
+    "order_placed_cod": "మీ {{category}} క్యాష్ ఆన్ డెలివరీ ద్వారా బుక్ చేయబడింది.",
+    "booking_confirmed_msg": "మీ {{category}} నిర్ధారించబడింది.",
+    "default_category_order": "ఆర్డర్",
+    "default_category_booking": "బుకింగ్",
+    "booking_id": "బుకింగ్ ID",
+    "confirmed_fallback": "నిర్ధారించబడింది",
+    "payable_on_delivery": "డెలివరీలో చెల్లించవలసినది (COD)",
+    "amount_paid": "చెల్లించిన మొత్తం",
+    "view_my_bookings": "నా బుకింగ్‌లు చూడండి",
+    "back_to_home": "హోమ్‌కు వెళ్ళండి"
   }
 }

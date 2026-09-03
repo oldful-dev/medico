@@ -3513,5 +3513,19 @@
     "permission_required_title": "அனுமதி தேவை",
     "camera_permission_msg": "கேமரா அனுமதி தேவை.",
     "gallery_permission_msg": "கேலரி அனுமதி தேவை."
+  },
+  "cart_success": {
+    "order_confirmed": "ஆர்டர் உறுதி செய்யப்பட்டது!",
+    "payment_successful": "பணம் செலுத்தல் வெற்றி!",
+    "order_placed_cod": "உங்கள் {{category}} கேஷ் ஆன் டெலிவரி மூலம் பதிவு செய்யப்பட்டது.",
+    "booking_confirmed_msg": "உங்கள் {{category}} உறுதி செய்யப்பட்டது.",
+    "default_category_order": "ஆர்டர்",
+    "default_category_booking": "முன்பதிவு",
+    "booking_id": "முன்பதிவு ID",
+    "confirmed_fallback": "உறுதி செய்யப்பட்டது",
+    "payable_on_delivery": "டெலிவரியில் செலுத்த வேண்டியது (COD)",
+    "amount_paid": "செலுத்தப்பட்ட தொகை",
+    "view_my_bookings": "என் முன்பதிவுகளைப் பார்",
+    "back_to_home": "முகப்புக்குச் செல்"
   }
 }

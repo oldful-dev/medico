@@ -6,12 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
 const TEXT_MUTED = '#888888';
 
 export default function CartSuccessScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams<{ bookingId?: string; amount?: string; category?: string; isCod?: string; isCash?: string }>();
     const { isDarkMode } = useTheme();
@@ -38,22 +40,22 @@ export default function CartSuccessScreen() {
                     <Ionicons name="checkmark-circle" size={80} color={PRIMARY_GREEN} />
                 </View>
                 
-                <Text style={dynamicStyles.title}>{isCod ? 'Order Confirmed!' : 'Payment Successful!'}</Text>
+                <Text style={dynamicStyles.title}>{isCod ? t('cart_success.order_confirmed') : t('cart_success.payment_successful')}</Text>
                 <Text style={dynamicStyles.subtitle}>
-                    {isCod 
-                        ? `Your ${params.category || 'order'} has been placed via Cash on Delivery.`
-                        : `Your ${params.category || 'booking'} has been confirmed.`
+                    {isCod
+                        ? t('cart_success.order_placed_cod', { category: params.category || t('cart_success.default_category_order') })
+                        : t('cart_success.booking_confirmed_msg', { category: params.category || t('cart_success.default_category_booking') })
                     }
                 </Text>
 
                 <View style={dynamicStyles.detailsCard}>
                     <View style={dynamicStyles.detailRow}>
-                        <Text style={dynamicStyles.detailLabel}>Booking ID</Text>
-                        <Text style={dynamicStyles.detailValue}>#{params.bookingId?.slice(-8) || 'CONFIRMED'}</Text>
+                        <Text style={dynamicStyles.detailLabel}>{t('cart_success.booking_id')}</Text>
+                        <Text style={dynamicStyles.detailValue}>#{params.bookingId?.slice(-8) || t('cart_success.confirmed_fallback')}</Text>
                     </View>
                     <View style={dynamicStyles.divider} />
                     <View style={dynamicStyles.detailRow}>
-                        <Text style={dynamicStyles.detailLabel}>{isCod ? 'Payable on Delivery (COD)' : 'Amount Paid'}</Text>
+                        <Text style={dynamicStyles.detailLabel}>{isCod ? t('cart_success.payable_on_delivery') : t('cart_success.amount_paid')}</Text>
                         <Text style={dynamicStyles.detailAmount}>₹{params.amount}</Text>
                     </View>
                 </View>
@@ -64,13 +66,13 @@ export default function CartSuccessScreen() {
                     style={dynamicStyles.primaryBtn}
                     onPress={() => router.replace('/my-bookings')}
                 >
-                    <Text style={dynamicStyles.primaryBtnText}>View My Bookings</Text>
+                    <Text style={dynamicStyles.primaryBtnText}>{t('cart_success.view_my_bookings')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={dynamicStyles.secondaryBtn}
                     onPress={() => router.replace('/(tabs)')}
                 >
-                    <Text style={dynamicStyles.secondaryBtnText}>Back to Home</Text>
+                    <Text style={dynamicStyles.secondaryBtnText}>{t('cart_success.back_to_home')}</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

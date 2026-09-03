@@ -3513,5 +3513,19 @@
     "permission_required_title": "ಅನುಮತಿ ಅಗತ್ಯ",
     "camera_permission_msg": "ಕ್ಯಾಮೆರಾ ಅನುಮತಿ ಅಗತ್ಯ.",
     "gallery_permission_msg": "ಗ್ಯಾಲರಿ ಅನುಮತಿ ಅಗತ್ಯ."
+  },
+  "cart_success": {
+    "order_confirmed": "ಆರ್ಡರ್ ದೃಢೀಕರಿಸಲಾಗಿದೆ!",
+    "payment_successful": "ಪಾವತಿ ಯಶಸ್ವಿ!",
+    "order_placed_cod": "ನಿಮ್ಮ {{category}} ಕ್ಯಾಶ್ ಆನ್ ಡೆಲಿವರಿ ಮೂಲಕ ಬುಕ್ ಆಗಿದೆ.",
+    "booking_confirmed_msg": "ನಿಮ್ಮ {{category}} ದೃಢೀಕರಿಸಲಾಗಿದೆ.",
+    "default_category_order": "ಆರ್ಡರ್",
+    "default_category_booking": "ಬುಕಿಂಗ್",
+    "booking_id": "ಬುಕಿಂಗ್ ID",
+    "confirmed_fallback": "ದೃಢೀಕರಿಸಲಾಗಿದೆ",
+    "payable_on_delivery": "ಡೆಲಿವರಿಯಲ್ಲಿ ಪಾವತಿ (COD)",
+    "amount_paid": "ಪಾವತಿಸಿದ ಮೊತ್ತ",
+    "view_my_bookings": "ನನ್ನ ಬುಕಿಂಗ್‌ಗಳು",
+    "back_to_home": "ಹೋಮ್‌ಗೆ ಹೋಗಿ"
   }
 }
