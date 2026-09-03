@@ -2649,7 +2649,9 @@
     "section_upcoming": "আসন্ন",
     "section_past": "অতীত ও সমাপ্ত",
     "assigned_name": "নিযুক্ত: {{name}}",
-    "view_details": "তথ্য দেখুন"
+    "view_details": "তথ্য দেখুন",
+    "booking_id_hash": "বুকিং ID: #{{id}}",
+    "details_coming_soon": "বুকিং বিবরণ শীঘ্রই আসছে।"
   },
   "checkout": {
     "header_title": "চেকআউট",

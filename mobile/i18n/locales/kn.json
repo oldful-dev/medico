@@ -2649,7 +2649,9 @@
     "section_upcoming": "ಮುಂದಿನವು",
     "section_past": "ಹಳೆಯವು",
     "assigned_name": "ಸಿಬ್ಬಂದಿ: {{name}}",
-    "view_details": "ವಿವರ ನೋಡಿ"
+    "view_details": "ವಿವರ ನೋಡಿ",
+    "booking_id_hash": "ಬುಕಿಂಗ್ ID: #{{id}}",
+    "details_coming_soon": "ಬುಕಿಂಗ್ ವಿವರಗಳು ಶೀಘ್ರದಲ್ಲೇ ಬರುತ್ತವೆ."
   },
   "checkout": {
     "header_title": "ಪಾವತಿ",

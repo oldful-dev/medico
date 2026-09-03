@@ -2742,7 +2742,9 @@
     "section_upcoming": "రాబోయేది",
     "section_past": "గత & పూర్తి",
     "assigned_name": "అసైన్డ్: {{name}}",
-    "view_details": "వివరాలను వీక్షించండి"
+    "view_details": "వివరాలను వీక్షించండి",
+    "booking_id_hash": "బుకింగ్ ID: #{{id}}",
+    "details_coming_soon": "బుకింగ్ వివరాలు త్వరలో వస్తాయి."
   },
   "checkout": {
     "header_title": "చెక్‌అవుట్",

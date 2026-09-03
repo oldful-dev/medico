@@ -2742,7 +2742,9 @@
     "section_upcoming": "வரவுள்ள",
     "section_past": "கடந்த/முடிந்த",
     "assigned_name": "ஒதுக்கீடு: {{name}}",
-    "view_details": "விவரம்"
+    "view_details": "விவரம்",
+    "booking_id_hash": "முன்பதிவு ID: #{{id}}",
+    "details_coming_soon": "முன்பதிவு விவரங்கள் விரைவில் வரும்."
   },
   "checkout": {
     "header_title": "செக்அவுட்",

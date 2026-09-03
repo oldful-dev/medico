@@ -1,19 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, ActivityIndicator, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, ActivityIndicator, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { labService } from '@/services/api/labService';
 import { useUser } from '@/context/UserContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
 const TEXT_MUTED = '#888888';
 const CARD_BORDER = '#E5E7EB';
 
+const TAB_KEYS = ['tab_upcoming', 'tab_completed', 'tab_wellness', 'tab_health', 'tab_concierge'];
 const TABS = ['Upcoming', 'Completed', 'Wellness', 'Health', 'Concierge'];
 
 interface UnifiedBooking {
@@ -31,6 +34,7 @@ interface UnifiedBooking {
 }
 
 export default function BookingsScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { profile } = useUser();
     const insets = useSafeAreaInsets(); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -41,6 +45,15 @@ export default function BookingsScreen() {
     const [activeTab, setActiveTab] = useState(0);
     const [bookings, setBookings] = useState<UnifiedBooking[]>([]);
     const [loading, setLoading] = useState(true);
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string; buttonText?: string; secondaryButtonText?: string; onSecondaryPress?: () => void; secondaryDestructive?: boolean }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'alert-circle-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'alert-circle-outline', extra?: Partial<typeof alertConfig>) => {
+        setAlertConfig({ visible: true, title, message, iconName, ...extra });
+    };
 
     const fetchBookings = useCallback(async () => {
         if (!profile?.id) return;
@@ -126,34 +139,31 @@ export default function BookingsScreen() {
 
     const handleCancel = (item: UnifiedBooking) => {
         if (!isBookingUpcoming(item)) {
-            Alert.alert('Error', 'This booking can no longer be cancelled.');
+            triggerAlert(t('common.error'), t('profile_bookings.cancel_error'));
             return;
         }
-        Alert.alert(
-            'Cancel Booking',
-            `Cancel "${item.title}" scheduled for ${item.date}?`,
-            [
-                { text: 'Keep Booking', style: 'cancel' },
-                {
-                    text: 'Cancel Booking', style: 'destructive',
-                    onPress: async () => {
-                        setCancellingId(item.id);
-                        try {
-                            const res = await labService.cancelLabOrder(item.id);
-                            if (res.success) {
-                                Alert.alert('Cancelled', 'Your booking has been cancelled.');
-                                fetchBookings();
-                            } else {
-                                Alert.alert('Error', res.message || 'Failed to cancel booking. Please try again.');
-                            }
-                        } catch {
-                            Alert.alert('Error', 'Failed to cancel booking. Please try again.');
-                        } finally {
-                            setCancellingId(null);
-                        }
-                    },
-                },
-            ]
+        const doCancel = async () => {
+            setAlertConfig(prev => ({ ...prev, visible: false }));
+            setCancellingId(item.id);
+            try {
+                const res = await labService.cancelLabOrder(item.id);
+                if (res.success) {
+                    triggerAlert(t('profile_bookings.cancelled_alert_title'), t('profile_bookings.cancelled_alert_msg'), 'checkmark-circle-outline');
+                    fetchBookings();
+                } else {
+                    triggerAlert(t('common.error'), res.message || t('profile_bookings.cancel_error'));
+                }
+            } catch {
+                triggerAlert(t('common.error'), t('profile_bookings.cancel_error'));
+            } finally {
+                setCancellingId(null);
+            }
+        };
+        triggerAlert(
+            t('profile_bookings.cancel_booking'),
+            t('profile_bookings.cancel_confirm'),
+            'warning-outline',
+            { buttonText: t('profile_bookings.keep_booking'), secondaryButtonText: t('profile_bookings.yes_cancel'), onSecondaryPress: doCancel, secondaryDestructive: true }
         );
     };
 
@@ -161,7 +171,7 @@ export default function BookingsScreen() {
         if (item.category === 'Health') {
             router.push('/blood-test' as any);
         } else {
-            Alert.alert('Rebook', 'Please browse services to book again.');
+            triggerAlert(t('profile_bookings.rebook'), t('profile_bookings.rebook_msg'));
         }
     };
 
@@ -192,7 +202,7 @@ export default function BookingsScreen() {
 
                 <View style={styles.cardBody}>
                     <Text style={styles.bookingTitle}>{item.title}</Text>
-                    <Text style={styles.bookingId}>Booking ID: #{item.displayId}</Text>
+                    <Text style={styles.bookingId}>{t('profile_bookings.booking_id_hash', { id: item.displayId })}</Text>
 
                     <View style={styles.detailRow}>
                         <Ionicons name="calendar-outline" size={14} color={TEXT_MUTED} />
@@ -208,7 +218,7 @@ export default function BookingsScreen() {
                             <View style={styles.staffAvatar}>
                                 <Ionicons name="person" size={13} color={PRIMARY_GREEN} />
                             </View>
-                            <Text style={styles.staffText}>Assigned: <Text style={styles.staffName}>{staffName}</Text></Text>
+                            <Text style={styles.staffText}>{t('profile_bookings.assigned')} <Text style={styles.staffName}>{staffName}</Text></Text>
                         </View>
                     )}
                 </View>
@@ -222,13 +232,13 @@ export default function BookingsScreen() {
                                 onPress={() => Linking.openURL(item.reportUrl!)}
                             >
                                 <Ionicons name="download-outline" size={14} color="#fff" />
-                                <Text style={styles.actionBtnText}>Report</Text>
+                                <Text style={styles.actionBtnText}>{t('profile_bookings.report')}</Text>
                             </TouchableOpacity>
                         ) : null}
                         {item.status === 'COMPLETED' && (
                             <TouchableOpacity style={styles.rebookBtn} onPress={() => handleRebook(item)}>
                                 <Ionicons name="refresh-outline" size={14} color={PRIMARY_GREEN} />
-                                <Text style={styles.rebookBtnText}>Rebook</Text>
+                                <Text style={styles.rebookBtnText}>{t('profile_bookings.rebook')}</Text>
                             </TouchableOpacity>
                         )}
                         {isUpcoming && (
@@ -240,15 +250,15 @@ export default function BookingsScreen() {
                                 {cancellingId === item.id ? (
                                     <ActivityIndicator size="small" color="#DC2626" />
                                 ) : (
-                                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                                    <Text style={styles.cancelBtnText}>{t('profile_bookings.cancel')}</Text>
                                 )}
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity
                             style={styles.outlineBtn}
-                            onPress={() => Alert.alert('Details', 'Booking details view coming soon.')}
+                            onPress={() => triggerAlert(t('profile_bookings.details'), t('profile_bookings.details_coming_soon'), 'time-outline')}
                         >
-                            <Text style={styles.outlineBtnText}>Details</Text>
+                            <Text style={styles.outlineBtnText}>{t('profile_bookings.details')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -264,7 +274,7 @@ export default function BookingsScreen() {
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Bookings</Text>
+                <Text style={styles.headerTitle}>{t('profile_bookings.header')}</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -282,7 +292,7 @@ export default function BookingsScreen() {
                             onPress={() => setActiveTab(idx)}
                         >
                             <Text style={[styles.tabText, activeTab === idx && styles.tabTextActive]}>
-                                {tab}
+                                {t(`profile_bookings.${TAB_KEYS[idx]}`)}
                             </Text>
                         </TouchableOpacity>
                     ))}
@@ -303,12 +313,23 @@ export default function BookingsScreen() {
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <Ionicons name="calendar-clear-outline" size={64} color="#E5E7EB" />
-                            <Text style={styles.emptyTitle}>No bookings found</Text>
-                            <Text style={styles.emptySubtitle}>You don&apos;t have any bookings in this section yet.</Text>
+                            <Text style={styles.emptyTitle}>{t('profile_bookings.no_bookings')}</Text>
+                            <Text style={styles.emptySubtitle}>{t('profile_bookings.no_bookings_subtitle')}</Text>
                         </View>
                     }
                 />
             )}
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={alertConfig.buttonText || t('common.ok')}
+                secondaryButtonText={alertConfig.secondaryButtonText}
+                onSecondaryPress={alertConfig.onSecondaryPress}
+                secondaryDestructive={alertConfig.secondaryDestructive}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </SafeAreaView>
     );
 }

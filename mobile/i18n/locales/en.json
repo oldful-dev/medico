@@ -2718,7 +2718,9 @@
     "section_upcoming": "Upcoming",
     "section_past": "Past & Completed",
     "assigned_name": "Assigned: {{name}}",
-    "view_details": "View Details"
+    "view_details": "View Details",
+    "booking_id_hash": "Booking ID: #{{id}}",
+    "details_coming_soon": "Booking details view coming soon."
   },
   "checkout": {
     "header_title": "Checkout",

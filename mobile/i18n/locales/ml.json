@@ -2742,7 +2742,9 @@
     "section_upcoming": "വരാനിരിക്കുന്ന",
     "section_past": "കഴിഞ്ഞ/പൂർത്തിയായ",
     "assigned_name": "നിയോഗിച്ചത്: {{name}}",
-    "view_details": "വിവരം"
+    "view_details": "വിവരം",
+    "booking_id_hash": "ബുക്കിംഗ് ID: #{{id}}",
+    "details_coming_soon": "ബുക്കിംഗ് വിശദാംശങ്ങൾ ഉടൻ വരും."
   },
   "checkout": {
     "header_title": "ചെക്ക്ഔട്ട്",

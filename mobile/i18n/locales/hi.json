@@ -2742,7 +2742,9 @@
     "section_upcoming": "आगामी",
     "section_past": "पिछली/पूर्ण",
     "assigned_name": "नियुक्त: {{name}}",
-    "view_details": "विवरण"
+    "view_details": "विवरण",
+    "booking_id_hash": "बुकिंग ID: #{{id}}",
+    "details_coming_soon": "बुकिंग विवरण जल्द आ रहा है।"
   },
   "checkout": {
     "header_title": "चेकआउट",
