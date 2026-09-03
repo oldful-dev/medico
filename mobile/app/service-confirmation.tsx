@@ -7,12 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { bookingService, Booking } from '@/services/api/bookingService';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY = '#02743F';
 const PRIMARY_DARK = '#015C32';
 const PRIMARY_LIGHT = '#E8F5EE';
 
 export default function ServiceConfirmationScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
@@ -108,27 +110,27 @@ export default function ServiceConfirmationScreen() {
     const handleCancel = () => {
         if (!booking?.id) return;
         triggerAlert(
-            'Cancel Request',
-            'Are you sure you want to cancel this booking?',
+            t('service_confirmation.cancel_request'),
+            t('service_confirmation.cancel_confirm'),
             'warning-outline',
-            'Yes, Cancel',
+            t('service_confirmation.yes_cancel'),
             async () => {
                 setAlertConfig(prev => ({ ...prev, visible: false }));
                 try {
                     const res = await bookingService.cancelBooking(booking.id);
                     if (res.success) {
-                        triggerAlert('Cancelled', 'Booking cancelled successfully', 'checkmark-circle-outline', 'OK', () => {
+                        triggerAlert(t('service_confirmation.cancelled'), t('service_confirmation.cancelled_msg'), 'checkmark-circle-outline', t('common.ok'), () => {
                             setAlertConfig(prev => ({ ...prev, visible: false }));
                             fetchBooking(booking.id);
                         });
                     } else {
-                        triggerAlert('Error', res.message || 'Failed to cancel');
+                        triggerAlert(t('common.error'), res.message || t('service_confirmation.cancel_failed'));
                     }
                 } catch {
-                    triggerAlert('Error', 'Something went wrong');
+                    triggerAlert(t('common.error'), t('service_confirmation.something_wrong'));
                 }
             },
-            'No, Keep It',
+            t('service_confirmation.no_keep_it'),
             () => setAlertConfig(prev => ({ ...prev, visible: false })),
             true
         );
@@ -152,7 +154,7 @@ export default function ServiceConfirmationScreen() {
                 else if (typeof v === 'number' || typeof v === 'boolean') lines.push(`${label}: ${v}`);
             });
         }
-        return lines.length ? lines.join('\n') : 'Standard service request';
+        return lines.length ? lines.join('\n') : t('service_confirmation.standard_request');
     };
 
     const getAttachments = (b: Booking): string[] => {
@@ -169,23 +171,23 @@ export default function ServiceConfirmationScreen() {
 
     const getInfoText = (name: string) => {
         const n = name.toLowerCase();
-        if (n.includes('driver') || n.includes('cab') || n.includes('hospital')) return 'A driver will be assigned shortly. You can track your cab location.';
-        if (n.includes('medicine') || n.includes('blood') || n.includes('order')) return 'Your order is being processed. Track delivery status here.';
-        if (n.includes('meal') || n.includes('tiffin')) return 'Our kitchen received your request. Track your tiffin delivery.';
-        if (n.includes('nurse') || n.includes('physio') || n.includes('doctor')) return 'A healthcare professional will be assigned to you shortly.';
-        if (n.includes('paper') || n.includes('legal') || n.includes('bank') || n.includes('bill')) return 'An Ayuxa concierge assistant will handle your request.';
-        if (n.includes('cleaning') || n.includes('repair') || n.includes('plumbing') || n.includes('tech')) return 'A certified technician is being prepared for your home visit.';
-        return 'A dedicated partner will be assigned to your request shortly.';
+        if (n.includes('driver') || n.includes('cab') || n.includes('hospital')) return t('service_confirmation.info_driver');
+        if (n.includes('medicine') || n.includes('blood') || n.includes('order')) return t('service_confirmation.info_order');
+        if (n.includes('meal') || n.includes('tiffin')) return t('service_confirmation.info_meal');
+        if (n.includes('nurse') || n.includes('physio') || n.includes('doctor')) return t('service_confirmation.info_healthcare');
+        if (n.includes('paper') || n.includes('legal') || n.includes('bank') || n.includes('bill')) return t('service_confirmation.info_concierge');
+        if (n.includes('cleaning') || n.includes('repair') || n.includes('plumbing') || n.includes('tech')) return t('service_confirmation.info_technician');
+        return t('service_confirmation.info_default');
     };
 
     const getTrackLabel = (name: string) => {
         const n = name.toLowerCase();
-        if (n.includes('driver') || n.includes('cab') || n.includes('hospital')) return 'Track Car/Cab';
-        if (n.includes('nurse') || n.includes('physio') || n.includes('doctor')) return 'Track Professional';
-        if (n.includes('medicine') || n.includes('blood')) return 'Track Order';
-        if (n.includes('meal') || n.includes('tiffin')) return 'Track Tiffin';
-        if (n.includes('cleaning') || n.includes('repair') || n.includes('plumbing') || n.includes('tech')) return 'Track Technician';
-        return 'Track Progress';
+        if (n.includes('driver') || n.includes('cab') || n.includes('hospital')) return t('service_confirmation.track_cab');
+        if (n.includes('nurse') || n.includes('physio') || n.includes('doctor')) return t('service_confirmation.track_professional');
+        if (n.includes('medicine') || n.includes('blood')) return t('service_confirmation.track_order');
+        if (n.includes('meal') || n.includes('tiffin')) return t('service_confirmation.track_tiffin');
+        if (n.includes('cleaning') || n.includes('repair') || n.includes('plumbing') || n.includes('tech')) return t('service_confirmation.track_technician');
+        return t('service_confirmation.track_progress');
     };
 
     // ─── Theme tokens ─────────────────────────────────────────────────────────
@@ -211,16 +213,16 @@ export default function ServiceConfirmationScreen() {
             : (params.meetupStartTime ?? '—');
 
         const meetupDetailRows = [
-            { icon: 'calendar-outline' as const, label: 'Date', value: meetupDate },
-            { icon: 'time-outline' as const, label: 'Time', value: meetupTime },
-            { icon: 'location-outline' as const, label: 'Venue', value: params.meetupVenue ?? '—' },
-            ...(params.meetupPinCode ? [{ icon: 'keypad-outline' as const, label: 'PIN Code', value: params.meetupPinCode }] : []),
+            { icon: 'calendar-outline' as const, label: t('service_confirmation.date'), value: meetupDate },
+            { icon: 'time-outline' as const, label: t('service_confirmation.time'), value: meetupTime },
+            { icon: 'location-outline' as const, label: t('service_confirmation.venue'), value: params.meetupVenue ?? '—' },
+            ...(params.meetupPinCode ? [{ icon: 'keypad-outline' as const, label: t('service_confirmation.pin_code'), value: params.meetupPinCode }] : []),
         ];
 
         const nextSteps = [
-            { icon: 'phone-portrait-outline' as const, text: "You'll receive a confirmation SMS" },
-            { icon: 'people-outline' as const, text: 'Our team will call you 1 day before the event' },
-            { icon: 'car-outline' as const, text: params.pickupEnabled === 'true' ? 'Pickup will be arranged at your address' : 'Please reach the venue on time' },
+            { icon: 'phone-portrait-outline' as const, text: t('service_confirmation.step_sms') },
+            { icon: 'people-outline' as const, text: t('service_confirmation.step_call') },
+            { icon: 'car-outline' as const, text: params.pickupEnabled === 'true' ? t('service_confirmation.step_pickup') : t('service_confirmation.step_reach_venue') },
         ];
 
         return (
@@ -240,17 +242,17 @@ export default function ServiceConfirmationScreen() {
                             </View>
                         </Animated.View>
                         <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 22, fontWeight: '700', color: textHigh, marginBottom: 8, textAlign: 'center' }}>Registration Confirmed!</Text>
-                            <Text style={{ fontSize: 14, color: textMid, textAlign: 'center', lineHeight: 20 }}>You have successfully joined the Local Meet Up.</Text>
+                            <Text style={{ fontSize: 22, fontWeight: '700', color: textHigh, marginBottom: 8, textAlign: 'center' }}>{t('service_confirmation.registration_confirmed')}</Text>
+                            <Text style={{ fontSize: 14, color: textMid, textAlign: 'center', lineHeight: 20 }}>{t('service_confirmation.meetup_joined')}</Text>
                             {params.bookingCode && (
-                                <Text style={{ fontSize: 13, fontWeight: '700', color: PRIMARY, marginTop: 12 }}>Booking Code: {params.bookingCode}</Text>
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: PRIMARY, marginTop: 12 }}>{t('service_confirmation.booking_code', { code: params.bookingCode })}</Text>
                             )}
                         </Animated.View>
                     </View>
 
                     {/* Details card */}
                     <Animated.View style={{ opacity: fadeAnim, backgroundColor: cardBg, borderRadius: 16, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: cardBorder }}>
-                        <Text style={{ fontSize: 15, fontWeight: '700', color: textHigh, marginBottom: 16 }}>Meeting Details</Text>
+                        <Text style={{ fontSize: 15, fontWeight: '700', color: textHigh, marginBottom: 16 }}>{t('service_confirmation.meeting_details')}</Text>
                         {meetupDetailRows.map((row, i) => (
                             <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
                                 <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: greenBg, justifyContent: 'center', alignItems: 'center' }}>
@@ -266,21 +268,21 @@ export default function ServiceConfirmationScreen() {
                             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: greenBg, borderRadius: 10, padding: 12, marginBottom: 12 }}>
                                 <Ionicons name="car-outline" size={16} color={PRIMARY} />
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ fontSize: 12, fontWeight: '700', color: PRIMARY, marginBottom: 2 }}>Pickup Arranged</Text>
+                                    <Text style={{ fontSize: 12, fontWeight: '700', color: PRIMARY, marginBottom: 2 }}>{t('service_confirmation.pickup_arranged')}</Text>
                                     {params.pickupAddress ? <Text style={{ fontSize: 13, color: textMid }}>{params.pickupAddress}</Text> : null}
-                                    {params.preferredTime ? <Text style={{ fontSize: 13, color: textMid }}>At {params.preferredTime}</Text> : null}
+                                    {params.preferredTime ? <Text style={{ fontSize: 13, color: textMid }}>{t('service_confirmation.at_time', { time: params.preferredTime })}</Text> : null}
                                 </View>
                             </View>
                         )}
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: greenBg, borderRadius: 10, padding: 12 }}>
                             <Ionicons name="information-circle-outline" size={16} color={PRIMARY} />
-                            <Text style={{ fontSize: 12, color: textMid, flex: 1, lineHeight: 18 }}>We will contact you soon with more details.</Text>
+                            <Text style={{ fontSize: 12, color: textMid, flex: 1, lineHeight: 18 }}>{t('service_confirmation.will_contact_soon')}</Text>
                         </View>
                     </Animated.View>
 
                     {/* What's next */}
                     <Animated.View style={{ opacity: fadeAnim, backgroundColor: cardBg, borderRadius: 16, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: cardBorder }}>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: textHigh, marginBottom: 14 }}>What&apos;s Next?</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: textHigh, marginBottom: 14 }}>{t('service_confirmation.whats_next')}</Text>
                         {nextSteps.map((item, i) => (
                             <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: i < nextSteps.length - 1 ? 12 : 0 }}>
                                 <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: greenBg, justifyContent: 'center', alignItems: 'center' }}>
@@ -298,13 +300,13 @@ export default function ServiceConfirmationScreen() {
                         onPress={() => router.replace('/meetup/my-bookings' as any)} activeOpacity={0.85}
                     >
                         <Ionicons name="calendar-outline" size={18} color="#fff" />
-                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#FAF7ED' }}>Go to My Bookings</Text>
+                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#FAF7ED' }}>{t('service_confirmation.go_my_bookings')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={{ alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: cardBorder, borderRadius: 14, paddingVertical: 14 }}
                         onPress={() => router.replace('/(tabs)' as any)} activeOpacity={0.85}
                     >
-                        <Text style={{ fontSize: 15, fontWeight: '600', color: textMid }}>Back to Home</Text>
+                        <Text style={{ fontSize: 15, fontWeight: '600', color: textMid }}>{t('service_confirmation.back_to_home')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -313,7 +315,7 @@ export default function ServiceConfirmationScreen() {
                     title={alertConfig.title}
                     message={alertConfig.message}
                     iconName={alertConfig.iconName as any || 'warning-outline'}
-                    buttonText={alertConfig.buttonText || 'OK'}
+                    buttonText={alertConfig.buttonText || t('common.ok')}
                     onClose={alertConfig.onClose || (() => setAlertConfig(prev => ({ ...prev, visible: false })))}
                     secondaryButtonText={alertConfig.secondaryButtonText}
                     onSecondaryPress={alertConfig.onSecondaryPress}
@@ -324,23 +326,23 @@ export default function ServiceConfirmationScreen() {
     }
 
     // ─── Standard service booking ─────────────────────────────────────────────
-    const dispName   = booking?.service?.name || params.serviceName || 'Service';
+    const dispName   = booking?.service?.name || params.serviceName || t('service_confirmation.service');
     const dispId     = booking?.bookingCode || params.requestId || 'REQ-PENDING';
-    const dispDesc   = booking ? formatDescription(booking) : (params.description || 'Details pending...');
-    const dispAddr   = booking?.addressLine || params.address || 'Address pending...';
-    const dispStatus = booking?.status || params.status || 'Confirmed';
-    const dispFee    = booking?.amount ? `₹${booking.amount}` : (params.fee || 'To be decided');
+    const dispDesc   = booking ? formatDescription(booking) : (params.description || t('service_confirmation.details_pending'));
+    const dispAddr   = booking?.addressLine || params.address || t('service_confirmation.address_pending');
+    const dispStatus = booking?.status || params.status || t('service_confirmation.confirmed_status');
+    const dispFee    = booking?.amount ? `₹${booking.amount}` : (params.fee || t('service_confirmation.to_be_decided'));
     const dispDate   = booking?.scheduledDate
         ? new Date(booking.scheduledDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
-        : 'Date pending...';
+        : t('service_confirmation.date_pending');
     const attachments = booking ? getAttachments(booking) : [];
 
     const serviceDetailRows = [
-        { icon: 'construct-outline' as const, label: 'Service', value: dispName },
-        { icon: 'information-circle-outline' as const, label: 'Additional Details', value: dispDesc },
-        { icon: 'location-outline' as const, label: 'Address', value: dispAddr },
-        { icon: 'calendar-outline' as const, label: 'Scheduled Date', value: dispDate },
-        { icon: 'wallet-outline' as const, label: 'Booking Fee / Estimate', value: dispFee },
+        { icon: 'construct-outline' as const, label: t('service_confirmation.service'), value: dispName },
+        { icon: 'information-circle-outline' as const, label: t('service_confirmation.additional_details'), value: dispDesc },
+        { icon: 'location-outline' as const, label: t('service_confirmation.address'), value: dispAddr },
+        { icon: 'calendar-outline' as const, label: t('service_confirmation.scheduled_date'), value: dispDate },
+        { icon: 'wallet-outline' as const, label: t('service_confirmation.booking_fee_estimate'), value: dispFee },
     ];
 
     return (
@@ -354,7 +356,7 @@ export default function ServiceConfirmationScreen() {
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: '#FAF7ED', marginLeft: 12, letterSpacing: -0.3 }}>
-                    {loading ? 'Loading...' : 'Booking Confirmed'}
+                    {loading ? t('common.loading') : t('service_confirmation.booking_confirmed')}
                 </Text>
             </View>
 
@@ -368,10 +370,10 @@ export default function ServiceConfirmationScreen() {
                             <Ionicons name="checkmark" size={38} color="#FFFFFF" />
                         </View>
                         <Text style={{ fontSize: 22, fontWeight: '700', color: textHigh, marginBottom: 6, letterSpacing: -0.3 }}>
-                            {loading ? 'Please wait...' : 'Booking Received!'}
+                            {loading ? t('service_confirmation.please_wait') : t('service_confirmation.booking_received')}
                         </Text>
                         <Text style={{ fontSize: 14, color: textMid, textAlign: 'center', lineHeight: 20 }}>
-                            {loading ? 'Fetching your booking details...' : 'Your service request has been submitted successfully.'}
+                            {loading ? t('service_confirmation.fetching_details') : t('service_confirmation.service_submitted')}
                         </Text>
                     </View>
 
@@ -380,7 +382,7 @@ export default function ServiceConfirmationScreen() {
                     {/* Request ID + status badge */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: greenBg, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 16, borderWidth: 1, borderColor: greenBorder, borderStyle: 'dashed' }}>
                         <View>
-                            <Text style={{ fontSize: 11, color: textMid, fontWeight: '500', marginBottom: 2 }}>Request ID</Text>
+                            <Text style={{ fontSize: 11, color: textMid, fontWeight: '500', marginBottom: 2 }}>{t('service_confirmation.request_id')}</Text>
                             <Text style={{ fontSize: 15, fontWeight: '700', color: greenText, letterSpacing: 0.5 }}>{dispId}</Text>
                         </View>
                         <View style={{ backgroundColor: isDarkMode ? '#1A4A32' : '#D4EDDA', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: isDarkMode ? PRIMARY : '#A8D5B8' }}>
@@ -390,7 +392,7 @@ export default function ServiceConfirmationScreen() {
 
                     {/* Service details card */}
                     <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: cardBorder }}>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: textHigh, marginBottom: 14, letterSpacing: -0.2 }}>Service Details</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: textHigh, marginBottom: 14, letterSpacing: -0.2 }}>{t('service_confirmation.service_details')}</Text>
                         {serviceDetailRows.map((row, i) => (
                             <View key={row.label}>
                                 {i > 0 && <View style={{ height: 0.5, backgroundColor: divider, marginVertical: 2 }} />}
@@ -410,7 +412,7 @@ export default function ServiceConfirmationScreen() {
                     {/* Attachments */}
                     {attachments.length > 0 && (
                         <View style={{ marginBottom: 16 }}>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: textHigh, marginBottom: 10 }}>Uploaded Photos / Documents</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: textHigh, marginBottom: 10 }}>{t('service_confirmation.uploaded_files')}</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
                                 {attachments.map((url, idx) => (
                                     <TouchableOpacity key={idx} activeOpacity={0.9}>
@@ -418,7 +420,7 @@ export default function ServiceConfirmationScreen() {
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
-                            <Text style={{ fontSize: 11, color: textMid, marginTop: 6 }}>{attachments.length} file(s) uploaded</Text>
+                            <Text style={{ fontSize: 11, color: textMid, marginTop: 6 }}>{t('service_confirmation.files_uploaded_count', { count: attachments.length })}</Text>
                         </View>
                     )}
 
@@ -441,7 +443,7 @@ export default function ServiceConfirmationScreen() {
                                 style={{ flex: 1, paddingVertical: 13, borderRadius: 14, alignItems: 'center', backgroundColor: isDarkMode ? '#2A1515' : '#FFF0F0', borderWidth: 1, borderColor: '#FFCCCC' }}
                                 onPress={handleCancel} activeOpacity={0.85}
                             >
-                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#E53E3E' }}>Cancel</Text>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#E53E3E' }}>{t('service_confirmation.cancel')}</Text>
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity
@@ -449,7 +451,7 @@ export default function ServiceConfirmationScreen() {
                             activeOpacity={0.85}
                         >
                             <Ionicons name="call-outline" size={16} color={PRIMARY} />
-                            <Text style={{ fontSize: 14, fontWeight: '600', color: PRIMARY }}>Call Support</Text>
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: PRIMARY }}>{t('service_confirmation.call_support')}</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -457,7 +459,7 @@ export default function ServiceConfirmationScreen() {
                         style={{ alignItems: 'center', paddingVertical: 12 }}
                         onPress={() => router.replace('/(tabs)' as any)} activeOpacity={0.8}
                     >
-                        <Text style={{ fontSize: 14, color: textMid, fontWeight: '500', textDecorationLine: 'underline' }}>Back to Home</Text>
+                        <Text style={{ fontSize: 14, color: textMid, fontWeight: '500', textDecorationLine: 'underline' }}>{t('service_confirmation.back_to_home')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -467,7 +469,7 @@ export default function ServiceConfirmationScreen() {
                 title={alertConfig.title}
                 message={alertConfig.message}
                 iconName={alertConfig.iconName as any || 'warning-outline'}
-                buttonText={alertConfig.buttonText || 'OK'}
+                buttonText={alertConfig.buttonText || t('common.ok')}
                 onClose={alertConfig.onClose || (() => setAlertConfig(prev => ({ ...prev, visible: false })))}
                 secondaryButtonText={alertConfig.secondaryButtonText}
                 onSecondaryPress={alertConfig.onSecondaryPress}
