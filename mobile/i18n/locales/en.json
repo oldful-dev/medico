@@ -1909,7 +1909,11 @@
     "send": "Send Email",
     "sending": "Sending...",
     "need_help": "Need Immediate Help?",
-    "call_support": "Call Support"
+    "call_support": "Call Support",
+    "enter_subject": "Please enter a subject",
+    "enter_message": "Please enter your message",
+    "sent_success": "Your email has been sent. Our team will respond within 24 hours.",
+    "send_failed": "Failed to send email. Please try again."
   },
   "all_services": {
     "header": "All Ayuxa Services",

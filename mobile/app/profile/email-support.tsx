@@ -1,25 +1,37 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 export default function EmailSupportScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'alert-circle-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'alert-circle-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     const handleSendEmail = async () => {
         if (!subject.trim()) {
-            Alert.alert('Required', 'Please enter a subject');
+            triggerAlert(t('common.required'), t('email_support.enter_subject'));
             return;
         }
         if (!message.trim()) {
-            Alert.alert('Required', 'Please enter your message');
+            triggerAlert(t('common.required'), t('email_support.enter_message'));
             return;
         }
 
@@ -27,11 +39,11 @@ export default function EmailSupportScreen() {
         try {
             // Simulate API call
             await new Promise(resolve => setTimeout(resolve, 1500));
-            Alert.alert('Success', 'Your email has been sent. Our team will respond within 24 hours.');
+            triggerAlert(t('common.success'), t('email_support.sent_success'), 'checkmark-circle-outline');
             setSubject('');
             setMessage('');
         } catch (error) {
-            Alert.alert('Error', 'Failed to send email. Please try again.');
+            triggerAlert(t('common.error'), t('email_support.send_failed'));
         } finally {
             setLoading(false);
         }
@@ -47,16 +59,16 @@ export default function EmailSupportScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Email Support</Text>
+                <Text style={styles.headerTitle}>{t('email_support.header')}</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Info Card */}
                 <View style={styles.infoCard}>
                     <Ionicons name="mail-outline" size={32} color={Colors.primary} />
-                    <Text style={styles.infoTitle}>Send us an Email</Text>
+                    <Text style={styles.infoTitle}>{t('email_support.title')}</Text>
                     <Text style={styles.infoText}>
-                        Our support team will respond to your email within 24 hours
+                        {t('email_support.subtitle')}
                     </Text>
                     <Text style={styles.emailAddress}>support@ayuxacare.com</Text>
                 </View>
@@ -65,10 +77,10 @@ export default function EmailSupportScreen() {
                 <View style={styles.formContainer}>
                     {/* Subject */}
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Subject</Text>
+                        <Text style={styles.label}>{t('email_support.subject')}</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Brief subject of your inquiry"
+                            placeholder={t('email_support.subject_placeholder')}
                             placeholderTextColor={Colors.textMuted}
                             value={subject}
                             onChangeText={setSubject}
@@ -78,11 +90,11 @@ export default function EmailSupportScreen() {
 
                     {/* Category */}
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Category</Text>
+                        <Text style={styles.label}>{t('email_support.category')}</Text>
                         <View style={styles.categoryOptions}>
-                            {['Billing', 'Technical', 'General', 'Other'].map((cat) => (
+                            {['billing', 'technical', 'general', 'other'].map((cat) => (
                                 <TouchableOpacity key={cat} style={styles.categoryChip} activeOpacity={0.7}>
-                                    <Text style={styles.categoryText}>{cat}</Text>
+                                    <Text style={styles.categoryText}>{t(`email_support.cat_${cat}`)}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -90,10 +102,10 @@ export default function EmailSupportScreen() {
 
                     {/* Message */}
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Message</Text>
+                        <Text style={styles.label}>{t('email_support.message')}</Text>
                         <TextInput
                             style={[styles.input, styles.textArea]}
-                            placeholder="Describe your issue in detail..."
+                            placeholder={t('email_support.message_placeholder')}
                             placeholderTextColor={Colors.textMuted}
                             value={message}
                             onChangeText={setMessage}
@@ -108,7 +120,7 @@ export default function EmailSupportScreen() {
                     <View style={styles.attachmentInfo}>
                         <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
                         <Text style={styles.attachmentText}>
-                            Screenshots or documents can be added later via email
+                            {t('email_support.attach_note')}
                         </Text>
                     </View>
 
@@ -122,12 +134,12 @@ export default function EmailSupportScreen() {
                         {loading ? (
                             <>
                                 <ActivityIndicator size="small" color="#FFFFFF" />
-                                <Text style={styles.sendButtonText}>Sending...</Text>
+                                <Text style={styles.sendButtonText}>{t('email_support.sending')}</Text>
                             </>
                         ) : (
                             <>
                                 <Ionicons name="send-outline" size={18} color="#FFFFFF" />
-                                <Text style={styles.sendButtonText}>Send Email</Text>
+                                <Text style={styles.sendButtonText}>{t('email_support.send')}</Text>
                             </>
                         )}
                     </TouchableOpacity>
@@ -135,11 +147,11 @@ export default function EmailSupportScreen() {
 
                 {/* Alternative Support */}
                 <View style={styles.alternativeSection}>
-                    <Text style={styles.alternativeTitle}>Need Immediate Help?</Text>
+                    <Text style={styles.alternativeTitle}>{t('email_support.need_help')}</Text>
                     <TouchableOpacity style={styles.altOption}>
                         <Ionicons name="call-outline" size={18} color={Colors.primary} />
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.altLabel}>Call Support</Text>
+                            <Text style={styles.altLabel}>{t('email_support.call_support')}</Text>
                             <Text style={styles.altSub}>+91-800-1234-567</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
@@ -148,6 +160,14 @@ export default function EmailSupportScreen() {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </KeyboardAvoidingView>
     );
 }
