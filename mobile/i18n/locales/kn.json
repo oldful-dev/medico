@@ -68,7 +68,8 @@
     "place_order": "ಆರ್ಡರ್ ಮಾಡಿ",
     "book_appointment": "ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಬುಕ್ ಮಾಡಿ",
     "pay": "ಪಾವತಿಸಿ",
-    "request_tiffin": "ಟಿಫಿನ್ ವಿನಂತಿಸಿ"
+    "request_tiffin": "ಟಿಫಿನ್ ವಿನಂತಿಸಿ",
+    "clear": "ಕ್ಲಿಯರ್"
   },
   "auth": {
     "splash_tagline": "ISO 9001:2015 ಪ್ರಮಾಣಿತ",
@@ -1383,25 +1384,25 @@
     "network_error": "ನೆಟ್‌ವರ್ಕ್ ದೋಷ. ದಯವಿಟ್ಟು ಮತ್ತೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸಿ."
   },
   "search_screen": {
-    "header": "ಹುಡುಕು",
-    "placeholder": "ಸೇವೆ, ವೈದ್ಯರು, ಪರೀಕ್ಷೆ ಹುಡುಕಿ...",
-    "browse_categories": "ವರ್ಗಗಳನ್ನು ನೋಡಿ",
-    "recent_searches": "ಇತ್ತೀಚಿನ ಹುಡುಕಾಟ",
-    "popular_searches": "ಜನಪ್ರಿಯ ಹುಡುಕಾಟ",
-    "clear": "ಮುಳಿಸು",
-    "no_results": "\"{{query}}\" ಗೆ ಸರಿಹೊಂದುವ ಸೇವೆ ಇಲ್ಲ",
-    "popular_doctor": "ವೈದ್ಯರ ಮನೆ ಭೇಟಿ",
-    "popular_blood": "ಮನೆ ರಕ್ತ ಪರೀಕ್ಷೆ",
-    "popular_nursing": "ನರ್ಸಿಂಗ್ ಆರೈಕೆ",
-    "popular_ac": "AC ರಿಪೇರಿ",
-    "popular_physio": "ಫಿಸಿಯೋಥೆರಪಿ",
-    "popular_medicines": "ಔಷಧಿ ಆರ್ಡರ್",
+    "header_title": "ಹುಡುಕಿ",
+    "placeholder": "ಸೇವೆಗಳು, ವೈದ್ಯರು, ಟೆಸ್ಟ್‌ಗಳನ್ನು ಹುಡುಕಿ...",
+    "results_for": "\"{{query}}\" ಗಾಗಿ ಫಲಿತಾಂಶಗಳು",
+    "no_results": "\"{{query}}\" ಗೆ ಹೊಂದುವ ಸೇವೆಗಳಿಲ್ಲ",
+    "browse_categories": "ವಿಭಾಗಗಳನ್ನು ವೀಕ್ಷಿಸಿ",
+    "recent_searches": "ಇತ್ತೀಚಿನ ಹುಡುಕಾಟಗಳು",
+    "popular_searches": "ಜನಪ್ರಿಯ ಹುಡುಕಾಟಗಳು",
     "category_doctor_visit": "ವೈದ್ಯರ ಭೇಟಿ",
-    "category_nursing_care": "ನರ್ಸಿಂಗ್ ಆರೈಕೆ",
+    "category_nursing_care": "ನರ್ಸಿಂಗ್ ಕೇರ್",
     "category_blood_test": "ರಕ್ತ ಪರೀಕ್ಷೆ",
     "category_medicines": "ಔಷಧಿಗಳು",
-    "category_physio_fitness": "ಫಿಸಿಯೋ ಮತ್ತು ಫಿಟ್‌ನೆಸ್",
-    "category_meal_service": "ಊಟದ ಸೇವೆ"
+    "category_physio_fitness": "ಫಿಸಿಯೋ & ಫಿಟ್ನೆಸ್",
+    "category_meal_service": "ಮೀಲ್ ಸೇವೆ",
+    "popular_doctor_home_visit": "ವೈದ್ಯರ ಮನೆ ಭೇಟಿ",
+    "popular_blood_test_at_home": "ಮನೆಯಲ್ಲಿ ರಕ್ತ ಪರೀಕ್ಷೆ",
+    "popular_nursing_care": "ನರ್ಸಿಂಗ್ ಕೇರ್",
+    "popular_ac_repair": "AC ರಿಪೇರಿ",
+    "popular_physiotherapy": "ಫಿಸಿಯೋಥೆರಪಿ",
+    "popular_order_medicines": "ಔಷಧಿಗಳು ಆರ್ಡರ್ ಮಾಡಿ"
   },
   "rate_us": {
     "header_title": "Ayuxa ರೇಟ್ ಮಾಡಿ",

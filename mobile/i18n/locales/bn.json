@@ -68,7 +68,8 @@
     "place_order": "অর্ডার দিন",
     "book_appointment": "অ্যাপয়েন্টমেন্ট বুক করুন",
     "pay": "অর্থ প্রদান করুন",
-    "request_tiffin": "টিফিন অনুরোধ করুন"
+    "request_tiffin": "টিফিন অনুরোধ করুন",
+    "clear": "মুছুন"
   },
   "auth": {
     "splash_tagline": "ISO 9001:2015 সার্টিফাইড",
@@ -1383,25 +1384,25 @@
     "network_error": "নেটওয়ার্ক ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।"
   },
   "search_screen": {
-    "header": "সার্চ",
-    "placeholder": "সার্ভিস, ডাক্তার, টেস্ট খুঁজুন...",
-    "browse_categories": "ক্যাটাগরি দেখুন",
-    "recent_searches": "সাম্প্রতিক সার্চ",
-    "popular_searches": "জনপ্রিয় সার্চ",
-    "clear": "মুছুন",
-    "no_results": "\"{{query}}\"-এর সাথে কিছু মিলল না",
-    "popular_doctor": "ডাক্তার হোম ভিজিট",
-    "popular_blood": "হোম রক্ত পরীক্ষা",
-    "popular_nursing": "নার্সিং কেয়ার",
-    "popular_ac": "AC মেরামত",
-    "popular_physio": "ফিজিওথেরাপি",
-    "popular_medicines": "ওষুধ অর্ডার",
+    "header_title": "খুঁজুন",
+    "placeholder": "সেবা, ডাক্তার, টেস্ট খুঁজুন...",
+    "results_for": "\"{{query}}\"-এর ফলাফল",
+    "no_results": "\"{{query}}\"-এর সাথে মিলে এমন সেবা নেই",
+    "browse_categories": "ক্যাটাগরি ব্রাউজ করুন",
+    "recent_searches": "সাম্প্রতিক অনুসন্ধান",
+    "popular_searches": "জনপ্রিয় অনুসন্ধান",
     "category_doctor_visit": "ডাক্তার ভিজিট",
-    "category_nursing_care": "নার্সিং কেয়ার",
+    "category_nursing_care": "নার্সিং কেয়ার",
     "category_blood_test": "রক্ত পরীক্ষা",
     "category_medicines": "ওষুধ",
-    "category_physio_fitness": "ফিজিওথেরাপি",
-    "category_meal_service": "খাবার সার্ভিস"
+    "category_physio_fitness": "ফিজিও ও ফিটনেস",
+    "category_meal_service": "মিল সার্ভিস",
+    "popular_doctor_home_visit": "ডাক্তার হোম ভিজিট",
+    "popular_blood_test_at_home": "বাড়িতে রক্ত পরীক্ষা",
+    "popular_nursing_care": "নার্সিং কেয়ার",
+    "popular_ac_repair": "AC মেরামত",
+    "popular_physiotherapy": "ফিজিওথেরাপি",
+    "popular_order_medicines": "ওষুধ অর্ডার করুন"
   },
   "rate_us": {
     "header_title": "Ayuxa রেট করুন",

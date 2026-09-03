@@ -68,7 +68,8 @@
     "place_order": "ऑर्डर द्या",
     "book_appointment": "अपॉइंटमेंट बुक करा",
     "pay": "पैसे द्या",
-    "request_tiffin": "टिफिनची विनंती करा"
+    "request_tiffin": "टिफिनची विनंती करा",
+    "clear": "साफ करा"
   },
   "auth": {
     "splash_tagline": "ISO 9001:2015 प्रमाणित",
@@ -1476,25 +1477,25 @@
     "network_error": "नेटवर्क त्रुटी. कृपया पुन्हा प्रयत्न करा."
   },
   "search_screen": {
-    "header": "शोधा",
-    "placeholder": "सेवा, डॉक्टर, चाचण्या...",
-    "browse_categories": "श्रेण्या पहा",
-    "recent_searches": "इतक्यात शोधलेले",
+    "header_title": "शोधा",
+    "placeholder": "सेवा, डॉक्टर, टेस्ट शोधा...",
+    "results_for": "\"{{query}}\" साठी निकाल",
+    "no_results": "\"{{query}}\" शी जुळणारी सेवा नाही",
+    "browse_categories": "श्रेणी पहा",
+    "recent_searches": "अलीकडील शोध",
     "popular_searches": "लोकप्रिय शोध",
-    "clear": "पुसा",
-    "no_results": "\"{{query}}\" शी जुळणाऱ्या कोणत्याही सेवा सापडल्या नाहीत",
-    "popular_doctor": "डॉक्टर घरगुती भेट",
-    "popular_blood": "घरी रक्त चाचणी",
-    "popular_nursing": "नर्सिंग केअर",
-    "popular_ac": "AC दुरुस्ती",
-    "popular_physio": "फिजिओथेरपी",
-    "popular_medicines": "औषधे ऑर्डर करा",
-    "category_doctor_visit": "डॉक्टर भेट",
+    "category_doctor_visit": "डॉक्टर व्हिजिट",
     "category_nursing_care": "नर्सिंग केअर",
-    "category_blood_test": "रक्त चाचणी",
+    "category_blood_test": "रक्त तपासणी",
     "category_medicines": "औषधे",
-    "category_physio_fitness": "फिजिओ आणि फिटनेस",
-    "category_meal_service": "जेवण सेवा"
+    "category_physio_fitness": "फिजिओ व फिटनेस",
+    "category_meal_service": "मील सर्व्हिस",
+    "popular_doctor_home_visit": "डॉक्टर होम व्हिजिट",
+    "popular_blood_test_at_home": "घरी रक्त तपासणी",
+    "popular_nursing_care": "नर्सिंग केअर",
+    "popular_ac_repair": "AC दुरुस्ती",
+    "popular_physiotherapy": "फिजिओथेरपी",
+    "popular_order_medicines": "औषधे ऑर्डर करा"
   },
   "rate_us": {
     "header_title": "Ayuxa रेट करा",

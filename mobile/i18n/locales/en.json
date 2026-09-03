@@ -72,7 +72,8 @@
     "place_order": "Place Order",
     "book_appointment": "Book Appointment",
     "pay": "Pay",
-    "request_tiffin": "Request Tiffin"
+    "request_tiffin": "Request Tiffin",
+    "clear": "Clear"
   },
   "auth": {
     "splash_tagline": "ISO 9001:2015 Certified",
@@ -789,6 +790,27 @@
     "reason_3": "Helps us maintain high service standards",
     "rate_button": "Rate Ayuxa on Play Store"
   },
+  "search_screen": {
+    "header_title": "Search",
+    "placeholder": "Search services, doctors, tests...",
+    "results_for": "Results for \"{{query}}\"",
+    "no_results": "No services found matching \"{{query}}\"",
+    "browse_categories": "Browse Categories",
+    "recent_searches": "Recent Searches",
+    "popular_searches": "Popular Searches",
+    "category_doctor_visit": "Doctor Visit",
+    "category_nursing_care": "Nursing Care",
+    "category_blood_test": "Blood Test",
+    "category_medicines": "Medicines",
+    "category_physio_fitness": "Physio & Fitness",
+    "category_meal_service": "Meal Service",
+    "popular_doctor_home_visit": "Doctor home visit",
+    "popular_blood_test_at_home": "Blood test at home",
+    "popular_nursing_care": "Nursing care",
+    "popular_ac_repair": "AC repair",
+    "popular_physiotherapy": "Physiotherapy",
+    "popular_order_medicines": "Order medicines"
+  },
   "sos": {
     "title": "My SOS Alerts",
     "slide_to_call": "Slide to Call for Help",
@@ -1442,37 +1464,6 @@
     "invalid_card_last4": "Enter last 4 digits of your card number.",
     "save_failed": "Failed to save card.",
     "network_error": "Network error. Please try again."
-  },
-  "search_screen": {
-    "header": "Search",
-    "placeholder": "Search services, doctors, tests...",
-    "browse_categories": "Browse Categories",
-    "recent_searches": "Recent Searches",
-    "popular_searches": "Popular Searches",
-    "clear": "Clear",
-    "no_results": "No services found matching \"{{query}}\"",
-    "popular_doctor": "Doctor home visit",
-    "popular_blood": "Blood test at home",
-    "popular_nursing": "Nursing care",
-    "popular_ac": "AC repair",
-    "popular_physio": "Physiotherapy",
-    "popular_medicines": "Order medicines",
-    "category_doctor_visit": "Doctor Visit",
-    "category_nursing_care": "Nursing Care",
-    "category_blood_test": "Blood Test",
-    "category_medicines": "Medicines",
-    "category_physio_fitness": "Physio & Fitness",
-    "category_meal_service": "Meal Service"
-  },
-  "rate_us": {
-    "header": "Rate Ayuxa",
-    "title": "Enjoying Ayuxa?",
-    "description": "Your feedback helps us improve our services and support more families. If you enjoyed using Ayuxa, please take a moment to rate us on the Play Store.",
-    "why_title": "Why Your Feedback Matters",
-    "reason1": "Helps us improve elder care services",
-    "reason2": "Helps other families discover trusted support",
-    "reason3": "Helps us maintain high service standards",
-    "cta": "Rate Ayuxa on Play Store"
   },
   "legal": {
     "failed_load": "Failed to load document",

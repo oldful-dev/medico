@@ -68,7 +68,8 @@
     "place_order": "ఆర్డర్ చేయండి",
     "book_appointment": "అపాయింట్‌మెంట్ బుక్ చేయండి",
     "pay": "చెల్లించండి",
-    "request_tiffin": "టిఫిన్ అభ్యర్థించండి"
+    "request_tiffin": "టిఫిన్ అభ్యర్థించండి",
+    "clear": "క్లియర్"
   },
   "auth": {
     "splash_tagline": "ISO 9001:2015 సర్టిఫికేట్",
@@ -1476,25 +1477,25 @@
     "network_error": "నెట్‌వర్క్ లోపం. దయచేసి మళ్లీ ప్రయత్నించండి."
   },
   "search_screen": {
-    "header": "శోధించండి",
-    "placeholder": "శోధన సేవలు, వైద్యులు, పరీక్షలు...",
-    "browse_categories": "వర్గాలను బ్రౌజ్ చేయండి",
+    "header_title": "వెతకండి",
+    "placeholder": "సేవలు, డాక్టర్లు, టెస్ట్‌లు వెతకండి...",
+    "results_for": "\"{{query}}\" కోసం ఫలితాలు",
+    "no_results": "\"{{query}}\" కు సరిపోలే సేవలు లేవు",
+    "browse_categories": "కేటగిరీలు చూడండి",
     "recent_searches": "ఇటీవలి శోధనలు",
-    "popular_searches": "జనాదరణ పొందిన శోధనలు",
-    "clear": "క్లియర్",
-    "no_results": "\"{{query}}\"కి సరిపోలే సేవలు ఏవీ కనుగొనబడలేదు",
-    "popular_doctor": "డాక్టర్ ఇంటి సందర్శన",
-    "popular_blood": "ఇంట్లో రక్త పరీక్ష",
-    "popular_nursing": "నర్సింగ్ కేర్",
-    "popular_ac": "AC మరమ్మత్తు",
-    "popular_physio": "ఫిజియోథెరపీ",
-    "popular_medicines": "మందులను ఆర్డర్ చేయండి",
-    "category_doctor_visit": "డాక్టర్ సందర్శన",
+    "popular_searches": "ప్రసిద్ధ శోధనలు",
+    "category_doctor_visit": "డాక్టర్ విజిట్",
     "category_nursing_care": "నర్సింగ్ కేర్",
     "category_blood_test": "రక్త పరీక్ష",
     "category_medicines": "మందులు",
     "category_physio_fitness": "ఫిజియో & ఫిట్‌నెస్",
-    "category_meal_service": "భోజన సేవ"
+    "category_meal_service": "మీల్ సర్వీస్",
+    "popular_doctor_home_visit": "డాక్టర్ హోమ్ విజిట్",
+    "popular_blood_test_at_home": "ఇంట్లో రక్త పరీక్ష",
+    "popular_nursing_care": "నర్సింగ్ కేర్",
+    "popular_ac_repair": "AC రిపేర్",
+    "popular_physiotherapy": "ఫిజియోథెరపీ",
+    "popular_order_medicines": "మందులు ఆర్డర్ చేయండి"
   },
   "rate_us": {
     "header_title": "Ayuxaను రేట్ చేయండి",

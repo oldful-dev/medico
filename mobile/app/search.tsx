@@ -8,27 +8,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useUser } from '@/context/UserContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
-// ─── Static Categories & Popular Searches ───
+// ─── Static Categories & Popular Searches (keys, translated at render) ───
 const CATEGORIES = [
-    { label: 'Doctor Visit', icon: 'medkit' as const, color: '#048357' },
-    { label: 'Nursing Care', icon: 'heart' as const, color: '#E05E5E' },
-    { label: 'Blood Test', icon: 'water' as const, color: '#3B82F6' },
-    { label: 'Medicines', icon: 'medical' as const, color: '#E8A317' },
-    { label: 'Physio & Fitness', icon: 'fitness' as const, color: '#7C3AED' },
-    { label: 'Meal Service', icon: 'restaurant' as const, color: '#F97316' },
+    { key: 'doctor_visit', icon: 'medkit' as const, color: '#048357' },
+    { key: 'nursing_care', icon: 'heart' as const, color: '#E05E5E' },
+    { key: 'blood_test', icon: 'water' as const, color: '#3B82F6' },
+    { key: 'medicines', icon: 'medical' as const, color: '#E8A317' },
+    { key: 'physio_fitness', icon: 'fitness' as const, color: '#7C3AED' },
+    { key: 'meal_service', icon: 'restaurant' as const, color: '#F97316' },
 ];
 
-const POPULAR_SEARCHES = [
-    'Doctor home visit',
-    'Blood test at home',
-    'Nursing care',
-    'AC repair',
-    'Physiotherapy',
-    'Order medicines',
+const POPULAR_SEARCH_KEYS = [
+    'doctor_home_visit',
+    'blood_test_at_home',
+    'nursing_care',
+    'ac_repair',
+    'physiotherapy',
+    'order_medicines',
 ];
 
 export default function SearchScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { services } = useUser();
@@ -88,7 +90,7 @@ export default function SearchScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Search</Text>
+                <Text style={styles.headerTitle}>{t('search_screen.header_title')}</Text>
             </View>
 
             <View style={[styles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
@@ -97,7 +99,7 @@ export default function SearchScreen() {
                         <Ionicons name="search" size={18} color={isDarkMode ? '#808080' : '#AAAEAC'} style={styles.searchIcon} />
                         <TextInput
                             style={[styles.searchInput, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}
-                            placeholder="Search services, doctors, tests..."
+                            placeholder={t('search_screen.placeholder')}
                             placeholderTextColor={isDarkMode ? '#808080' : '#AAAEAC'}
                             autoFocus={true}
                             value={query}
@@ -119,7 +121,7 @@ export default function SearchScreen() {
                 >
                     {query.length > 1 ? (
                         <View style={styles.resultsContainer}>
-                            <Text style={[styles.sectionTitle, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>Results for &quot;{query}&quot;</Text>
+                            <Text style={[styles.sectionTitle, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>{t('search_screen.results_for', { query })}</Text>
                             {results.length > 0 ? (
                                 results.map((item, index) => (
                                     <TouchableOpacity
@@ -140,24 +142,24 @@ export default function SearchScreen() {
                             ) : (
                                 <View style={styles.emptyResults}>
                                     <Ionicons name="search-outline" size={48} color={isDarkMode ? '#555555' : '#AAAEAC'} />
-                                    <Text style={[styles.emptyText, { color: isDarkMode ? '#A0A0A0' : '#AAAEAC' }]}>No services found matching &quot;{query}&quot;</Text>
+                                    <Text style={[styles.emptyText, { color: isDarkMode ? '#A0A0A0' : '#AAAEAC' }]}>{t('search_screen.no_results', { query })}</Text>
                                 </View>
                             )}
                         </View>
                     ) : (
                         <>
-                            <Text style={[styles.sectionTitle, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>Browse Categories</Text>
+                            <Text style={[styles.sectionTitle, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>{t('search_screen.browse_categories')}</Text>
                             <View style={styles.categoriesGrid}>
                                 {CATEGORIES.map((cat, index) => (
                                     <TouchableOpacity
                                         key={index}
                                         style={[styles.categoryCard, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAF7ED' }]}
-                                        onPress={() => setQuery(cat.label)}
+                                        onPress={() => setQuery(t(`search_screen.category_${cat.key}`))}
                                     >
                                         <View style={[styles.categoryIconCircle, { backgroundColor: `${cat.color}12` }]}>
                                             <Ionicons name={cat.icon} size={22} color={cat.color} />
                                         </View>
-                                        <Text style={[styles.categoryLabel, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>{cat.label}</Text>
+                                        <Text style={[styles.categoryLabel, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>{t(`search_screen.category_${cat.key}`)}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
@@ -165,9 +167,9 @@ export default function SearchScreen() {
                             {recentSearches.length > 0 && (
                                 <>
                                     <View style={styles.sectionHeader}>
-                                        <Text style={[styles.sectionTitle, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>Recent Searches</Text>
+                                        <Text style={[styles.sectionTitle, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>{t('search_screen.recent_searches')}</Text>
                                         <TouchableOpacity onPress={clearRecent}>
-                                            <Text style={[styles.clearText, { color: '#E05E5E' }]}>Clear</Text>
+                                            <Text style={[styles.clearText, { color: '#E05E5E' }]}>{t('common.clear')}</Text>
                                         </TouchableOpacity>
                                     </View>
                                     <View style={[styles.recentList, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAF7ED' }]}>
@@ -185,16 +187,16 @@ export default function SearchScreen() {
                                 </>
                             )}
 
-                            <Text style={[styles.sectionTitle, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>Popular Searches</Text>
+                            <Text style={[styles.sectionTitle, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>{t('search_screen.popular_searches')}</Text>
                             <View style={styles.popularGrid}>
-                                {POPULAR_SEARCHES.map((item, index) => (
+                                {POPULAR_SEARCH_KEYS.map((key, index) => (
                                     <TouchableOpacity
                                         key={index}
                                         style={[styles.popularChip, { backgroundColor: isDarkMode ? 'rgba(52,199,89,0.15)' : 'rgba(2, 116, 63, 0.08)' }]}
-                                        onPress={() => setQuery(item)}
+                                        onPress={() => setQuery(t(`search_screen.popular_${key}`))}
                                     >
                                         <Ionicons name="trending-up" size={12} color="#02743F" style={styles.chipIcon} />
-                                        <Text style={[styles.popularChipText, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>{item}</Text>
+                                        <Text style={[styles.popularChipText, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>{t(`search_screen.popular_${key}`)}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>

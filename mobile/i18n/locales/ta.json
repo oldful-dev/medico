@@ -68,7 +68,8 @@
     "place_order": "ஆர்டர் செய்யுங்கள்",
     "book_appointment": "அப்பாயிண்ட்மெண்ட் புக் செய்யவும்",
     "pay": "பணம் செலுத்தவும்",
-    "request_tiffin": "டிஃபின் கோரிக்கை"
+    "request_tiffin": "டிஃபின் கோரிக்கை",
+    "clear": "அழி"
   },
   "auth": {
     "splash_tagline": "ISO 9001:2015",
@@ -1476,25 +1477,25 @@
     "network_error": "நெட்வொர்க் பிழை. மீண்டும் முயற்சிக்கவும்."
   },
   "search_screen": {
-    "header": "தேடு",
-    "placeholder": "சேவைகள், மருத்துவர்கள், சோதனைகள் தேடு",
-    "browse_categories": "வகைகள்",
-    "recent_searches": "சமீபத்திய",
-    "popular_searches": "பிரபல",
-    "clear": "அழி",
-    "no_results": "\"{{query}}\" க்கு சேவை இல்லை",
-    "popular_doctor": "மருத்துவர் வருகை",
-    "popular_blood": "இரத்த பரிசோதனை",
-    "popular_nursing": "நர்சிங் கேர்",
-    "popular_ac": "ஏசி பழுது",
-    "popular_physio": "பிசியோ",
-    "popular_medicines": "மருந்துகள்",
-    "category_doctor_visit": "மருத்துவர்",
-    "category_nursing_care": "நர்சிங்",
-    "category_blood_test": "இருத்தம்",
+    "header_title": "தேடு",
+    "placeholder": "சேவைகள், மருத்துவர்கள், டெஸ்ட்கள் தேடு...",
+    "results_for": "\"{{query}}\" க்கான முடிவுகள்",
+    "no_results": "\"{{query}}\" க்கு பொருந்தும் சேவை இல்லை",
+    "browse_categories": "வகைகளை உலாவு",
+    "recent_searches": "சமீபத்திய தேடல்கள்",
+    "popular_searches": "பிரபலமான தேடல்கள்",
+    "category_doctor_visit": "மருத்துவர் விசிட்",
+    "category_nursing_care": "நர்சிங் கேர்",
+    "category_blood_test": "இரத்த பரிசோதனை",
     "category_medicines": "மருந்துகள்",
     "category_physio_fitness": "பிசியோ & ஃபிட்னஸ்",
-    "category_meal_service": "உணவு"
+    "category_meal_service": "உணவு சேவை",
+    "popular_doctor_home_visit": "மருத்துவர் வீட்டு விசிட்",
+    "popular_blood_test_at_home": "வீட்டில் இரத்த பரிசோதனை",
+    "popular_nursing_care": "நர்சிங் கேர்",
+    "popular_ac_repair": "AC ரிப்பேர்",
+    "popular_physiotherapy": "பிசியோதெரபி",
+    "popular_order_medicines": "மருந்துகள் ஆர்டர்"
   },
   "rate_us": {
     "header_title": "Ayuxa-ஐ மதிப்பிடு",

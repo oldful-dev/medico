@@ -68,7 +68,8 @@
     "place_order": "ഓർഡർ ചെയ്യുക",
     "book_appointment": "അപ്പോയിന്റ്മെന്റ് ബുക്ക് ചെയ്യുക",
     "pay": "പണം നൽകുക",
-    "request_tiffin": "ടിഫിൻ അഭ്യർത്ഥിക്കുക"
+    "request_tiffin": "ടിഫിൻ അഭ്യർത്ഥിക്കുക",
+    "clear": "മായ്ക്കുക"
   },
   "auth": {
     "splash_tagline": "ISO 9001:2015",
@@ -1476,25 +1477,25 @@
     "network_error": "നെറ്റ്‌വർക്ക് തകരാർ. ദയവായി വീണ്ടും ശ്രമിക്കുക."
   },
   "search_screen": {
-    "header": "തിരയുക",
-    "placeholder": "സേവനങ്ങൾ, ഡോക്ടർമാർ, ടെസ്റ്റുകൾ തിരയുക",
-    "browse_categories": "വിഭാഗങ്ങൾ",
-    "recent_searches": "സമീപകാല",
-    "popular_searches": "ജനപ്രിയ",
-    "clear": "മായ്ക്കുക",
-    "no_results": "\"{{query}}\" ന് സേവനമില്ല",
-    "popular_doctor": "ഡോക്ടർ സന്ദർശനം",
-    "popular_blood": "രക്ത പരിശോധന",
-    "popular_nursing": "നഴ്സിംഗ് കെയർ",
-    "popular_ac": "AC അറ്റകുറ്റപ്പണി",
-    "popular_physio": "ഫിസിയോ",
-    "popular_medicines": "മരുന്നുകൾ",
-    "category_doctor_visit": "ഡോക്ടർ",
-    "category_nursing_care": "നഴ്സിംഗ്",
-    "category_blood_test": "രക്തം",
+    "header_title": "തിരയുക",
+    "placeholder": "സേവനങ്ങൾ, ഡോക്ടർമാർ, ടെസ്റ്റുകൾ തിരയുക...",
+    "results_for": "\"{{query}}\" എന്നതിനുള്ള ഫലങ്ങൾ",
+    "no_results": "\"{{query}}\" യുമായി പൊരുത്തപ്പെടുന്ന സേവനങ്ങളില്ല",
+    "browse_categories": "വിഭാഗങ്ങൾ ബ്രൗസ് ചെയ്യുക",
+    "recent_searches": "സമീപകാല തിരയലുകൾ",
+    "popular_searches": "പ്രശസ്തമായ തിരയലുകൾ",
+    "category_doctor_visit": "ഡോക്ടർ വിസിറ്റ്",
+    "category_nursing_care": "നഴ്‌സിംഗ് കെയർ",
+    "category_blood_test": "രക്തപരിശോധന",
     "category_medicines": "മരുന്നുകൾ",
     "category_physio_fitness": "ഫിസിയോ & ഫിറ്റ്നസ്",
-    "category_meal_service": "ഭക്ഷണം"
+    "category_meal_service": "മീൽ സർവീസ്",
+    "popular_doctor_home_visit": "ഡോക്ടർ ഹോം വിസിറ്റ്",
+    "popular_blood_test_at_home": "വീട്ടിൽ രക്തപരിശോധന",
+    "popular_nursing_care": "നഴ്‌സിംഗ് കെയർ",
+    "popular_ac_repair": "AC റിപ്പയർ",
+    "popular_physiotherapy": "ഫിസിയോതെറാപ്പി",
+    "popular_order_medicines": "മരുന്നുകൾ ഓർഡർ ചെയ്യുക"
   },
   "rate_us": {
     "header_title": "Ayuxa റേറ്റ് ചെയ്യുക",
