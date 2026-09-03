@@ -69,7 +69,8 @@
     "book_appointment": "अपॉइंटमेंट बुक करें",
     "pay": "भुगतान करें",
     "request_tiffin": "टिफिन का अनुरोध करें",
-    "clear": "साफ़ करें"
+    "clear": "साफ़ करें",
+    "go_back": "वापस जाएँ"
   },
   "auth": {
     "splash_tagline": "ISO 9001:2015",
@@ -266,7 +267,8 @@
     "describe_problem_alert": "कृपया स्वास्थ्य समस्या लिखें।",
     "invalid_time_alert": "भविष्य की तारीख और समय चुनें।",
     "address_required_gps_denied": "डॉक्टर के लिए पूरा पता लिखें।",
-    "address_required_failed": "पता नहीं मिला। प्रतीक्षा करें या फिर कोशिश करें।"
+    "address_required_failed": "पता नहीं मिला। प्रतीक्षा करें या फिर कोशिश करें।",
+    "geriatric_care": "वृद्धावस्था देखभाल"
   },
   "nurse_care": {
     "header": "नर्सिंग केयर",
@@ -567,7 +569,12 @@
     "live_chat_subtitle": "WhatsApp पर हमारे सहायता अधिकारियों से तुरंत जुड़ें",
     "live_chat_info": "हमारे सहायता साथी सेवा बुकिंग, भुगतान समस्याओं, डॉक्टर स्लॉट और अन्य में मदद के लिए उपलब्ध हैं।",
     "live_chat_status": "सहायता ऑनलाइन सक्रिय",
-    "live_chat": "लाइव चैट"
+    "live_chat": "लाइव चैट",
+    "download_your_data": "अपना डेटा डाउनलोड करें",
+    "download_your_data_sub": "आपके पंजीकृत ईमेल पर भेजा गया",
+    "download_data_title": "डेटा भेजा गया",
+    "download_data_success": "आपका डेटा आपके पंजीकृत पते पर ईमेल कर दिया गया है।",
+    "download_data_failed": "आपका डेटा भेजने में विफल। कृपया पुनः प्रयास करें।"
   },
   "plans": {
     "tab_title": "योजनाएँ",
@@ -640,7 +647,9 @@
     "transit_feat_crowd": "भीड़ और गतिशीलता: प्राथमिकता कतारों, भीड़ और मंदिर में बैठने की सहायता।",
     "transit_feat_dietary": "आहार अनुपालन: यात्रा/आयोजनों के दौरान निर्धारित आहार का सख्त रखरखाव।",
     "transit_feat_itineraries": "आरामदायक कार्यक्रम: पर्याप्त आराम के साथ आराम के इर्द-गिर्द नियोजित यात्रा।",
-    "transit_feat_dest_coordination": "गंतव्य समन्वय: आयोजनों के दौरान सहायता और सुरक्षित घर वापसी।"
+    "transit_feat_dest_coordination": "गंतव्य समन्वय: आयोजनों के दौरान सहायता और सुरक्षित घर वापसी।",
+    "not_found": "योजना नहीं मिली।",
+    "no_features": "इस योजना के लिए कोई सुविधाएँ सूचीबद्ध नहीं हैं।"
   },
   "wellness": {
     "tab_title": "वेलनेस",
@@ -1521,7 +1530,11 @@
     "download_pdf": "पीडीएफ डाउनलोड करें",
     "generating_pdf": "पीडीएफ बन रहा है...",
     "download_title": "दस्तावेज़ डाउनलोड करें",
-    "download_started": "आपका दस्तावेज़ डाउनलोड सफलतापूर्वक शुरू हो गया है।"
+    "download_started": "आपका दस्तावेज़ डाउनलोड सफलतापूर्वक शुरू हो गया है।",
+    "cookie_policy": "कुकी नीति",
+    "download_my_data": "मेरा डेटा डाउनलोड करें",
+    "download_failed_title": "डाउनलोड विफल",
+    "download_failed_msg": "PDF जनरेट नहीं हो सका। कृपया पुनः प्रयास करें।"
   },
   "privacy_policy": {
     "header_title": "गोपनीयता"
@@ -1589,7 +1602,9 @@
     "months_3": "3 महीने",
     "months_6": "6 महीने",
     "months_12": "12 महीने",
-    "you_saved_fees": "💰 आपने शुल्क पर ₹{{amount}} बचाए!"
+    "you_saved_fees": "💰 आपने शुल्क पर ₹{{amount}} बचाए!",
+    "booking_request_title": "बुकिंग अनुरोध",
+    "inquiry_note": "अभी कोई भुगतान नहीं — हम अंतिम मूल्य और विवरण की पुष्टि के लिए आपसे संपर्क करेंगे।"
   },
   "service_confirmation": {
     "booking_confirmed": "पुष्टि हो गई",
@@ -1823,7 +1838,19 @@
       "failed_upload_retry": "अपलोड विफल रहा। कृपया पुनः प्रयास करें।",
       "permission_required_title": "अनुमति आवश्यक",
       "camera_access_needed": "कैमरा एक्सेस की आवश्यकता है",
-      "gallery_access_needed": "गैलरी एक्सेस की आवश्यकता है"
+      "gallery_access_needed": "गैलरी एक्सेस की आवश्यकता है",
+      "downloaded_title": "डाउनलोड किया गया",
+      "downloaded_msg": "आपके चुने हुए फ़ोल्डर में सहेजा गया।",
+      "allergen_prompt_title": "एलर्जी में जोड़ें?",
+      "allergen_prompt_msg": "यह रिपोर्ट {{allergen}} से एलर्जी का उल्लेख करती है। इसे अपने मेडिकल कार्ड में जोड़ें?",
+      "allergen_add_btn": "जोड़ें",
+      "allergen_added_title": "जोड़ा गया",
+      "allergen_added_msg": "{{allergen}} आपके मेडिकल कार्ड की एलर्जी में जोड़ा गया।",
+      "failed_allergen_add": "आपका मेडिकल कार्ड अपडेट नहीं हो सका। कृपया पुनः प्रयास करें।"
+    },
+    "severity": {
+      "critical": "गंभीर",
+      "high": "समीक्षा की आवश्यकता"
     }
   },
   "activity_center": {
@@ -2632,7 +2659,9 @@
     "apply_coupon_code": "कूपन कोड लागू करें",
     "enter_coupon_code": "कूपन कोड दर्ज करें",
     "apply": "लागू करें",
-    "confirm_booking": "बुकिंग की पुष्टि करें"
+    "confirm_booking": "बुकिंग की पुष्टि करें",
+    "booking_failed_title": "बुकिंग विफल",
+    "slot_unavailable_msg": "हम यह स्लॉट आरक्षित नहीं कर सके। कृपया कोई अन्य समय आज़माएँ या थोड़ी देर बाद देखें।"
   },
   "blood_test_success": {
     "header": "भुगतान सफल!",
@@ -2711,7 +2740,11 @@
     "get_directions": "दिशा-निर्देश",
     "cancel_appointment": "रद्द",
     "call_support": "कॉल",
-    "back_home": "होम"
+    "back_home": "होम",
+    "subtitle": "{{visitType}} के लिए आपकी अपॉइंटमेंट सफलतापूर्वक बुक हो गई है।",
+    "details_title": "अपॉइंटमेंट विवरण",
+    "info_home": "डॉक्टर द्वारा आपका अनुरोध स्वीकार करने पर आपको एक सूचना प्राप्त होगी।",
+    "info_clinic": "कृपया अपने निर्धारित समय से 10 मिनट पहले क्लिनिक पहुँचें।"
   },
   "nurse_confirmation": {
     "header": "अनुरोध भेज दिया",
@@ -3607,5 +3640,21 @@
     "load_failed": "डेटा लोड नहीं हो सका",
     "change_to_label": "{{plan}} में बदलें",
     "new_plan_fallback": "नया प्लान"
+  },
+  "care_form": {
+    "family": "परिवार",
+    "select_family_member": "परिवार का सदस्य चुनें",
+    "no_family_members": "कोई सहेजा गया परिवार सदस्य नहीं।",
+    "comments": "टिप्पणियाँ",
+    "comments_placeholder": "कोई अतिरिक्त आवश्यकता, विशेष अनुरोध या टिप्पणी दर्ज करें...",
+    "upload_report_optional": "रिपोर्ट अपलोड करें (वैकल्पिक)"
+  },
+  "caregiver_support": {
+    "title": "देखभालकर्ता सहायता",
+    "subtitle": "घर पर पेशेवर बेडसाइड परिचारक और दैनिक देखभाल सहायता।"
+  },
+  "security": {
+    "rooted_device_title": "डिवाइस सुरक्षा सूचना",
+    "rooted_device_msg": "यह डिवाइस रूटेड या जेलब्रोकन प्रतीत होता है, जिससे इस पर संग्रहीत डेटा की सुरक्षा कम हो सकती है। आप ऐप का उपयोग जारी रख सकते हैं, लेकिन हम आपकी स्वास्थ्य जानकारी तक पहुँचने के लिए एक मानक, असंशोधित डिवाइस का उपयोग करने की सलाह देते हैं।"
   }
 }

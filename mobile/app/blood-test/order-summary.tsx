@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { labService } from '@/services/api/labService';
 import { useUser } from '@/context/UserContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { useTranslation } from 'react-i18next';
 
 const PRIMARY_GREEN = '#02743F';
@@ -46,6 +47,15 @@ export default function BloodTestOrderSummaryScreen() {
     const [discount, setDiscount] = useState(0);
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('UPI');
 
+    // Native Alert.alert is globally muted (app/_layout.tsx) — use a modal.
+    const [alertConfig, setAlertConfig] = useState<{
+        visible: boolean; title: string; message: string;
+        retry?: boolean;
+    }>({ visible: false, title: '', message: '' });
+    const showAlert = (title: string, message: string, retry = false) =>
+        setAlertConfig({ visible: true, title, message, retry });
+    const closeAlert = () => setAlertConfig((p) => ({ ...p, visible: false }));
+
     let bookingData: any = null;
     try {
         if (params.bookingPayload) {
@@ -70,18 +80,18 @@ export default function BloodTestOrderSummaryScreen() {
             if (res.success && res.data?.valid) {
                 setDiscount(res.data.discount);
                 setCouponApplied(true);
-                Alert.alert(t('common.success'), t('blood_test_summary.coupon_applied_msg', { discount: res.data.discount }));
+                showAlert(t('common.success'), t('blood_test_summary.coupon_applied_msg', { discount: res.data.discount }));
             } else {
-                Alert.alert(t('blood_test_summary.invalid_title'), t('blood_test_summary.coupon_invalid_msg'));
+                showAlert(t('blood_test_summary.invalid_title'), t('blood_test_summary.coupon_invalid_msg'));
             }
         } catch {
-            Alert.alert(t('common.error'), t('blood_test_summary.coupon_error_msg'));
+            showAlert(t('common.error'), t('blood_test_summary.coupon_error_msg'));
         }
     };
 
     const handlePayment = async () => {
         if (!bookingData) {
-            Alert.alert(t('common.error'), t('blood_test_summary.invalid_booking_msg'));
+            showAlert(t('common.error'), t('blood_test_summary.invalid_booking_msg'));
             return;
         }
 
@@ -93,19 +103,17 @@ export default function BloodTestOrderSummaryScreen() {
             const bookingRes = await labService.holdBooking(finalBookingData);
             console.log('🩸 Order Summary: Full booking response:', JSON.stringify(bookingRes, null, 2));
 
-            if (!bookingRes) {
-                console.error('🩸 Order Summary: holdBooking returned undefined');
-                Alert.alert(t('common.error'), t('blood_test_summary.booking_no_response_msg'));
-                return;
-            }
-
             // The response from holdBooking is the updated labOrder object
             // which has: id, clientRefId, redcliffeBookingId, status, etc.
             const bookingId = (bookingRes as any)?.id;
 
             if (!bookingId) {
                 console.error('🩸 Order Summary: No booking ID in response:', bookingRes);
-                Alert.alert(t('common.error'), t('blood_test_summary.booking_failed_msg'));
+                showAlert(
+                    t('blood_test_summary.booking_failed_title', 'Booking failed'),
+                    (bookingRes as any)?.message || t('blood_test_summary.booking_failed_msg'),
+                    true,
+                );
                 return;
             }
 
@@ -133,7 +141,7 @@ export default function BloodTestOrderSummaryScreen() {
             });
 
             if (!payRes.success || !payRes.data) {
-                Alert.alert(t('common.error'), t('blood_test_summary.payment_initiate_failed_msg'));
+                showAlert(t('common.error'), t('blood_test_summary.payment_initiate_failed_msg'));
                 return;
             }
 
@@ -194,7 +202,7 @@ export default function BloodTestOrderSummaryScreen() {
                     },
                 });
             } else {
-                Alert.alert(t('common.error'), t('blood_test_summary.payment_verification_failed_msg'));
+                showAlert(t('common.error'), t('blood_test_summary.payment_verification_failed_msg'));
             }
         } catch (error: any) {
             console.error('🩸 Order Summary: Payment/Booking error:', error);
@@ -205,7 +213,7 @@ export default function BloodTestOrderSummaryScreen() {
             });
             if (error.code !== 'E_CANCELED') {
                 const errorMsg = error.details?.message || error.message || t('blood_test_summary.payment_failed_msg');
-                Alert.alert(t('common.error'), errorMsg);
+                showAlert(t('common.error'), errorMsg, true);
             }
         } finally {
             setIsLoading(false);
@@ -267,15 +275,15 @@ export default function BloodTestOrderSummaryScreen() {
                     {/* Collection Type */}
                     <View style={styles.detailRow}>
                         <View style={styles.detailIcon}>
-                            <Ionicons name={params.collectionType === 'LAB' ? 'business' : 'home'} size={16} color={colors.primary} />
+                            <Ionicons name="home" size={16} color={colors.primary} />
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.detailLabel}>{t('blood_test_summary.collection_type')}</Text>
-                            <Text style={styles.detailValue}>{params.collectionType === 'LAB' ? t('blood_test_summary.lab_visit') : t('blood_test_summary.home_collection')}</Text>
+                            <Text style={styles.detailValue}>{t('blood_test_summary.home_collection')}</Text>
                         </View>
                     </View>
 
-                    {params.collectionType !== 'LAB' && bookingData?.address?.line1 && (
+                    {bookingData?.address?.line1 && (
                         <>
                             <View style={styles.divider} />
                             {/* Address */}
@@ -392,6 +400,21 @@ export default function BloodTestOrderSummaryScreen() {
                     )}
                 </TouchableOpacity>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.title === t('common.success') ? 'checkmark-circle-outline' : 'warning-outline'}
+                buttonText={alertConfig.retry ? t('blood_test_summary.retry', 'Retry') : 'OK'}
+                onClose={() => {
+                    const shouldRetry = alertConfig.retry;
+                    closeAlert();
+                    if (shouldRetry) handlePayment();
+                }}
+                secondaryButtonText={alertConfig.retry ? t('common.cancel', 'Cancel') : undefined}
+                onSecondaryPress={alertConfig.retry ? closeAlert : undefined}
+            />
         </KeyboardAvoidingView>
     );
 }

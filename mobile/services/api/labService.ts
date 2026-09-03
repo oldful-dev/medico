@@ -1,4 +1,30 @@
 import { apiClient, PaginatedApiResponse } from './apiClient';
+import { formatters } from '@/utils/formatters';
+
+/**
+ * Builds the `patient` block for a lab booking from the user profile, or throws
+ * a user-facing message naming exactly what's missing. Redcliffe rejects bookings
+ * with age 0 / unknown gender / wrong-gender-for-test, so we validate up front
+ * instead of sending "30" / "M" placeholders that cause opaque failures later.
+ */
+export function resolvePatient(
+    profile: { name?: string; gender?: string; dateOfBirth?: string } | null,
+    phone: string
+): { name: string; age: number; gender: 'male' | 'female'; phone: string } {
+    if (!profile?.name?.trim()) throw new Error('Please add your name in Profile before booking.');
+
+    const age = formatters.ageFromDob(profile.dateOfBirth);
+    if (!age) throw new Error('Please set your date of birth in Profile — the lab needs the patient age.');
+
+    const g = (profile.gender || '').trim().toUpperCase();
+    const gender = (g === 'M' || g === 'MALE') ? 'male' : (g === 'F' || g === 'FEMALE') ? 'female' : null;
+    if (!gender) throw new Error('Please set your gender in Profile before booking a lab test.');
+
+    const digits = phone.replace(/\D/g, '').slice(-10);
+    if (digits.length !== 10) throw new Error('Please enter a valid 10-digit phone number.');
+
+    return { name: profile.name.trim(), age, gender, phone: `+91${digits}` };
+}
 
 export interface LabPackage {
     code: string;
@@ -28,7 +54,10 @@ export interface LabSlot {
 }
 
 export interface LabBookingPayload {
-    bookingType: 'HOME' | 'LAB';
+    // Only HOME is offered in-app. DROP_OFF exists backend-side but has no UI;
+    // LAB (centre visit) was removed — it silently booked a home collection
+    // because the backend has no imaging-booking path.
+    bookingType: 'HOME';
     patient: {
         name: string;
         age: number;
@@ -157,49 +186,6 @@ export const labService = {
     holdBooking: async (payload: LabBookingPayload) => {
         const response = await apiClient.post<LabBookingResponse>('/labs/book/hold', payload);
         return response.data;
-    },
-
-    searchLocation: async (q: string) => {
-        try {
-            const response = await apiClient.get(`/labs/location?search=${encodeURIComponent(q)}`);
-            return response.data || response;
-        } catch (error) {
-            console.error('searchLocation error:', error);
-            throw error;
-        }
-    },
-
-    // Redcliffe-specific APIs
-    searchLocationByArea: async (areaName: string) => {
-        // API #1: Get eloc (location code) by area name
-        try {
-            const response = await apiClient.request({
-                method: 'GET',
-                endpoint: `/labs/location/search?q=${encodeURIComponent(areaName)}`,
-                timeout: 10000
-            });
-            console.log('searchLocationByArea raw response:', response);
-            return response.data || response;
-        } catch (error) {
-            console.error('searchLocationByArea error:', error);
-            throw error;
-        }
-    },
-
-    getCoordinatesByEloc: async (eloc: string) => {
-        // API #2: Get latitude/longitude from eloc
-        try {
-            const response = await apiClient.request({
-                method: 'GET',
-                endpoint: `/labs/location/latlng?eloc=${eloc}`,
-                timeout: 10000
-            });
-            console.log('getCoordinatesByEloc raw response:', response);
-            return response.data || response;
-        } catch (error) {
-            console.error('getCoordinatesByEloc error:', error);
-            throw error;
-        }
     },
 
     getUserLabOrders: async () => {

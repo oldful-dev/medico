@@ -163,15 +163,40 @@ export default function EditMedicalCardScreen() {
 
                     {/* Allergies */}
                     <Text style={styles.label}>{t('edit_medical_card.allergies_label')}</Text>
-                    <TextInput style={styles.input} value={allergies} onChangeText={setAllergies} placeholder={t('edit_medical_card.allergies_placeholder')} placeholderTextColor={colors.textMuted} />
+                    <TextInput
+                        style={styles.input}
+                        value={allergies}
+                        onChangeText={setAllergies}
+                        placeholder={t('edit_medical_card.allergies_placeholder')}
+                        placeholderTextColor={colors.textMuted}
+                        selectionColor={colors.primary}
+                        cursorColor={colors.primary}
+                    />
 
                     {/* Other Chronic Conditions */}
                     <Text style={styles.label}>{t('edit_medical_card.other_conditions_label')}</Text>
-                    <TextInput style={styles.input} value={otherConditions} onChangeText={setOtherConditions} placeholder={t('edit_medical_card.other_conditions_placeholder')} placeholderTextColor={colors.textMuted} />
+                    <TextInput
+                        style={styles.input}
+                        value={otherConditions}
+                        onChangeText={setOtherConditions}
+                        placeholder={t('edit_medical_card.other_conditions_placeholder')}
+                        placeholderTextColor={colors.textMuted}
+                        selectionColor={colors.primary}
+                        cursorColor={colors.primary}
+                    />
 
                     {/* Current Medications */}
                     <Text style={styles.label}>{t('edit_medical_card.medications_label')}</Text>
-                    <TextInput style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]} value={medications} onChangeText={setMedications} placeholder={t('edit_medical_card.medications_placeholder')} placeholderTextColor={colors.textMuted} multiline />
+                    <TextInput
+                        style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
+                        value={medications}
+                        onChangeText={setMedications}
+                        placeholder={t('edit_medical_card.medications_placeholder')}
+                        placeholderTextColor={colors.textMuted}
+                        selectionColor={colors.primary}
+                        cursorColor={colors.primary}
+                        multiline
+                    />
 
                     {/* Emergency Info */}
                     <View style={styles.emergencyNote}>

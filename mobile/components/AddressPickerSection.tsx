@@ -79,6 +79,19 @@ export const AddressPickerSection = ({
 }: AddressPickerSectionProps) => {
     const { t } = useTranslation();
     const resolvedTitle = title ?? t('location_picker.delivery_address');
+
+    // Only run the serviceability check with real coords — passing
+    // undefined / NaN / 0,0 sends ?lat=NaN to the API, which 500s.
+    const runServiceabilityCheck = (lat: unknown, lng: unknown) => {
+        if (!(showServiceabilityCheck && onServiceabilityChange && checkServiceabilityFn)) return;
+        const a = Number(lat), b = Number(lng);
+        if (!Number.isFinite(a) || !Number.isFinite(b) || (a === 0 && b === 0)) {
+            onServiceabilityChange('unchecked');
+            return;
+        }
+        onServiceabilityChange('checking');
+        return checkServiceabilityFn(String(a), String(b));
+    };
     const { defaultAddress, savedAddresses, selectActiveAddress, detectCurrentLocationSnapshot } = useAddress();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
@@ -114,8 +127,11 @@ export const AddressPickerSection = ({
                 cityName: defaultAddr.cityName || '',
                 pincode: defaultAddr.pincode || '',
                 landmark: defaultAddr.landmark,
-                latitude: defaultAddr.latitude || initialLat,
-                longitude: defaultAddr.longitude || initialLng,
+                // Don't fake coords — a saved address with no lat/long stays
+                // NaN so the serviceability guard skips it, rather than
+                // checking against a wrong city.
+                latitude: Number(defaultAddr.latitude),
+                longitude: Number(defaultAddr.longitude),
                 state: defaultAddr.state,
             };
             onAddressChange(addressData);
@@ -125,10 +141,7 @@ export const AddressPickerSection = ({
             }
 
             // Check serviceability if enabled
-            if (showServiceabilityCheck && onServiceabilityChange && checkServiceabilityFn) {
-                onServiceabilityChange('checking');
-                checkServiceabilityFn(String(addressData.latitude), String(addressData.longitude));
-            }
+            runServiceabilityCheck(addressData.latitude, addressData.longitude);
         }
     }, [savedAddresses, defaultAddress, onAddressChange, syncToContext, selectActiveAddress, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn, initialLat, initialLng, t]);
 
@@ -161,10 +174,7 @@ export const AddressPickerSection = ({
             }
 
             // Check serviceability if enabled
-            if (showServiceabilityCheck && onServiceabilityChange && checkServiceabilityFn) {
-                onServiceabilityChange('checking');
-                await checkServiceabilityFn(String(snapshot.latitude), String(snapshot.longitude));
-            }
+            await runServiceabilityCheck(snapshot.latitude, snapshot.longitude);
 
             Alert.alert(t('location_picker.success_title'), t('location_picker.location_detected'));
         } catch (error: any) {
@@ -182,14 +192,13 @@ export const AddressPickerSection = ({
     // silently shows "unchecked" until the user re-picks something.
     const checkedCoordsRef = useRef<string | null>(null);
     useEffect(() => {
-        if (!showServiceabilityCheck || !onServiceabilityChange || !checkServiceabilityFn) return;
-        if (!selectedAddress?.latitude || !selectedAddress?.longitude) return;
         if (serviceabilityStatus !== 'unchecked') return;
-        const key = `${selectedAddress.latitude},${selectedAddress.longitude}`;
+        const a = Number(selectedAddress?.latitude), b = Number(selectedAddress?.longitude);
+        if (!Number.isFinite(a) || !Number.isFinite(b) || (a === 0 && b === 0)) return;
+        const key = `${a},${b}`;
         if (checkedCoordsRef.current === key) return;
         checkedCoordsRef.current = key;
-        onServiceabilityChange('checking');
-        checkServiceabilityFn(String(selectedAddress.latitude), String(selectedAddress.longitude));
+        runServiceabilityCheck(a, b);
     }, [selectedAddress?.latitude, selectedAddress?.longitude, serviceabilityStatus, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn]);
 
     // Google Maps location picker (tertiary option)
@@ -219,10 +228,7 @@ export const AddressPickerSection = ({
         }
 
         // Check serviceability if enabled
-        if (showServiceabilityCheck && onServiceabilityChange && checkServiceabilityFn) {
-            onServiceabilityChange('checking');
-            checkServiceabilityFn(String(location.latitude), String(location.longitude));
-        }
+        runServiceabilityCheck(location.latitude, location.longitude);
 
         setLocationPickerVisible(false);
     }, [onAddressChange, syncToContext, selectActiveAddress, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn]);

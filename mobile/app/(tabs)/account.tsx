@@ -759,20 +759,22 @@ export default function AccountScreen() {
                     {SOCIAL_LINKS.map((s) => (
                         <TouchableOpacity
                             key={s.key}
-                            style={[styles.socialMenuRow, { backgroundColor: isDarkMode ? '#1F2937' : '#FAF7ED' }]}
+                            style={styles.menuRow}
                             onPress={() => Linking.openURL(s.url)}
                             activeOpacity={0.7}
                         >
-                            <View style={[styles.socialIconWrap, { backgroundColor: `${s.color}18` }]}>
-                                <Ionicons name={s.icon as any} size={20} color={s.color} />
+                            <View style={styles.menuLeft}>
+                                <View style={[styles.menuIcon, { backgroundColor: `${s.color}18` }]}>
+                                    <Ionicons name={s.icon as any} size={20} color={s.color} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.menuTitle}>{t(`account.social_label_${s.key}`)}</Text>
+                                    <Text style={styles.menuSubtitle}>
+                                        {s.key === 'whatsapp' ? t('account.social_handle_whatsapp') : s.handle}
+                                    </Text>
+                                </View>
                             </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={[styles.socialLabel, { color: isDarkMode ? '#F9FAFB' : '#1F2937' }]}>{t(`account.social_label_${s.key}`)}</Text>
-                                <Text style={[styles.socialHandle, { color: isDarkMode ? '#6B7280' : '#9CA3AF' }]}>
-                                    {s.key === 'whatsapp' ? t('account.social_handle_whatsapp') : s.handle}
-                                </Text>
-                            </View>
-                            <Ionicons name="open-outline" size={15} color={isDarkMode ? '#6B7280' : '#9CA3AF'} />
+                            <Ionicons name="open-outline" size={18} color={colors.textLight} />
                         </TouchableOpacity>
                     ))}
                 </DropdownSection>
@@ -924,31 +926,31 @@ function DropdownSection({
     colors: ThemeColors; isDarkMode: boolean;
     children: React.ReactNode;
 }) {
-    const s = makeStyles(colors);
+    const s = makeSharedStyles(colors);
     return (
-        <View style={{ marginBottom: 8 }}>
+        <View style={{ marginBottom: 4 }}>
             <TouchableOpacity
-                style={[s.docDropdownHeader, { borderColor: colors.borderLight }]}
+                style={s.menuRow}
                 onPress={onToggle}
                 activeOpacity={0.75}
             >
-                <View style={s.docDropdownLeft}>
-                    <View style={[s.docDropdownIcon, { backgroundColor: iconBg }]}>
+                <View style={s.menuLeft}>
+                    <View style={[s.menuIcon, { backgroundColor: iconBg }]}>
                         <Ionicons name={icon as any} size={20} color={iconColor} />
                     </View>
                     <View style={{ flex: 1 }}>
-                        <Text style={s.docDropdownTitle}>{title}</Text>
-                        {subtitle ? <Text style={s.docDropdownSub}>{subtitle}</Text> : null}
+                        <Text style={s.menuTitle}>{title}</Text>
+                        {subtitle ? <Text style={s.menuSubtitle}>{subtitle}</Text> : null}
                     </View>
                 </View>
                 <Ionicons
                     name={expanded ? 'chevron-up' : 'chevron-down'}
-                    size={18}
+                    size={20}
                     color={colors.textLight}
                 />
             </TouchableOpacity>
             {expanded && (
-                <View style={[s.docDropdownContent, { borderColor: colors.borderLight, backgroundColor: colors.bgCard }]}>
+                <View style={s.dropdownContent}>
                     {children}
                 </View>
             )}
@@ -970,12 +972,16 @@ function makeSharedStyles(c: ThemeColors) {
         menuRow: {
             backgroundColor: c.bgCard, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
             flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-            marginBottom: 8, ...Shadow.card,
+            marginBottom: 8, borderWidth: 1, borderColor: c.borderLight, ...Shadow.card,
         },
         menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
         menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
         menuTitle: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: c.textDark },
         menuSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: c.textMuted, marginTop: 1 },
+        dropdownContent: {
+            paddingTop: 2,
+            marginBottom: 4,
+        },
     });
 }
 
@@ -1039,7 +1045,7 @@ function makeStyles(c: ThemeColors) {
         menuRow: {
             backgroundColor: c.bgCard, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
             flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-            marginBottom: 8, ...Shadow.card,
+            marginBottom: 8, borderWidth: 1, borderColor: c.borderLight, ...Shadow.card,
         },
         menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
         menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
@@ -1061,60 +1067,16 @@ function makeStyles(c: ThemeColors) {
         modalCancel: { marginTop: Spacing.xl, paddingVertical: Spacing.sm, alignItems: 'center' },
         modalCancelText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: c.textMuted },
 
-        docDropdownHeader: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: c.bgCard,
-            borderWidth: 1,
-            borderRadius: Radius.md,
-            padding: Spacing.md,
-            marginBottom: Spacing.sm,
-            marginHorizontal: 0,
-        },
-        docDropdownLeft: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            flex: 1,
-            gap: Spacing.md,
-        },
-        docDropdownIcon: {
-            width: 40,
-            height: 40,
-            borderRadius: Radius.sm,
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        docDropdownTitle: {
-            fontFamily: Fonts.semiBold,
-            fontSize: FontSize.body,
-            color: c.textDark,
-        },
-        docDropdownSub: {
-            fontFamily: Fonts.regular,
-            fontSize: FontSize.caption,
-            color: c.textMuted,
-            marginTop: 2,
-        },
-        docDropdownContent: {
-            borderWidth: 1,
-            borderRadius: Radius.md,
-            borderTopWidth: 0,
-            borderTopLeftRadius: 0,
-            borderTopRightRadius: 0,
-            overflow: 'hidden',
-            marginBottom: Spacing.lg,
-        },
-
         emergencyBtn: {
             flexDirection: 'row',
             alignItems: 'center',
-            borderWidth: 2,
-            borderRadius: Radius.md,
-            padding: Spacing.md,
-            marginHorizontal: Spacing.md,
-            marginBottom: Spacing.md,
-            gap: Spacing.md,
+            borderWidth: 1.5,
+            borderRadius: 14,
+            paddingHorizontal: 14,
+            paddingVertical: 14,
+            marginBottom: 8,
+            gap: 12,
+            ...Shadow.card,
         },
         emergencyIcon: {
             width: 40,
@@ -1143,32 +1105,6 @@ function makeStyles(c: ThemeColors) {
             width: 10,
             height: 10,
             borderRadius: 5,
-        },
-
-        socialMenuRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: 14,
-            paddingVertical: 12,
-            gap: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: c.borderLight,
-        },
-        socialIconWrap: {
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        socialLabel: {
-            fontFamily: Fonts.medium,
-            fontSize: FontSize.body,
-        },
-        socialHandle: {
-            fontFamily: Fonts.regular,
-            fontSize: FontSize.caption,
-            marginTop: 1,
         },
     });
 }

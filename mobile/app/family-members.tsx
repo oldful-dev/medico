@@ -113,20 +113,43 @@ export default function FamilyMembersScreen() {
         setEditingId(null);
     };
 
+    const formatLocalDateToYYYYMMDD = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const formatDOBForDisplay = (dateStr?: string) => {
+        if (!dateStr) return '';
+        const clean = dateStr.split('T')[0];
+        const parts = clean.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+        }
+        return dateStr;
+    };
+
     const startEdit = (member: FamilyMember) => {
         setEditingId(member.id);
         setForm({
             name: member.name,
             relation: member.relation,
             gender: member.gender || '',
-            dateOfBirth: member.dateOfBirth || '',
+            dateOfBirth: member.dateOfBirth ? member.dateOfBirth.split('T')[0] : '',
             bloodGroup: member.bloodGroup || '',
             allergies: member.allergies || '',
             chronicConditions: member.chronicConditions || '',
             emergencyNotes: member.emergencyNotes || '',
         });
         if (member.dateOfBirth) {
-            setDobDate(new Date(member.dateOfBirth));
+            const clean = member.dateOfBirth.split('T')[0];
+            const parts = clean.split('-').map(Number);
+            if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+                setDobDate(new Date(parts[0], parts[1] - 1, parts[2]));
+            } else {
+                setDobDate(new Date(member.dateOfBirth));
+            }
         }
         setShowForm(true);
     };
@@ -135,7 +158,7 @@ export default function FamilyMembersScreen() {
         setShowDatePicker(false);
         if (date) {
             setDobDate(date);
-            const formattedDate = date.toISOString().split('T')[0];
+            const formattedDate = formatLocalDateToYYYYMMDD(date);
             setForm(f => ({ ...f, dateOfBirth: formattedDate }));
         }
     };
@@ -314,7 +337,7 @@ export default function FamilyMembersScreen() {
                             <View style={styles.dateInputContent}>
                                 <Ionicons name="calendar-outline" size={16} color={colors.primary} />
                                 <Text style={[styles.dateInputText, !form.dateOfBirth && { color: colors.textMuted }]}>
-                                    {form.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString('en-GB') : t('family_members.dob_placeholder')}
+                                    {form.dateOfBirth ? formatDOBForDisplay(form.dateOfBirth) : t('family_members.dob_placeholder')}
                                 </Text>
                             </View>
                         </TouchableOpacity>

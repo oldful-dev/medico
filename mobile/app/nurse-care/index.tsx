@@ -378,13 +378,13 @@ export default function BookNursingCareScreen() {
                                     onPress={() => setSelectedWho('Family')}
                                 >
                                     <Image source={familyIcon} style={dynamicStyles.whoIcon} resizeMode="contain" />
-                                    <Text style={dynamicStyles.whoButtonText}>Family</Text>
+                                    <Text style={dynamicStyles.whoButtonText}>{t('care_form.family')}</Text>
                                 </TouchableOpacity>
                             </View>
 
                             {selectedWho === 'Family' && (
                                 <View style={{ marginTop: 12 }}>
-                                    <Text style={dynamicStyles.subSectionTitle}>Select Family Member</Text>
+                                    <Text style={dynamicStyles.subSectionTitle}>{t('care_form.select_family_member')}</Text>
                                     {familyMembers.length > 0 ? (
                                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
                                             {familyMembers.map((member) => (
@@ -406,7 +406,7 @@ export default function BookNursingCareScreen() {
                                             ))}
                                         </ScrollView>
                                     ) : (
-                                        <Text style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>No saved family members.</Text>
+                                        <Text style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>{t('care_form.no_family_members')}</Text>
                                     )}
 
                                     <TouchableOpacity
@@ -582,10 +582,10 @@ export default function BookNursingCareScreen() {
 
                         {/* ─── Comments input ─── */}
                         <View style={dynamicStyles.sectionContainer}>
-                            <Text style={dynamicStyles.sectionTitle}>Comments</Text>
+                            <Text style={dynamicStyles.sectionTitle}>{t('care_form.comments')}</Text>
                             <TextInput
                                 style={dynamicStyles.commentsInput}
-                                placeholder="Enter any additional requirements, special requests or comments..."
+                                placeholder={t('care_form.comments_placeholder')}
                                 placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
                                 value={comments}
                                 onChangeText={setComments}

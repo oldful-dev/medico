@@ -20,6 +20,15 @@ import { usePreventScreenCapture } from 'expo-screen-capture';
 const formatDate = (iso?: string) => {
     if (!iso) return 'N/A';
     try {
+        const clean = iso.split('T')[0];
+        const parts = clean.split('-').map(Number);
+        if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+            return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+            });
+        }
         return new Date(iso).toLocaleDateString('en-IN', {
             day: '2-digit',
             month: 'short',

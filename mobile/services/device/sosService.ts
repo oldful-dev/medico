@@ -38,7 +38,9 @@ export const sosService = {
      * Request location permission
      */
     requestLocationPermission: async (): Promise<boolean> => {
+        console.log('[sos] requestLocationPermission — SHOWING OS DIALOG (SOS path, always asks)');
         const { status } = await Location.requestForegroundPermissionsAsync();
+        console.log('[sos] requestLocationPermission result:', status);
         return status === 'granted';
     },
 

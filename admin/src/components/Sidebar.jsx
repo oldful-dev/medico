@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -10,7 +11,31 @@ export default function Sidebar({ collapsed, open, currentPath, onClose }) {
     const { user } = useAuthStore();
     const userRole = user?.role || 'CITY_ADMIN';
     const searchParams = useSearchParams();
-    const currentSearch = searchParams.toString();
+    const currentSearch = searchParams ? searchParams.toString() : "";
+    const navRef = useRef(null);
+    const activeLinkRef = useRef(null);
+
+    // Restore scroll position or scroll active item into view on route change
+    useEffect(() => {
+        if (!navRef.current) return;
+        const savedScroll = sessionStorage.getItem("admin_sidebar_scroll_top");
+        if (savedScroll !== null) {
+            navRef.current.scrollTop = parseInt(savedScroll, 10);
+        } else if (activeLinkRef.current) {
+            activeLinkRef.current.scrollIntoView({ block: "nearest" });
+        }
+    }, [currentPath, currentSearch]);
+
+    const handleScroll = (e) => {
+        sessionStorage.setItem("admin_sidebar_scroll_top", String(e.currentTarget.scrollTop));
+    };
+
+    const handleLinkClick = () => {
+        if (navRef.current) {
+            sessionStorage.setItem("admin_sidebar_scroll_top", String(navRef.current.scrollTop));
+        }
+        if (onClose) onClose();
+    };
 
     return (
         <>
@@ -30,7 +55,7 @@ export default function Sidebar({ collapsed, open, currentPath, onClose }) {
                         <X size={24} />
                     </button>
                 </div>
-                <nav className="sidebar-nav">
+                <nav className="sidebar-nav" ref={navRef} onScroll={handleScroll}>
                     {NAV_SECTIONS.map((section) => {
                         const filteredItems = section.items.filter(item => item.roles.includes(userRole));
                         if (filteredItems.length === 0) return null;
@@ -41,13 +66,25 @@ export default function Sidebar({ collapsed, open, currentPath, onClose }) {
                                 {filteredItems.map((item) => {
                                     const Icon = item.icon;
                                     const [itemPath, itemQuery = ""] = item.href.split('?');
-                                    const isActive = currentPath === itemPath && currentSearch === itemQuery;
+                                    
+                                    let isActive = false;
+                                    if (itemQuery) {
+                                        isActive = currentPath === itemPath && currentSearch.includes(itemQuery);
+                                    } else {
+                                        if (itemPath === "/dashboard") {
+                                            isActive = currentPath === "/dashboard" || currentPath === "/";
+                                        } else {
+                                            isActive = currentPath === itemPath || currentPath.startsWith(itemPath + '/');
+                                        }
+                                    }
+
                                     return (
                                         <Link
                                             key={item.id}
                                             href={item.href}
+                                            ref={isActive ? activeLinkRef : null}
                                             className={`sidebar-link ${isActive ? "active" : ""}`}
-                                            onClick={onClose}
+                                            onClick={handleLinkClick}
                                             title={collapsed ? item.label : undefined}
                                         >
                                             <Icon size={18} />

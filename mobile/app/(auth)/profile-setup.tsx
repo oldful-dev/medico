@@ -72,12 +72,20 @@ export default function ProfileSetupScreen() {
     const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
     const otpRef = useRef<OTPInputRef>(null);
 
-    const fetchGPSLocation = async () => {
+    const fetchGPSLocation = async ({ auto = false }: { auto?: boolean } = {}) => {
+        console.log('[profile-setup] fetchGPSLocation({ auto:', auto, '})');
         setLine2('Fetching GPS Location...');
         setLocationDenied(false);
 
         try {
-            const hasPermission = await locationService.requestPermission();
+            // On the auto (mount) run, never pop the OS dialog — only use the
+            // location if it's already granted. The dialog appears only when the
+            // user taps "Use GPS" (auto=false).
+            let hasPermission = (await locationService.getPermissionStatus()) === 'granted';
+            if (!hasPermission && !auto) {
+                console.log('[profile-setup] not auto — prompting');
+                hasPermission = await locationService.requestPermission();
+            }
             if (!hasPermission) {
                 setLine2('');
                 setLocationDenied(true);
@@ -130,8 +138,8 @@ export default function ProfileSetupScreen() {
         } else {
             fetchDefaultCity();
         }
-        // Always try GPS for address autofill (independent of city matching)
-        fetchGPSLocation();
+        // Try GPS for address autofill — but silently (no permission dialog on mount)
+        fetchGPSLocation({ auto: true });
     }, [contextCityId]);
 
     const handleReqOTP = async () => {
@@ -248,6 +256,8 @@ export default function ProfileSetupScreen() {
             // Resolve final phone: OTP-verified phone takes priority; Google flow uses manually entered phone
             const finalPhone = passedPhone || `+91${phoneInput.replace(/\D/g, '').slice(-10)}`;
 
+            const formattedDOB = dateOfBirth ? `${dateOfBirth.getFullYear()}-${String(dateOfBirth.getMonth() + 1).padStart(2, '0')}-${String(dateOfBirth.getDate()).padStart(2, '0')}` : undefined;
+
             // ── Step 1: Create user (no token yet — profile image skipped here) ──
             const response = await userService.createUser({
                 name: name.trim(),
@@ -256,7 +266,7 @@ export default function ProfileSetupScreen() {
                 cityId: cityId,
                 preferredLanguage: langCode,
                 gender: gender.toLowerCase() || undefined,
-                dateOfBirth: dateOfBirth?.toISOString() || undefined,
+                dateOfBirth: formattedDOB,
                 emergencyNumber: cleanEmergency.length === 10 ? `+91${cleanEmergency}` : undefined,
                 line1: line1.trim() || undefined,
                 line2: validAddress ? line2 : undefined,
@@ -476,7 +486,7 @@ export default function ProfileSetupScreen() {
                         <TouchableOpacity
                             style={styles.locationButton}
                             activeOpacity={0.7}
-                            onPress={fetchGPSLocation}
+                            onPress={() => fetchGPSLocation()}
                         >
                             <Ionicons name="location" size={27} color="#048357" />
                         </TouchableOpacity>

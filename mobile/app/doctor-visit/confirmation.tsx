@@ -8,8 +8,10 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 export default function ConfirmationScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const colors = useThemeColors();
@@ -44,7 +46,7 @@ export default function ConfirmationScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Booking Confirmed</Text>
+                <Text style={styles.headerTitle}>{t('doctor_confirmation.header')}</Text>
             </View>
 
             {/* ─── Content Card ─── */}
@@ -59,33 +61,33 @@ export default function ConfirmationScreen() {
                         <View style={styles.successCircle}>
                             <Ionicons name="checkmark" size={48} color="#FFFFFF" />
                         </View>
-                        <Text style={styles.successTitle}>Booking Confirmed!</Text>
+                        <Text style={styles.successTitle}>{t('doctor_confirmation.title')}</Text>
                         <Text style={styles.successSubtitle}>
-                            Your appointment for {visitType} has been successfully booked.
+                            {t('doctor_confirmation.subtitle', { visitType })}
                         </Text>
                     </View>
 
                     {/* Booking ID Card */}
                     <View style={styles.bookingIdCard}>
                         <View>
-                            <Text style={styles.bookingIdLabel}>Booking ID</Text>
+                            <Text style={styles.bookingIdLabel}>{t('doctor_confirmation.booking_id')}</Text>
                             <Text style={styles.bookingIdValue}>{bookingId}</Text>
                         </View>
                         <View style={styles.statusBadge}>
-                            <Text style={styles.statusBadgeText}>Confirmed</Text>
+                            <Text style={styles.statusBadgeText}>{t('doctor_confirmation.confirmed')}</Text>
                         </View>
                     </View>
 
                     {/* Booking Details Card */}
                     <View style={styles.detailsCard}>
-                        <Text style={styles.detailsCardTitle}>Appointment Details</Text>
+                        <Text style={styles.detailsCardTitle}>{t('doctor_confirmation.details_title')}</Text>
 
                         <View style={styles.detailRow}>
                             <View style={styles.detailIconBox}>
                                 <Ionicons name={visitType === 'Clinic Visit' ? "business-outline" : "home-outline"} size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Visit Type</Text>
+                                <Text style={styles.detailLabel}>{t('doctor_confirmation.visit_type')}</Text>
                                 <Text style={styles.detailValue}>{visitType}</Text>
                             </View>
                         </View>
@@ -97,8 +99,8 @@ export default function ConfirmationScreen() {
                                 <Ionicons name="medkit" size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Service</Text>
-                                <Text style={styles.detailValue}>Doctor Visit</Text>
+                                <Text style={styles.detailLabel}>{t('doctor_confirmation.service')}</Text>
+                                <Text style={styles.detailValue}>{t('doctor_confirmation.doctor_visit')}</Text>
                             </View>
                         </View>
 
@@ -109,7 +111,7 @@ export default function ConfirmationScreen() {
                                 <Ionicons name="person" size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Doctor Type</Text>
+                                <Text style={styles.detailLabel}>{t('doctor_confirmation.doctor_type')}</Text>
                                 <Text style={styles.detailValue}>{doctorType}</Text>
                             </View>
                         </View>
@@ -121,7 +123,7 @@ export default function ConfirmationScreen() {
                                 <Ionicons name="calendar" size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Schedule</Text>
+                                <Text style={styles.detailLabel}>{t('doctor_confirmation.schedule')}</Text>
                                 <Text style={styles.detailValue}>{when}</Text>
                             </View>
                         </View>
@@ -133,7 +135,7 @@ export default function ConfirmationScreen() {
                                 <Ionicons name="location" size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Address</Text>
+                                <Text style={styles.detailLabel}>{t('doctor_confirmation.address')}</Text>
                                 <Text style={styles.detailValue}>{address}</Text>
                             </View>
                         </View>
@@ -145,7 +147,7 @@ export default function ConfirmationScreen() {
                                 <Ionicons name="alert-circle" size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Problem</Text>
+                                <Text style={styles.detailLabel}>{t('doctor_confirmation.problem')}</Text>
                                 <Text style={styles.detailValue}>{problem}</Text>
                             </View>
                         </View>
@@ -156,8 +158,8 @@ export default function ConfirmationScreen() {
                         <Ionicons name="information-circle" size={18} color={colors.primary} />
                         <Text style={styles.infoBannerText}>
                             {visitType === 'Home Session'
-                                ? "You will receive a notification once a doctor accepts your request."
-                                : "Please arrive at the clinic 10 minutes prior to your scheduled time."}
+                                ? t('doctor_confirmation.info_home')
+                                : t('doctor_confirmation.info_clinic')}
                         </Text>
                     </View>
                 </ScrollView>
@@ -166,18 +168,18 @@ export default function ConfirmationScreen() {
                 <View style={styles.bottomBar}>
                     <TouchableOpacity style={[styles.actionButton, styles.rescheduleBtn]} activeOpacity={0.8}>
                         <Ionicons name="map-outline" size={18} color={colors.textWhite} style={{ marginRight: 8 }} />
-                        <Text style={[styles.actionButtonText, styles.rescheduleText]}>Get Directions</Text>
+                        <Text style={[styles.actionButtonText, styles.rescheduleText]}>{t('doctor_confirmation.get_directions')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.actionButton, styles.cancelBtn]} activeOpacity={0.8}>
-                        <Text style={[styles.actionButtonText, styles.cancelText]}>Cancel Appointment</Text>
+                        <Text style={[styles.actionButtonText, styles.cancelText]}>{t('doctor_confirmation.cancel_appointment')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.actionButton, styles.callBtn]} activeOpacity={0.8}>
                         <Ionicons name="call-outline" size={18} color={colors.primary} style={{ marginRight: 8 }} />
-                        <Text style={[styles.actionButtonText, styles.callText]}>Call Support</Text>
+                        <Text style={[styles.actionButtonText, styles.callText]}>{t('service_confirmation.call_support')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.homeButton} activeOpacity={0.8} onPress={() => router.replace('/(tabs)')}>
                         <Ionicons name="home-outline" size={18} color={colors.primary} style={{ marginRight: 8 }} />
-                        <Text style={styles.homeButtonText}>Back to Home</Text>
+                        <Text style={styles.homeButtonText}>{t('service_confirmation.back_to_home')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

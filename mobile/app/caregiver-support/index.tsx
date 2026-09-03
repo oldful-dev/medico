@@ -329,7 +329,7 @@ export default function BookCaregiverSupportScreen() {
                     >
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={dynamicStyles.headerTitle}>Caregiver Support</Text>
+                    <Text style={dynamicStyles.headerTitle}>{t('caregiver_support.title')}</Text>
                 </View>
 
                 {/* ─── Main Content Card (Cream Background with Top Radius) ─── */}
@@ -342,8 +342,8 @@ export default function BookCaregiverSupportScreen() {
                     >
                         <View style={dynamicStyles.outerContainer}>
                         {/* Hero / Titles */}
-                        <Text style={dynamicStyles.mainTitle}>Caregiver Support</Text>
-                        <Text style={dynamicStyles.subTitle}>Professional bedside attendant and daily care assistance at home.</Text>
+                        <Text style={dynamicStyles.mainTitle}>{t('caregiver_support.title')}</Text>
+                        <Text style={dynamicStyles.subTitle}>{t('caregiver_support.subtitle')}</Text>
                         <View style={dynamicStyles.divider} />
 
                         {/* ─── Who is it for? ─── */}
@@ -362,13 +362,13 @@ export default function BookCaregiverSupportScreen() {
                                     onPress={() => setSelectedWho('Family')}
                                 >
                                     <Image source={familyIcon} style={dynamicStyles.whoIcon} resizeMode="contain" />
-                                    <Text style={dynamicStyles.whoButtonText}>Family</Text>
+                                    <Text style={dynamicStyles.whoButtonText}>{t('care_form.family')}</Text>
                                 </TouchableOpacity>
                             </View>
 
                             {selectedWho === 'Family' && (
                                 <View style={{ marginTop: 12 }}>
-                                    <Text style={dynamicStyles.subSectionTitle}>Select Family Member</Text>
+                                    <Text style={dynamicStyles.subSectionTitle}>{t('care_form.select_family_member')}</Text>
                                     {familyMembers.length > 0 ? (
                                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
                                             {familyMembers.map((member) => (
@@ -390,7 +390,7 @@ export default function BookCaregiverSupportScreen() {
                                             ))}
                                         </ScrollView>
                                     ) : (
-                                        <Text style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>No saved family members.</Text>
+                                        <Text style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>{t('care_form.no_family_members')}</Text>
                                     )}
 
                                     <TouchableOpacity
@@ -563,7 +563,7 @@ export default function BookCaregiverSupportScreen() {
                                     activeOpacity={0.8}
                                 >
                                     <Ionicons name="document-attach-outline" size={16} color="#02743F" />
-                                    <Text style={dynamicStyles.compactUploadText}>Upload report (Optional)</Text>
+                                    <Text style={dynamicStyles.compactUploadText}>{t('care_form.upload_report_optional')}</Text>
                                 </TouchableOpacity>
                                 {selectedImages.length > 0 && (
                                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynamicStyles.compactThumbScroll}>
@@ -585,10 +585,10 @@ export default function BookCaregiverSupportScreen() {
 
                         {/* ─── Comments input ─── */}
                         <View style={dynamicStyles.sectionContainer}>
-                            <Text style={dynamicStyles.sectionTitle}>Comments</Text>
+                            <Text style={dynamicStyles.sectionTitle}>{t('care_form.comments')}</Text>
                             <TextInput
                                 style={dynamicStyles.commentsInput}
-                                placeholder="Enter any additional requirements, special requests or comments..."
+                                placeholder={t('care_form.comments_placeholder')}
                                 placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
                                 value={comments}
                                 onChangeText={setComments}

@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
 import { bookingService } from '@/services/api/bookingService';
-import { labService, type LabSlot } from '@/services/api/labService';
+import { labService, resolvePatient, type LabSlot } from '@/services/api/labService';
 import { storeService } from '@/services/api/storeService';
 import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
 import { useUser } from '@/context/UserContext';
@@ -371,9 +371,8 @@ export default function CheckoutScreen() {
     const [selectedSlotId, setSelectedSlotId] = useState<number>(0);
     const [slots, setSlots] = useState<LabSlot[]>([]);
     const [slotsLoading, setSlotsLoading] = useState(false);
-    const [coords, setCoords] = useState({ lat: '12.9716', long: '77.5946' });
+    const [coords, setCoords] = useState({ lat: '', long: '' });
     const [serviceabilityStatus, setServiceabilityStatus] = useState<'unchecked' | 'checking' | 'serviceable' | 'non-serviceable'>('unchecked');
-    const [collectionType, setCollectionType] = useState<'HOME' | 'LAB'>('HOME');
     const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
     // Benefit calculation state
@@ -516,7 +515,9 @@ export default function CheckoutScreen() {
     // user-picked), but only auto-select a slot once the user has actually
     // chosen a date — otherwise leave selectedTime empty.
     useEffect(() => {
-        if (!isBloodTest) return;
+        // Redcliffe slots are location-specific — wait for real coords, else the
+        // request goes out as /time-slots?lat=&lng= and the backend 400s.
+        if (!isBloodTest || !coords.lat || !coords.long) { setSlots([]); return; }
         const dateForSlots = selectedDate || defaultCollectionDay();
         setSlotsLoading(true);
         const dateStr = dateForSlots.toISOString().split('T')[0];
@@ -543,12 +544,12 @@ export default function CheckoutScreen() {
 
     // ─── Update coords when selected address changes (for blood test slot fetching)
     useEffect(() => {
-        if (selectedAddress?.latitude && selectedAddress?.longitude) {
-            setCoords({
-                lat: String(selectedAddress.latitude),
-                long: String(selectedAddress.longitude),
-            });
-        }
+        const a = Number(selectedAddress?.latitude), b = Number(selectedAddress?.longitude);
+        setCoords(
+            Number.isFinite(a) && Number.isFinite(b) && (a !== 0 || b !== 0)
+                ? { lat: String(a), long: String(b) }
+                : { lat: '', long: '' },
+        );
     }, [selectedAddress?.latitude, selectedAddress?.longitude]);
 
     // ─── Wellness: Fetch shipping rate when address changes
@@ -584,12 +585,39 @@ export default function CheckoutScreen() {
     const sessionBookingId = useRef<string | null>(params.bookingId ?? null);
     const pendingOrderId = useRef<string | null>(null);
 
+    // Wipes the Razorpay pending-order keys (called on success/failure/recovery).
+    const clearPendingOrder = async () => {
+        await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
+        await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
+        await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_AT);
+    };
+
     useEffect(() => {
         const checkPendingOrder = async () => {
             try {
                 const pendingOrderId = await storageService.getItem(STORAGE_KEYS.PENDING_ORDER_ID);
                 const pendingBookingId = await storageService.getItem(STORAGE_KEYS.PENDING_BOOKING_ID);
-                if (pendingOrderId && pendingBookingId) {
+                const pendingAt = Number(await storageService.getItem(STORAGE_KEYS.PENDING_ORDER_AT)) || 0;
+
+                // Expire pending keys after 1h — an order the user never came back
+                // to finish should not resurface on a later checkout.
+                const isExpired = pendingAt > 0 && Date.now() - pendingAt > 60 * 60 * 1000;
+
+                // Only offer recovery if this checkout IS the interrupted one.
+                // A fresh order always arrives with a new bookingPayload / amount /
+                // subscriptionId — in that case any leftover pending keys belong to
+                // a PREVIOUS order and must be discarded, not resurrected (that's
+                // what made the app charge the old amount).
+                const isFreshOrder = !!(params.bookingPayload || params.amount || params.subscriptionId || params.upgradeSubId);
+                const isSameInterruptedOrder = !!params.bookingId && params.bookingId === pendingBookingId;
+
+                if (pendingOrderId && pendingBookingId && (isExpired || (isFreshOrder && !isSameInterruptedOrder))) {
+                    // Stale / expired keys — wipe and move on.
+                    await clearPendingOrder();
+                    return;
+                }
+
+                if (pendingOrderId && pendingBookingId && (isSameInterruptedOrder || !isFreshOrder)) {
                     setPendingRecovery(true);
                     sessionBookingId.current = pendingBookingId;
                     setActionModal({
@@ -599,9 +627,7 @@ export default function CheckoutScreen() {
                         secondaryText: t('checkout.dismiss'),
                         onSecondary: async () => {
                             closeActionModal();
-                            // Clear stale pending order
-                            await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
-                            await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
+                            await clearPendingOrder();
                             setPendingRecovery(false);
                         },
                         primaryText: t('checkout.check_status'),
@@ -609,8 +635,7 @@ export default function CheckoutScreen() {
                             closeActionModal();
                             // Navigate to service-confirmation which fetches booking from backend
                             // The backend will have the real payment status from Razorpay webhooks
-                            await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
-                            await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
+                            await clearPendingOrder();
                             router.replace({
                                 pathname: '/service-confirmation',
                                 params: { bookingId: pendingBookingId },
@@ -623,7 +648,7 @@ export default function CheckoutScreen() {
             }
         };
         checkPendingOrder();
-    }, [router]);
+    }, [router, params.bookingId, params.bookingPayload, params.amount, params.subscriptionId, params.upgradeSubId]);
 
     // ─── Apply coupon ───────────────────────────────────────
     const handleApplyCoupon = useCallback(async () => {
@@ -651,12 +676,6 @@ export default function CheckoutScreen() {
         setCouponApplied(false);
         setDiscount(0);
         setFinalAmount(amountWithTaxAndFee);
-    };
-
-    // ─── Helper: Clear pending order from storage (called on success/failure) ──
-    const clearPendingOrder = async () => {
-        await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
-        await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
     };
 
     // ─── Helper: Cancel payment on backend (dismiss / failure) ────────────────
@@ -720,29 +739,19 @@ export default function CheckoutScreen() {
             let lastProductOrderId = isWellness ? productOrderId : null;
 
             if (isBloodTest && !lastBookingId) {
-                // ─── Blood Test Booking ───────────────────────────────────────
-                const calculateAge = (dob: string | undefined) => {
-                    if (!dob) return 0;
-                    const today = new Date();
-                    const birthDate = new Date(dob);
-                    let age = today.getFullYear() - birthDate.getFullYear();
-                    if (today.getMonth() < birthDate.getMonth() ||
-                        (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
-                        age--;
-                    }
-                    return age;
-                };
+                // ─── Blood Test Booking (home collection only) ────────────────
+                // Validates name/DOB/gender/phone from profile — throws a
+                // user-facing message rather than sending age:0 / gender:M
+                // placeholders that Redcliffe rejects with opaque errors.
+                const patient = resolvePatient(profile, phoneNumber);
+                if (!coords.lat || !coords.long) {
+                    throw new Error(t('checkout.address_required', 'Please choose your collection address.'));
+                }
 
                 // Create a booking for each package (Redcliffe requires separate bookings)
                 const basePayload = {
-                    bookingType: collectionType,
-                    patient: {
-                        name: profile?.name || '',
-                        age: calculateAge(profile?.dateOfBirth),
-                        gender: profile?.gender || 'M',
-                        phone: phoneNumber.startsWith('+91') ? phoneNumber : `+91${phoneNumber}`,
-                        email: profile?.email || '',
-                    },
+                    bookingType: 'HOME' as const,
+                    patient: { ...patient, email: profile?.email || '' },
                     address: {
                         lat: coords.lat,
                         long: coords.long,
@@ -853,7 +862,11 @@ export default function CheckoutScreen() {
             if (selectedMethod === 'CASH') {
                 // COD Flow — Direct success (Booking is already PENDING)
                 setFlowState('success');
-                
+
+                // No Razorpay order for COD, but clear any pending keys so the
+                // NEXT checkout doesn't try to recover this order / its amount.
+                await clearPendingOrder();
+
                 // Confirm the lab order at partner end!
                 if (isBloodTest && lastBookingId) {
                     try {
@@ -957,6 +970,7 @@ export default function CheckoutScreen() {
             // ─── STEP 4: Handle Zero Amount Booking (Post-Initiation) ─────────
             if (paymentNotRequired) {
                 setFlowState('success');
+                await clearPendingOrder();
                 // The backend already marks it as SUCCESS in this case
                 router.replace({
                     pathname: '/payment/payment-success',
@@ -981,8 +995,11 @@ export default function CheckoutScreen() {
             }
 
             // ─── STEP 5: Persist pending order for crash recovery ──────
-            // If the app crashes while Razorpay is open, we can recover on next launch.
+            // If the app crashes while Razorpay is open, we can recover on next launch.   
+            // Timestamped so a never-completed order (app killed, never reopened)
+            // expires instead of haunting a future checkout with a stale amount.
             await storageService.setItem(STORAGE_KEYS.PENDING_ORDER_ID, orderId);
+            await storageService.setItem(STORAGE_KEYS.PENDING_ORDER_AT, String(Date.now()));
             if (sessionBookingId.current) {
                 await storageService.setItem(STORAGE_KEYS.PENDING_BOOKING_ID, sessionBookingId.current);
             }
@@ -1138,7 +1155,7 @@ export default function CheckoutScreen() {
         } finally {
             setPayLoading(false);
         }
-    }, [payLoading, finalAmount, standardRateAmount, isPaidBookingOverride, selectedMethod, couponApplied, couponCode, params, label, router, collectionType, selectedDate, selectedTime, selectedAddress, serviceabilityStatus, phoneNumber, wellnessItems, shippingDetails]);
+    }, [payLoading, finalAmount, standardRateAmount, isPaidBookingOverride, selectedMethod, couponApplied, couponCode, params, label, router, selectedDate, selectedTime, selectedAddress, serviceabilityStatus, phoneNumber, wellnessItems, shippingDetails]);
 
     // ─── Live form validity — gates the Pay button itself, mirroring the same
     // checks handlePay/executePayment already enforce at submit time. Deliberately
@@ -1147,11 +1164,9 @@ export default function CheckoutScreen() {
     const isFormValid = React.useMemo(() => {
         if (isBloodTest) {
             if (!selectedDate || !selectedTime) return false;
-            if (collectionType === 'HOME') {
-                if (!selectedAddress?.line1) return false;
-                if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) return false;
-                if (serviceabilityStatus !== 'serviceable') return false;
-            }
+            if (!selectedAddress?.line1) return false;
+            if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) return false;
+            if (serviceabilityStatus !== 'serviceable') return false;
             if (!phoneNumber?.trim() || phoneNumber.length < 10) return false;
         }
         if (isWellness) {
@@ -1159,7 +1174,7 @@ export default function CheckoutScreen() {
             if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) return false;
         }
         return true;
-    }, [isBloodTest, isWellness, selectedDate, selectedTime, collectionType, selectedAddress, serviceabilityStatus, phoneNumber]);
+    }, [isBloodTest, isWellness, selectedDate, selectedTime, selectedAddress, serviceabilityStatus, phoneNumber]);
 
     // ─── Open Razorpay native popup ─────────────────────────
     // isPaidBookingForce is threaded through to executePayment (directly, and
@@ -1177,23 +1192,21 @@ export default function CheckoutScreen() {
                 triggerAlert(t('checkout.required'), t('checkout.select_date_time'));
                 return;
             }
-            if (collectionType === 'HOME') {
-                if (!selectedAddress || !selectedAddress.line1) {
-                    triggerAlert(t('checkout.address_required'), t('checkout.address_required_msg2'));
-                    return;
-                }
-                if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
-                    triggerAlert(t('checkout.pincode_required'), t('checkout.pincode_required_msg'));
-                    return;
-                }
-                if (serviceabilityStatus === 'non-serviceable') {
-                    triggerAlert(t('checkout.location_not_serviceable'), t('checkout.location_not_serviceable_msg'));
-                    return;
-                }
-                if (serviceabilityStatus !== 'serviceable') {
-                    triggerAlert(t('checkout.address_verification_needed'), t('checkout.address_verification_needed_msg'));
-                    return;
-                }
+            if (!selectedAddress || !selectedAddress.line1) {
+                triggerAlert(t('checkout.address_required'), t('checkout.address_required_msg2'));
+                return;
+            }
+            if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
+                triggerAlert(t('checkout.pincode_required'), t('checkout.pincode_required_msg'));
+                return;
+            }
+            if (serviceabilityStatus === 'non-serviceable') {
+                triggerAlert(t('checkout.location_not_serviceable'), t('checkout.location_not_serviceable_msg'));
+                return;
+            }
+            if (serviceabilityStatus !== 'serviceable') {
+                triggerAlert(t('checkout.address_verification_needed'), t('checkout.address_verification_needed_msg'));
+                return;
             }
             if (!phoneNumber?.trim() || phoneNumber.length < 10) {
                 triggerAlert(t('checkout.phone_required'), t('checkout.phone_required_msg'));
@@ -1209,7 +1222,7 @@ export default function CheckoutScreen() {
         }
 
         await executePayment(isPaidBookingForce);
-    }, [payLoading, isBloodTest, selectedDate, selectedTime, collectionType, selectedAddress, serviceabilityStatus, phoneNumber, executePayment]);
+    }, [payLoading, isBloodTest, selectedDate, selectedTime, selectedAddress, serviceabilityStatus, phoneNumber, executePayment]);
 
     // ─── UI ─────────────────────────────────────────────────
     return (
@@ -1687,39 +1700,23 @@ export default function CheckoutScreen() {
                     </View>
                 )}
 
-                {/* Blood Test: Collection Type */}
+                {/* Blood Test: Collection Type — home collection only */}
                 {isBloodTest && (
                     <View style={styles.card}>
                         <Text style={styles.cardTitle}>{t('checkout.collection_type')}</Text>
-                        <TouchableOpacity
-                            style={[styles.collectionOption, collectionType === 'HOME' && styles.collectionOptionActive]}
-                            onPress={() => setCollectionType('HOME')}
-                            activeOpacity={0.75}
-                        >
-                            <Ionicons name="home" size={20} color={collectionType === 'HOME' ? colors.primary : colors.textMuted} style={{ marginRight: 12 }} />
+                        <View style={[styles.collectionOption, styles.collectionOptionActive]}>
+                            <Ionicons name="home" size={20} color={colors.primary} style={{ marginRight: 12 }} />
                             <View style={{ flex: 1 }}>
-                                <Text style={[styles.collectionOptionTitle, collectionType === 'HOME' && { color: colors.textDark }]}>{t('checkout.home_collection')}</Text>
+                                <Text style={[styles.collectionOptionTitle, { color: colors.textDark }]}>{t('checkout.home_collection')}</Text>
                                 <Text style={styles.collectionOptionDesc}>{t('checkout.home_collection_desc')}</Text>
                             </View>
-                            <Ionicons name={collectionType === 'HOME' ? 'checkmark-circle' : 'radio-button-off'} size={22} color={collectionType === 'HOME' ? colors.primary : '#D1D5DB'} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.collectionOption, collectionType === 'LAB' && styles.collectionOptionActive]}
-                            onPress={() => setCollectionType('LAB')}
-                            activeOpacity={0.75}
-                        >
-                            <Ionicons name="business" size={20} color={collectionType === 'LAB' ? colors.primary : colors.textMuted} style={{ marginRight: 12 }} />
-                            <View style={{ flex: 1 }}>
-                                <Text style={[styles.collectionOptionTitle, collectionType === 'LAB' && { color: colors.textDark }]}>{t('checkout.lab_visit')}</Text>
-                                <Text style={styles.collectionOptionDesc}>{t('checkout.lab_visit_desc')}</Text>
-                            </View>
-                            <Ionicons name={collectionType === 'LAB' ? 'checkmark-circle' : 'radio-button-off'} size={22} color={collectionType === 'LAB' ? colors.primary : '#D1D5DB'} />
-                        </TouchableOpacity>
+                            <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                        </View>
                     </View>
                 )}
 
                 {/* Single Merged Address Picker Section */}
-                {((isBloodTest && collectionType === 'HOME') || isWellness) && (
+                {(isBloodTest || isWellness) && (
                     <AddressPickerSection
                         selectedAddress={selectedAddress}
                         onAddressChange={setSelectedAddress}
@@ -1727,8 +1724,13 @@ export default function CheckoutScreen() {
                         serviceabilityStatus={serviceabilityStatus}
                         onServiceabilityChange={setServiceabilityStatus}
                         checkServiceabilityFn={isBloodTest ? async (lat: string, lng: string) => {
+                            const a = parseFloat(lat), b = parseFloat(lng);
+                            if (Number.isNaN(a) || Number.isNaN(b) || (a === 0 && b === 0)) {
+                                setServiceabilityStatus('unchecked');
+                                return false;
+                            }
                             try {
-                                const result: any = await labService.checkServiceability(lat, lng);
+                                const result: any = await labService.checkServiceability(String(a), String(b));
                                 const isServiceable = result?.status === 'success' || result?.data?.status === 'success' || result?.serviceable === true;
                                 setServiceabilityStatus(isServiceable ? 'serviceable' : 'non-serviceable');
                                 return isServiceable;
@@ -1745,8 +1747,8 @@ export default function CheckoutScreen() {
                         showPhoneField={true}
                         showLandmarkField={isBloodTest}
                         allowManualEntry={true}
-                        initialLat={isBloodTest ? parseFloat(coords.lat) : undefined}
-                        initialLng={isBloodTest ? parseFloat(coords.long) : undefined}
+                        initialLat={coords.lat ? parseFloat(coords.lat) : undefined}
+                        initialLng={coords.long ? parseFloat(coords.long) : undefined}
                     />
                 )}
 
@@ -1867,12 +1869,12 @@ export default function CheckoutScreen() {
                                 </View>
 
                                 <View style={[styles.modalRow, styles.modalDivider]}>
-                                    <Ionicons name={collectionType === 'LAB' ? 'business-outline' : 'home-outline'} size={15} color={colors.primary} style={{ marginRight: 8 }} />
+                                    <Ionicons name="home-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
                                     <Text style={styles.modalRowLabel}>{t('checkout.collection')}</Text>
-                                    <Text style={styles.modalRowValue}>{collectionType === 'LAB' ? t('checkout.lab_visit') : t('checkout.home_collection')}</Text>
+                                    <Text style={styles.modalRowValue}>{t('checkout.home_collection')}</Text>
                                 </View>
 
-                                {((collectionType === 'HOME' && isBloodTest) || isWellness) && selectedAddress?.line1 && (
+                                {(isBloodTest || isWellness) && selectedAddress?.line1 && (
                                     <View style={[styles.modalRow, styles.modalDivider]}>
                                         <Ionicons name="location-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
                                         <Text style={styles.modalRowLabel}>{t('checkout.address')}</Text>

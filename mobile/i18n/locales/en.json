@@ -73,7 +73,8 @@
     "book_appointment": "Book Appointment",
     "pay": "Pay",
     "request_tiffin": "Request Tiffin",
-    "clear": "Clear"
+    "clear": "Clear",
+    "go_back": "Go Back"
   },
   "auth": {
     "splash_tagline": "ISO 9001:2015 Certified",
@@ -650,7 +651,9 @@
     "transit_feat_crowd": "Crowd & Mobility: Assistance with priority queues, crowds, and temple seating.",
     "transit_feat_dietary": "Dietary Adherence: Strict maintenance of prescribed diets during travel/events.",
     "transit_feat_itineraries": "Paced Itineraries: Travel planned around comfort with adequate rest.",
-    "transit_feat_dest_coordination": "Destination Coordination: Support during events and safe return home."
+    "transit_feat_dest_coordination": "Destination Coordination: Support during events and safe return home.",
+    "not_found": "Plan not found.",
+    "no_features": "No features listed for this plan."
   },
   "cart": {
     "header_title": "Your Cart",
@@ -2608,7 +2611,9 @@
     "apply_coupon_code": "Apply Coupon Code",
     "enter_coupon_code": "Enter coupon code",
     "apply": "Apply",
-    "confirm_booking": "Confirm Booking"
+    "confirm_booking": "Confirm Booking",
+    "booking_failed_title": "Booking failed",
+    "slot_unavailable_msg": "We couldn't reserve this slot. Please try a different time or check back shortly."
   },
   "blood_test_success": {
     "header": "Payment Successful!",
@@ -2687,7 +2692,11 @@
     "get_directions": "Get Directions",
     "cancel_appointment": "Cancel Appointment",
     "call_support": "Call Support",
-    "back_home": "Back to Home"
+    "back_home": "Back to Home",
+    "subtitle": "Your appointment for {{visitType}} has been successfully booked.",
+    "details_title": "Appointment Details",
+    "info_home": "You will receive a notification once a doctor accepts your request.",
+    "info_clinic": "Please arrive at the clinic 10 minutes prior to your scheduled time."
   },
   "nurse_confirmation": {
     "header": "Booking Confirmed",
@@ -3635,5 +3644,17 @@
     "permission_required_title": "Permission Required",
     "camera_permission_msg": "Camera permission is required.",
     "gallery_permission_msg": "Gallery permission is required."
+  },
+  "care_form": {
+    "family": "Family",
+    "select_family_member": "Select Family Member",
+    "no_family_members": "No saved family members.",
+    "comments": "Comments",
+    "comments_placeholder": "Enter any additional requirements, special requests or comments...",
+    "upload_report_optional": "Upload report (Optional)"
+  },
+  "caregiver_support": {
+    "title": "Caregiver Support",
+    "subtitle": "Professional bedside attendant and daily care assistance at home."
   }
 }

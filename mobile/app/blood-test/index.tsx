@@ -127,9 +127,11 @@ export default function BloodTestScreen() {
     const colors = useThemeColors();
     const styles = makeStyles(colors, isDarkMode);
 
-    const [packages, setPackages] = useState<LabPackage[]>([]);
+    const [packages, setPackages] = useState<LabPackage[]>([]);       // paginated catalog
+    const [searchResults, setSearchResults] = useState<LabPackage[] | null>(null); // server search hits; null = not searching
     const [loading, setLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [searching, setSearching] = useState(false);
     const pageRef = React.useRef(1);
     const hasMoreRef = React.useRef(true);
     const [activeCategory, setActiveCategory] = useState('all');
@@ -174,10 +176,25 @@ export default function BloodTestScreen() {
         } catch { /* silent */ } finally { setLoading(false); }
     };
 
+    // Server-side search: Redcliffe's ?search= matches the whole catalog (all
+    // ~1700 packages), not just the pages we've loaded. Debounced per keystroke.
+    useEffect(() => {
+        const q = searchText.trim();
+        if (!q) { setSearchResults(null); setSearching(false); return; }
+        setSearching(true);
+        const id = setTimeout(async () => {
+            try {
+                const { items } = await labService.getPackages(q);
+                setSearchResults(items);
+            } catch { setSearchResults([]); }
+            finally { setSearching(false); }
+        }, 350);
+        return () => clearTimeout(id);
+    }, [searchText]);
+
     const loadMorePackages = useCallback(async () => {
-        // Server-side pages only make sense for the unfiltered catalog; when the
-        // user is searching or has a category chip active, we filter the already
-        // loaded set client-side and don't page further.
+        // Server-side pages only apply to the unfiltered catalog; while searching
+        // or on a category chip we work off the already-loaded / search result set.
         if (loadingMore || loading || !hasMoreRef.current || searchText.trim() || activeCategory !== 'all') return;
         setLoadingMore(true);
         try {
@@ -229,7 +246,13 @@ export default function BloodTestScreen() {
     }, [packages]);
 
     const filteredPackages = useMemo(() => {
-        let list = packages.filter(pkg => pkg.name.toLowerCase().includes(searchText.toLowerCase()));
+        // Searching → server results (whole catalog); otherwise the paginated
+        // list. Local name filter still applied so it updates instantly while
+        // the debounced request is in flight.
+        const base = searchResults ?? packages;
+        let list = searchText.trim()
+            ? base.filter(pkg => pkg.name.toLowerCase().includes(searchText.toLowerCase()))
+            : base;
 
         if (activeCategory !== 'all') {
             list = list.filter(pkg => (pkg.category_for_web || []).some(c => c.name === activeCategory));
@@ -255,7 +278,7 @@ export default function BloodTestScreen() {
                 break;
         }
         return sorted;
-    }, [packages, searchText, activeCategory, sortBy]);
+    }, [packages, searchResults, searchText, activeCategory, sortBy]);
 
     const renderItem = useCallback(({ item }: { item: LabPackage }) => (
         <PackageCard
@@ -390,7 +413,7 @@ export default function BloodTestScreen() {
                 </View>
 
                 {/* Grid */}
-                {loading ? (
+                {loading || (searching && filteredPackages.length === 0) ? (
                     <View style={styles.loadingBox}>
                         <ActivityIndicator size="large" color={colors.primary} />
                         <Text style={[styles.loadingText, { color: themeColors.textMuted }]}>{t('blood_test.loading_packages')}</Text>
@@ -407,18 +430,20 @@ export default function BloodTestScreen() {
                         onEndReached={loadMorePackages}
                         onEndReachedThreshold={0.5}
                         ListFooterComponent={
-                            loadingMore ? (
+                            (loadingMore || searching) ? (
                                 <View style={{ paddingVertical: Spacing.lg }}>
                                     <ActivityIndicator size="small" color={colors.primary} />
                                 </View>
                             ) : null
                         }
                         ListEmptyComponent={
-                            <View style={styles.emptyBox}>
-                                <Ionicons name="search-outline" size={42} color={themeColors.textMuted} style={{ opacity: 0.35, marginBottom: 10 }} />
-                                <Text style={[styles.emptyTitle, { color: themeColors.textDark }]}>{t('blood_test.empty_title')}</Text>
-                                <Text style={[styles.emptySub, { color: themeColors.textMuted }]}>{t('blood_test.empty_sub')}</Text>
-                            </View>
+                            searching ? null : (
+                                <View style={styles.emptyBox}>
+                                    <Ionicons name="search-outline" size={42} color={themeColors.textMuted} style={{ opacity: 0.35, marginBottom: 10 }} />
+                                    <Text style={[styles.emptyTitle, { color: themeColors.textDark }]}>{t('blood_test.empty_title')}</Text>
+                                    <Text style={[styles.emptySub, { color: themeColors.textMuted }]}>{t('blood_test.empty_sub')}</Text>
+                                </View>
+                            )
                         }
                         maxToRenderPerBatch={10}
                         initialNumToRender={8}

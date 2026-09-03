@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, ActivityIndicator, RefreshControl, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, ActivityIndicator, RefreshControl, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { userService } from '@/services/api/userService';
 import { useUser } from '@/context/UserContext';
@@ -11,6 +12,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import * as ImagePicker from 'expo-image-picker';
 import { usePreventScreenCapture } from 'expo-screen-capture';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 
 interface HealthReport {
@@ -27,6 +29,7 @@ interface HealthReport {
 
 export default function MyPrescriptionsScreen() {
     usePreventScreenCapture('my-prescriptions'); // uploaded prescription documents shown here
+    const { t } = useTranslation();
     const router = useRouter();
     const { profile } = useUser();
     const { isDarkMode } = useTheme();
@@ -35,6 +38,15 @@ export default function MyPrescriptionsScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'alert-circle-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'alert-circle-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     const fetchReports = async () => {
         try {
@@ -57,7 +69,7 @@ export default function MyPrescriptionsScreen() {
     const handleUpload = async () => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
-            Alert.alert('Permission required', 'Gallery access is needed to upload prescriptions.');
+            triggerAlert(t('my_prescriptions.permission_required'), t('my_prescriptions.gallery_permission_msg'));
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -76,20 +88,20 @@ export default function MyPrescriptionsScreen() {
             };
             const res = await userService.uploadHealthReport(profile.id, file, 'Prescription', 'Prescription');
             if (res.success) {
-                Alert.alert('Success', 'Prescription uploaded.');
+                triggerAlert(t('common.success'), t('my_prescriptions.upload_success'), 'checkmark-circle-outline');
                 fetchReports();
             } else {
-                Alert.alert('Error', res.message || 'Upload failed.');
+                triggerAlert(t('common.error'), res.message || t('my_prescriptions.upload_failed'));
             }
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'Upload failed.');
+            triggerAlert(t('common.error'), err.message || t('my_prescriptions.upload_failed'));
         } finally {
             setUploading(false);
         }
     };
 
     const openReport = (url: string) => {
-        Linking.openURL(url).catch(() => Alert.alert('Error', 'Cannot open this file.'));
+        Linking.openURL(url).catch(() => triggerAlert(t('common.error'), t('my_prescriptions.cannot_open_file')));
     };
 
     const getSeverityColor = (severity?: string) => {
@@ -131,7 +143,7 @@ export default function MyPrescriptionsScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>My Prescriptions</Text>
+                    <Text style={styles.headerTitle}>{t('my_prescriptions.header_title')}</Text>
                 </View>
             </SafeAreaView>
 
@@ -149,8 +161,8 @@ export default function MyPrescriptionsScreen() {
                         ListEmptyComponent={
                             <View style={styles.emptyState}>
                                 <Ionicons name="document-text-outline" size={56} color="#AAAEAC" />
-                                <Text style={styles.emptyTitle}>No Prescriptions</Text>
-                                <Text style={styles.emptyDesc}>Upload your prescriptions and discharge summaries here.</Text>
+                                <Text style={styles.emptyTitle}>{t('my_prescriptions.no_prescriptions')}</Text>
+                                <Text style={styles.emptyDesc}>{t('my_prescriptions.empty_desc')}</Text>
                             </View>
                         }
                         ListFooterComponent={
@@ -158,7 +170,7 @@ export default function MyPrescriptionsScreen() {
                                 {uploading ? <ActivityIndicator color="#FFF" /> : (
                                     <>
                                         <Ionicons name="cloud-upload-outline" size={20} color="#FFF" />
-                                        <Text style={styles.uploadBtnText}>Upload Prescription</Text>
+                                        <Text style={styles.uploadBtnText}>{t('my_prescriptions.upload_prescription')}</Text>
                                     </>
                                 )}
                             </TouchableOpacity>
@@ -166,6 +178,14 @@ export default function MyPrescriptionsScreen() {
                     />
                 )}
             </View>
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

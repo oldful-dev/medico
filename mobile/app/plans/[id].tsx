@@ -192,9 +192,9 @@ export default function PlanDetailsScreen() {
     if (!plan) {
         return (
             <View style={[styles.screen, { alignItems: 'center', justifyContent: 'center' }]}>
-                <Text style={{ color: colors.textBody }}>Plan not found.</Text>
+                <Text style={{ color: colors.textBody }}>{t('plans.not_found')}</Text>
                 <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
-                    <Text style={{ color: colors.primary }}>Go Back</Text>
+                    <Text style={{ color: colors.primary }}>{t('common.go_back')}</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -290,7 +290,7 @@ export default function PlanDetailsScreen() {
                             </View>
                         ))
                     ) : (
-                        <Text style={[styles.featureText, { color: colors.textMuted }]}>No features listed for this plan.</Text>
+                        <Text style={[styles.featureText, { color: colors.textMuted }]}>{t('plans.no_features')}</Text>
                     )}
                 </View>
             </ScrollView>

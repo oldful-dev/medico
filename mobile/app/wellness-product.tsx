@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { storeService, Product } from '@/services/api/storeService';
 import { useCart } from '@/context/CartContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
@@ -687,7 +687,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: colors.borderLight,
-        ...Shadow.card,
     },
     relatedImageBox: {
         aspectRatio: 1,

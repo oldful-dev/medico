@@ -24,6 +24,7 @@ export const STORAGE_KEYS = {
     // Payment recovery — persisted before Razorpay opens, cleared on success/failure
     PENDING_ORDER_ID: 'ayuxacare_pending_order_id',
     PENDING_BOOKING_ID: 'ayuxacare_pending_booking_id',
+    PENDING_ORDER_AT: 'ayuxacare_pending_order_at',
 } as const;
 
 // ─── Service ──────────────────────────────────

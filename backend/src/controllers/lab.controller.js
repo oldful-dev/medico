@@ -11,8 +11,13 @@ const rc = require('../services/redcliffe.service');
 const checkServiceability = async (req, res, next) => {
     try {
         const { lat, lng } = req.query;
-        if (!lat || !lng) return sendResponse(res, 400, null, 'lat and lng are required');
-        const result = await rc.checkServiceability(lat, lng);
+        const latN = parseFloat(lat), lngN = parseFloat(lng);
+        if (!lat || !lng || Number.isNaN(latN) || Number.isNaN(lngN) || (latN === 0 && lngN === 0)) {
+            // No usable location — treat as "unknown", not an error (client sends
+            // this before the user picks an address).
+            return sendResponse(res, 200, { status: 'unchecked', message: 'Select an address to check serviceability' });
+        }
+        const result = await rc.checkServiceability(latN, lngN);
         sendResponse(res, 200, result);
     } catch (error) {
         // Redcliffe returns 400 for non-serviceable locations
@@ -56,7 +61,12 @@ const getLatLng = async (req, res, next) => {
 const getTimeSlots = async (req, res, next) => {
     try {
         const { date, lat, lng, gender } = req.query;
-        if (!date || !lat || !lng) return sendResponse(res, 400, null, 'date, lat and lng are required');
+        if (!date) return sendResponse(res, 400, null, 'date is required');
+        // No location yet (user hasn't picked an address) → no slots, not an error.
+        const latN = parseFloat(lat), lngN = parseFloat(lng);
+        if (!lat || !lng || Number.isNaN(latN) || Number.isNaN(lngN) || (latN === 0 && lngN === 0)) {
+            return sendResponse(res, 200, [], 'Select a collection address to see slots');
+        }
         const result = await rc.getTimeSlots(date, lat, lng, gender);
         // Ensure we send only the array of slots to the frontend
         const slots = result.data || [];

@@ -3,6 +3,7 @@
 // ──────────────────────────────────────────────
 
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface LocationCoordinates {
     latitude: number;
@@ -10,13 +11,52 @@ export interface LocationCoordinates {
     accuracy?: number;
 }
 
+// Set once we've prompted for location. Passive screens (Home) check this and
+// stop re-prompting; only an explicit SOS press asks again.
+const LOCATION_PROMPTED_KEY = '@ayuxa_location_prompted';
+// In-memory mirror so a fast tab-switch can't beat the async AsyncStorage write.
+let promptedThisSession = false;
+
 export const locationService = {
     /**
-     * Request foreground location permission
+     * Request foreground location permission (shows the OS dialog).
      */
     requestPermission: async (): Promise<boolean> => {
-        const { status } = await Location.requestForegroundPermissionsAsync();
+        promptedThisSession = true;
+        AsyncStorage.setItem(LOCATION_PROMPTED_KEY, '1').catch(() => {});
+        console.log('[loc] requestPermission() — SHOWING OS DIALOG. promptedThisSession=true, wrote AsyncStorage flag');
+        const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
+        console.log('[loc] requestPermission() result:', { status, canAskAgain });
         return status === 'granted';
+    },
+
+    /**
+     * Current permission status WITHOUT showing a dialog.
+     */
+    getPermissionStatus: async (): Promise<'granted' | 'denied' | 'undetermined'> => {
+        const { status, canAskAgain } = await Location.getForegroundPermissionsAsync();
+        console.log('[loc] getPermissionStatus() ->', { status, canAskAgain });
+        return status;
+    },
+
+    /**
+     * True only the very first time — before we've ever prompted for location
+     * (this session OR a previous one). After that, passive flows stay quiet.
+     */
+    shouldPromptOnce: async (): Promise<boolean> => {
+        if (promptedThisSession) {
+            console.log('[loc] shouldPromptOnce() -> false (promptedThisSession already true)');
+            return false;
+        }
+        const status = await locationService.getPermissionStatus();
+        if (status === 'granted') {
+            console.log('[loc] shouldPromptOnce() -> false (already granted)');
+            return false;
+        }
+        const flag = await AsyncStorage.getItem(LOCATION_PROMPTED_KEY);
+        const result = flag === null;
+        console.log('[loc] shouldPromptOnce() ->', result, `(AsyncStorage flag=${JSON.stringify(flag)}, status=${status})`);
+        return result;
     },
 
     /**
@@ -27,6 +67,13 @@ export const locationService = {
      *   3. Fall back to last-known if the fresh fix loses the race
      */
     getCurrentLocation: async (): Promise<LocationCoordinates> => {
+        // getCurrentPositionAsync prompts if permission is undetermined — bail
+        // out first so this never becomes a back-door permission dialog. Callers
+        // that WANT to prompt call requestPermission() explicitly beforehand.
+        if ((await locationService.getPermissionStatus()) !== 'granted') {
+            throw new Error('Location permission not granted');
+        }
+
         // ── Helper: reject after N ms ─────────────────────────────────────────
         const timeout = (ms: number) =>
             new Promise<never>((_, reject) =>

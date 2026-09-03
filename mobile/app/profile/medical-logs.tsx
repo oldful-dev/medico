@@ -1,7 +1,7 @@
 // Medical Logs — Document vault
 // Prescriptions, blood work reports, scans, discharge summaries, etc.
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Linking, TextInput, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Linking, TextInput, RefreshControl, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -519,10 +519,28 @@ export default function MedicalLogsScreen() {
             )}
 
             {/* Upload modal */}
-            {uploadModalVisible && (
-                <View style={styles.modalOverlay}>
-                    <KeyboardAvoidingView style={styles.modal} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                        <Text style={styles.modalTitle}>{t('medical_logs.modal_title')}</Text>
+            <Modal
+                visible={uploadModalVisible}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setUploadModalVisible(false)}
+            >
+                <KeyboardAvoidingView
+                    style={styles.modalOverlay}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                >
+                    <TouchableOpacity
+                        style={styles.modalBackdrop}
+                        activeOpacity={1}
+                        onPress={() => setUploadModalVisible(false)}
+                    />
+                    <View style={styles.modal}>
+                        <View style={styles.modalHeaderRow}>
+                            <Text style={styles.modalTitle}>{t('medical_logs.modal_title')}</Text>
+                            <TouchableOpacity onPress={() => setUploadModalVisible(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                <Ionicons name="close" size={22} color={colors.textMuted} />
+                            </TouchableOpacity>
+                        </View>
 
                         <Text style={styles.fieldLabel}>{t('medical_logs.field_title_label')}</Text>
                         <TextInput
@@ -531,6 +549,9 @@ export default function MedicalLogsScreen() {
                             placeholderTextColor={colors.textMuted}
                             value={uploadTitle}
                             onChangeText={setUploadTitle}
+                            selectionColor={colors.primary}
+                            cursorColor={colors.primary}
+                            autoFocus={true}
                         />
 
                         <Text style={styles.fieldLabel}>{t('medical_logs.field_category_label')}</Text>
@@ -539,7 +560,7 @@ export default function MedicalLogsScreen() {
                             data={CATEGORIES.slice(1)}
                             keyExtractor={c => c.key}
                             showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ gap: 8, marginBottom: 16 }}
+                            contentContainerStyle={{ gap: 8, marginBottom: 18 }}
                             renderItem={({ item: cat }) => (
                                 <TouchableOpacity
                                     style={[styles.catChip, uploadCategory === cat.key && { backgroundColor: cat.color }]}
@@ -566,9 +587,9 @@ export default function MedicalLogsScreen() {
                         <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setUploadModalVisible(false)}>
                             <Text style={styles.modalCancelText}>{t('medical_logs.cancel')}</Text>
                         </TouchableOpacity>
-                    </KeyboardAvoidingView>
-                </View>
-            )}
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
 
             <CustomAlertModal
                 visible={alertConfig.visible}
@@ -672,18 +693,47 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     emptyUploadText: { fontFamily: Fonts.medium, fontSize: 14, color: '#FAF7ED' },
 
     // Modal
-    modalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modal: { backgroundColor: colors.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 },
-    modalTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: colors.textDark, marginBottom: 16 },
-    fieldLabel: { fontFamily: Fonts.medium, fontSize: 13, color: colors.textDark, marginBottom: 6 },
-    fieldInput: {
-        borderWidth: 1, borderColor: colors.borderLight, borderRadius: 10,
-        paddingHorizontal: 12, paddingVertical: 10,
-        fontFamily: Fonts.regular, fontSize: 14, color: colors.textDark,
-        backgroundColor: colors.bgCardMuted,
-        marginBottom: 14,
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
     },
-    catChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: colors.bgCardMuted },
+    modalBackdrop: {
+        flex: 1,
+    },
+    modal: {
+        backgroundColor: colors.bgCard,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 28,
+        shadowColor: colors.shadowColor,
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+    modalHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 18,
+    },
+    modalTitle: { fontFamily: Fonts.semiBold, fontSize: 18, color: colors.textDark },
+    fieldLabel: { fontFamily: Fonts.medium, fontSize: 13, color: colors.textDark, marginBottom: 8 },
+    fieldInput: {
+        borderWidth: 1.5,
+        borderColor: colors.borderLight,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        fontFamily: Fonts.medium,
+        fontSize: 15,
+        color: colors.textDark,
+        backgroundColor: colors.bgCard,
+        marginBottom: 18,
+    },
+    catChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.bgCardMuted, borderWidth: 1, borderColor: colors.borderLight },
     catChipText: { fontFamily: Fonts.medium, fontSize: 12, color: colors.textMuted },
     uploadOptions: { flexDirection: 'row', gap: 12, marginBottom: 12 },
     uploadOptionBtn: {

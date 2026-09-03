@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Alert,
   TextInput,
   ActivityIndicator,
   Modal,
@@ -18,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   labService,
+  resolvePatient,
   type LabPackage,
   type LabSlot,
 } from "@/services/api/labService";
@@ -27,6 +27,7 @@ import { useAddress } from "@/context/AddressContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useThemeColors, ThemeColors } from "@/hooks/use-theme-colors";
 import { LocationPickerModal } from "@/components/LocationPickerModal";
+import { CustomAlertModal } from "@/components/common/CustomAlertModal";
 import { useTranslation } from "react-i18next";
 import { AddressPickerSection, type AddressData } from "@/components/AddressPickerSection";
 
@@ -50,7 +51,9 @@ export default function BloodTestScheduleScreen() {
 
   const [pkg, setPkg] = useState<LabPackage | null>(null);
   const [step, setStep] = useState<1 | 2 | 3>(1); // 3-step flow: Date/Time, Address, Confirm
-  const [coords, setCoords] = useState({ lat: "12.9716", long: "77.5946" });
+  // No hardcoded city default — coords come from the selected/detected address.
+  // Empty means "not chosen yet"; serviceability + booking are gated on it.
+  const [coords, setCoords] = useState({ lat: "", long: "" });
 
   // Step 1: Date & Time
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -58,8 +61,7 @@ export default function BloodTestScheduleScreen() {
   const [slots, setSlots] = useState<LabSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
 
-  // Step 2: Collection type + Address
-  const [collectionType, setCollectionType] = useState<"HOME" | "LAB">("HOME");
+  // Step 2: Address (home collection only)
   const [selectedAddress, setSelectedAddress] = useState("");
   const [pincode, setPincode] = useState("");
   const [landmark, setLandmark] = useState("");
@@ -99,6 +101,25 @@ export default function BloodTestScheduleScreen() {
   // Step 3: Confirm
   const [isBooking, setIsBooking] = useState(false);
 
+  // Native Alert.alert is globally muted app-wide (app/_layout.tsx) — use a modal.
+  const [alertConfig, setAlertConfig] = useState({ visible: false, title: "", message: "" });
+  const triggerAlert = (title: string, message: string) =>
+    setAlertConfig({ visible: true, title, message });
+  const closeAlert = () => setAlertConfig((p) => ({ ...p, visible: false }));
+
+  // Set coords only when both are real, finite numbers. An address with no
+  // lat/long must leave coords empty ("" ""), NOT "undefined"/"null" strings —
+  // those are truthy and slip past the "have coords?" guards, firing
+  // /time-slots?lat=&lng= which the backend 400s.
+  const setCoordsFrom = (lat: unknown, long: unknown) => {
+    const a = Number(lat), b = Number(long);
+    setCoords(
+      Number.isFinite(a) && Number.isFinite(b) && (a !== 0 || b !== 0)
+        ? { lat: String(a), long: String(b) }
+        : { lat: "", long: "" },
+    );
+  };
+
   useEffect(() => {
     if (params.packagePayload) {
       try {
@@ -136,15 +157,13 @@ export default function BloodTestScheduleScreen() {
     setSelectedAddress(addrText);
     if (activeAddress.pincode) setPincode(activeAddress.pincode);
     if (activeAddress.landmark) setLandmark(activeAddress.landmark);
-    setCoords({
-      lat: String(activeAddress.latitude),
-      long: String(activeAddress.longitude),
-    });
+    setCoordsFrom(activeAddress.latitude, activeAddress.longitude);
   }, [activeAddress]);
 
-  // Fetch slots when date changes
+  // Fetch slots when date or location changes. Redcliffe slots are location-
+  // specific, so wait until we have coords (address chosen / detected).
   useEffect(() => {
-    if (!selectedDate || !pkg) return;
+    if (!selectedDate || !pkg || !coords.lat || !coords.long) return;
     setSlotsLoading(true);
     const dateStr = selectedDate.toISOString().split("T")[0];
     labService
@@ -158,7 +177,7 @@ export default function BloodTestScheduleScreen() {
       })
       .catch(() => setSlots([]))
       .finally(() => setSlotsLoading(false));
-  }, [selectedDate, pkg]);
+  }, [selectedDate, pkg, coords.lat, coords.long]);
 
   const formatDate = (d: Date) => {
     return `${d.getDate()} ${d.toLocaleDateString("en-US", { month: "short" })}`;
@@ -178,10 +197,7 @@ export default function BloodTestScheduleScreen() {
   const handleLocationConfirmed = (location: any) => {
     const address = location.address || location.description || "";
     setSelectedAddress(address);
-    setCoords({
-      lat: String(location.latitude),
-      long: String(location.longitude),
-    });
+    setCoordsFrom(location.latitude, location.longitude);
     const pincodeMatch = address.match(/\b\d{6}\b/);
     if (pincodeMatch) setPincode(pincodeMatch[0]);
     checkServiceability(String(location.latitude), String(location.longitude));
@@ -191,6 +207,15 @@ export default function BloodTestScheduleScreen() {
   const handleDetectLocation = async () => {
     setDetectingLocation(true);
     try {
+      // Explicit user action — OK to prompt here.
+      const granted = await locationService.requestPermission();
+      if (!granted) {
+        triggerAlert(
+          t("blood_test_schedule.location_error_title"),
+          t("blood_test_schedule.unable_detect_location_alert"),
+        );
+        return;
+      }
       const coords = await locationService.getCurrentLocation();
       const address = await locationService.getAddressFromCoordinates(coords);
       const pincode = await locationService.getPincodeFromAddress(
@@ -198,17 +223,14 @@ export default function BloodTestScheduleScreen() {
         address,
       );
 
-      setCoords({
-        lat: String(coords.latitude),
-        long: String(coords.longitude),
-      });
+      setCoordsFrom(coords.latitude, coords.longitude);
       setSelectedAddress(address);
       if (pincode) {
         setPincode(pincode);
       }
       checkServiceability(String(coords.latitude), String(coords.longitude));
     } catch (error) {
-      Alert.alert(
+      triggerAlert(
         t("blood_test_schedule.location_error_title"),
         t("blood_test_schedule.unable_detect_location_alert"),
       );
@@ -219,6 +241,10 @@ export default function BloodTestScheduleScreen() {
   };
 
   const checkServiceability = async (lat: string, lng: string) => {
+    if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) {
+      setServiceabilityStatus("unchecked");
+      return;
+    }
     setServiceabilityStatus("checking");
     try {
       const result: any = await labService.checkServiceability(lat, lng);
@@ -238,14 +264,14 @@ export default function BloodTestScheduleScreen() {
 
   const handleSaveNewAddress = async () => {
     if (!newAddrText.trim()) {
-      Alert.alert(
+      triggerAlert(
         t("blood_test_schedule.required_title"),
         t("blood_test_schedule.enter_address_alert"),
       );
       return;
     }
     if (newAddrPincode.length !== 6) {
-      Alert.alert(
+      triggerAlert(
         t("blood_test_schedule.required_title"),
         t("blood_test_schedule.valid_pincode_alert"),
       );
@@ -288,7 +314,7 @@ export default function BloodTestScheduleScreen() {
       setNewAddrLabel("Home");
       setAddingNewAddr(false);
     } catch {
-      Alert.alert(
+      triggerAlert(
         t("common.error"),
         t("blood_test_schedule.save_address_error"),
       );
@@ -300,7 +326,7 @@ export default function BloodTestScheduleScreen() {
   const handleContinue = async () => {
     if (step === 1) {
       if (!selectedDate || !selectedTime) {
-        Alert.alert(
+        triggerAlert(
           t("blood_test_schedule.required_title"),
           t("blood_test_schedule.select_date_time_alert"),
         );
@@ -308,28 +334,26 @@ export default function BloodTestScheduleScreen() {
       }
       setStep(2);
     } else if (step === 2) {
-      if (collectionType === "HOME") {
-        if (!selectedAddress.trim()) {
-          Alert.alert(
-            t("blood_test_schedule.required_title"),
-            t("blood_test_schedule.enter_collection_address_alert"),
-          );
-          return;
-        }
-        if (pincode.length !== 6) {
-          Alert.alert(
-            t("blood_test_schedule.required_title"),
-            t("blood_test_schedule.enter_valid_pincode_alert"),
-          );
-          return;
-        }
-        if (serviceabilityStatus === "non-serviceable") {
-          Alert.alert(
-            t("blood_test_schedule.not_serviceable_title"),
-            t("blood_test_schedule.not_serviceable_msg"),
-          );
-          return;
-        }
+      if (!selectedAddress.trim()) {
+        triggerAlert(
+          t("blood_test_schedule.required_title"),
+          t("blood_test_schedule.enter_collection_address_alert"),
+        );
+        return;
+      }
+      if (pincode.length !== 6) {
+        triggerAlert(
+          t("blood_test_schedule.required_title"),
+          t("blood_test_schedule.enter_valid_pincode_alert"),
+        );
+        return;
+      }
+      if (serviceabilityStatus === "non-serviceable") {
+        triggerAlert(
+          t("blood_test_schedule.not_serviceable_title"),
+          t("blood_test_schedule.not_serviceable_msg"),
+        );
+        return;
       }
       setStep(3);
     } else if (step === 3) {
@@ -340,29 +364,23 @@ export default function BloodTestScheduleScreen() {
   const handleConfirmBooking = async () => {
     if (!pkg || !selectedDate || !selectedTime) return;
 
-    if (!phoneNumber.trim()) {
-      Alert.alert(
-        t("blood_test_schedule.required_title"),
-        t("blood_test_schedule.valid_phone_alert"),
-      );
-      return;
-    }
-
     setIsBooking(true);
     try {
+      // Validates name/DOB/gender/phone from the profile and throws a
+      // user-facing message ("Please set your date of birth in Profile…")
+      // rather than sending age:30 / gender:M placeholders Redcliffe rejects.
+      const patient = resolvePatient(profile, phoneNumber);
+
+      if (!coords.lat || !coords.long) {
+        throw new Error("Please choose your collection address so we can confirm the slot.");
+      }
+
       const selectedSlot = slots.find(
         (s) => (s.slot || s.slot_time) === selectedTime,
       );
       const bookingPayload = {
-        bookingType: collectionType,
-        patient: {
-          name: profile?.name || "",
-          age: 30,
-          gender: profile?.gender || "M",
-          phone: phoneNumber.startsWith("+91")
-            ? phoneNumber
-            : `+91${phoneNumber}`,
-        },
+        bookingType: "HOME" as const,
+        patient,
         address: {
           lat: coords.lat,
           long: coords.long,
@@ -384,12 +402,6 @@ export default function BloodTestScheduleScreen() {
         },
       };
 
-      // Address persistence is handled by AddressPickerSection at
-      // selection time (via AddressContext.selectActiveAddress /
-      // addAddress) — booking submission no longer silently overwrites
-      // the user's saved default address with whatever text happens to
-      // be in the form.
-
       const amount = pkg.discounted_cost || pkg.cost;
       router.push({
         pathname: "/blood-test/order-summary",
@@ -398,13 +410,13 @@ export default function BloodTestScheduleScreen() {
           amount: String(amount),
           label: pkg.name,
           testsCount: String(pkg.tests_count || 0),
-          collectionType,
+          collectionType: "HOME",
         },
       } as any);
-    } catch (error) {
-      Alert.alert(
-        t("common.error"),
-        t("blood_test_schedule.failed_proceed_booking_alert"),
+    } catch (error: any) {
+      triggerAlert(
+        t("blood_test_schedule.required_title"),
+        error?.message || t("blood_test_schedule.failed_proceed_booking_alert"),
       );
     } finally {
       setIsBooking(false);
@@ -452,10 +464,18 @@ export default function BloodTestScheduleScreen() {
         <Text style={styles.sectionTitle}>
           {t("blood_test_schedule.select_time_slot")}
         </Text>
-        {slotsLoading ? (
+        {!coords.lat || !coords.long ? (
+          <Text style={styles.optionDesc}>
+            {t("blood_test_schedule.pick_location_for_slots", "Choose your collection address first to see available slots.")}
+          </Text>
+        ) : slotsLoading ? (
           <View style={{ paddingVertical: 20 }}>
             <ActivityIndicator size="small" color={colors.primary} />
           </View>
+        ) : slots.length === 0 ? (
+          <Text style={styles.optionDesc}>
+            {t("blood_test_schedule.no_slots_for_date", "No slots available for this date. Try another day.")}
+          </Text>
         ) : (
           <View style={styles.slotsGrid}>
             {slots.map((slot, idx) => (
@@ -489,75 +509,16 @@ export default function BloodTestScheduleScreen() {
 
   const renderStep2 = () => (
     <ScrollView showsVerticalScrollIndicator={false} style={styles.stepContent}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          {t("blood_test_schedule.collection_type")}
-        </Text>
-        <TouchableOpacity
-          style={[
-            styles.collectionOption,
-            collectionType === "HOME" && styles.collectionOptionActive,
-          ]}
-          onPress={() => setCollectionType("HOME")}
-          activeOpacity={0.75}
-        >
-          <Ionicons
-            name="home"
-            size={20}
-            color={collectionType === "HOME" ? colors.primary : TEXT_MUTED}
-            style={{ marginRight: 12 }}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.optionTitle}>
-              {t("blood_test_schedule.home_collection")}
-            </Text>
-            <Text style={styles.optionDesc}>
-              {t("blood_test_schedule.home_collection_desc")}
-            </Text>
-          </View>
-          <Ionicons
-            name={
-              collectionType === "HOME"
-                ? "checkmark-circle"
-                : "radio-button-off"
-            }
-            size={24}
-            color={collectionType === "HOME" ? colors.primary : "#D1D5DB"}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.collectionOption,
-            collectionType === "LAB" && styles.collectionOptionActive,
-          ]}
-          onPress={() => setCollectionType("LAB")}
-          activeOpacity={0.75}
-        >
-          <Ionicons
-            name="business"
-            size={20}
-            color={collectionType === "LAB" ? colors.primary : TEXT_MUTED}
-            style={{ marginRight: 12 }}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.optionTitle}>
-              {t("blood_test_schedule.lab_visit")}
-            </Text>
-            <Text style={styles.optionDesc}>
-              {t("blood_test_schedule.lab_visit_desc")}
-            </Text>
-          </View>
-          <Ionicons
-            name={
-              collectionType === "LAB" ? "checkmark-circle" : "radio-button-off"
-            }
-            size={24}
-            color={collectionType === "LAB" ? colors.primary : "#D1D5DB"}
-          />
-        </TouchableOpacity>
+      <View style={[styles.collectionOption, styles.collectionOptionActive]}>
+        <Ionicons name="home" size={20} color={colors.primary} style={{ marginRight: 12 }} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.optionTitle}>{t("blood_test_schedule.home_collection")}</Text>
+          <Text style={styles.optionDesc}>{t("blood_test_schedule.home_collection_desc")}</Text>
+        </View>
+        <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
       </View>
 
-      {collectionType === "HOME" && (
+      {(
         <AddressPickerSection
           selectedAddress={selectedAddressData}
           onAddressChange={(addr) => {
@@ -566,10 +527,7 @@ export default function BloodTestScheduleScreen() {
             setSelectedAddress(addrText);
             if (addr.pincode) setPincode(addr.pincode);
             if (addr.landmark) setLandmark(addr.landmark || "");
-            setCoords({
-              lat: String(addr.latitude),
-              long: String(addr.longitude),
-            });
+            setCoordsFrom(addr.latitude, addr.longitude);
             checkServiceability(String(addr.latitude), String(addr.longitude));
           }}
           title={t("blood_test_schedule.collection_address")}
@@ -625,12 +583,10 @@ export default function BloodTestScheduleScreen() {
             {t("blood_test_schedule.collection_type_label")}
           </Text>
           <Text style={styles.summaryValue}>
-            {collectionType === "HOME"
-              ? t("blood_test_schedule.home_collection")
-              : t("blood_test_schedule.lab_visit")}
+            {t("blood_test_schedule.home_collection")}
           </Text>
         </View>
-        {collectionType === "HOME" && !!selectedAddress && (
+        {!!selectedAddress && (
           <View style={[styles.summaryRow, styles.summaryRowDivider]}>
             <Text style={styles.summaryLabel}>
               {t("blood_test_schedule.address")}
@@ -809,6 +765,15 @@ export default function BloodTestScheduleScreen() {
         }}
         initialLat={parseFloat(coords.lat)}
         initialLng={parseFloat(coords.long)}
+      />
+
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        iconName="warning-outline"
+        buttonText="OK"
+        onClose={closeAlert}
       />
     </KeyboardAvoidingView>
   );

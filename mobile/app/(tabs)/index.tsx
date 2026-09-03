@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, useWindowDimensions, Alert, Linking, ActivityIndicator, Animated } from 'react-native';
-import * as Location from 'expo-location';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, useWindowDimensions, Alert, ActivityIndicator, Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -603,6 +602,13 @@ export default function HomeScreen() {
     (async () => {
       let detectedPinCode: string | null = null;
       try {
+        // Only touch GPS if permission is already granted — this passive
+        // background pass must never trigger the OS permission dialog.
+        console.log('[home] refetchAllHomeData background GPS pass — checking status (no prompt)');
+        if ((await locationService.getPermissionStatus()) !== 'granted') {
+          console.log('[home] background GPS pass — not granted, skipping GPS');
+          throw new Error('location-permission-not-granted');
+        }
         const coords = await locationService.getCurrentLocation();
         const address = await locationService.getAddressFromCoordinates(coords);
         const locality = address.split(',')[0] || 'Unknown Location';
@@ -667,9 +673,11 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      console.log('[home] location focus effect fired. selectedCity=', selectedCity);
       (async () => {
         try {
           if (selectedCity) {
+            console.log('[home] selectedCity set — skipping location check entirely');
             setCurrentLocationStr(selectedCity);
             const cityData = cities.find((c: any) => c.name.toLowerCase() === selectedCity.toLowerCase());
             setIsCitySupported(!!cityData && cityData.available);
@@ -678,23 +686,23 @@ export default function HomeScreen() {
 
           setCurrentLocationStr('Loading...');
 
-          const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
-
-          if (status !== 'granted') {
-            if (!canAskAgain) {
-              // Permanently denied — user must enable in Settings
-              setCurrentLocationStr('Enable in Settings');
-              Alert.alert(
-                t('home.location_perm_required_title'),
-                t('home.location_perm_required_msg'),
-                [
-                  { text: t('common.cancel'), style: 'cancel' },
-                  { text: t('home.open_settings'), onPress: () => Linking.openSettings() },
-                ],
-              );
-            } else {
-              setCurrentLocationStr('Location Required');
+          // Passive flow: never re-prompt. Only ask the OS once (genuine first
+          // run), then just read the current status. Re-prompting on every tab
+          // focus is what the "popup keeps appearing" report is about — an
+          // explicit SOS press is the only thing that should ask again.
+          let granted = (await locationService.getPermissionStatus()) === 'granted';
+          console.log('[home] initial granted check:', granted);
+          if (!granted) {
+            const willPrompt = await locationService.shouldPromptOnce();
+            console.log('[home] not granted. shouldPromptOnce =', willPrompt);
+            if (willPrompt) {
+              granted = await locationService.requestPermission();
             }
+          }
+
+          if (!granted) {
+            const st = await locationService.getPermissionStatus();
+            setCurrentLocationStr(st === 'denied' ? 'Enable in Settings' : 'Location Required');
             return;
           }
 

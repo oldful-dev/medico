@@ -81,12 +81,12 @@ export default function CartOrderSummaryScreen() {
             if (res.success && res.data?.valid) {
                 setDiscount(res.data.discount);
                 setCouponApplied(true);
-                showAlert('Success', `Coupon applied! You saved ₹${res.data.discount}`);
+                showAlert(t('common.success'), t('blood_test_summary.coupon_applied_msg', { discount: res.data.discount }));
             } else {
-                showAlert('Invalid', 'This coupon is not valid');
+                showAlert(t('blood_test_summary.invalid_title'), t('blood_test_summary.coupon_invalid_msg'));
             }
         } catch {
-            showAlert('Error', 'Could not apply coupon');
+            showAlert(t('common.error'), t('blood_test_summary.coupon_error_msg'));
         }
     };
 
@@ -111,7 +111,7 @@ export default function CartOrderSummaryScreen() {
 
     const handlePayment = async () => {
         if (!bookingData) {
-            showAlert('Error', 'Invalid booking data');
+            showAlert(t('common.error'), t('blood_test_summary.invalid_booking_msg'));
             return;
         }
 
@@ -122,15 +122,12 @@ export default function CartOrderSummaryScreen() {
             const finalBookingData = { ...bookingData, paymentMethod: selectedMethod };
             const bookingRes = await labService.holdBooking(finalBookingData);
 
-            if (!bookingRes) {
-                showAlert('Error', 'Could not create booking');
-                return;
-            }
-
             const bookingId = (bookingRes as any)?.id;
-
             if (!bookingId) {
-                showAlert('Error', `Could not create booking`);
+                showAlert(
+                    t('blood_test_summary.booking_failed_title'),
+                    (bookingRes as any)?.message || t('blood_test_summary.slot_unavailable_msg'),
+                );
                 return;
             }
 
@@ -147,7 +144,7 @@ export default function CartOrderSummaryScreen() {
             });
 
             if (!payRes.success || !payRes.data) {
-                showAlert('Error', 'Could not initiate payment');
+                showAlert(t('common.error'), t('blood_test_summary.payment_initiate_failed_msg'));
                 return;
             }
 
@@ -193,12 +190,12 @@ export default function CartOrderSummaryScreen() {
             if (verifyRes.success) {
                 handlePaymentSuccess(bookingId);
             } else {
-                showAlert('Error', 'Payment verification failed');
+                showAlert(t('common.error'), t('blood_test_summary.payment_verification_failed_msg'));
             }
         } catch (error: any) {
             if (error.code !== 'E_CANCELED') {
-                const errorMsg = error.details?.message || error.message || 'Payment failed';
-                showAlert('Error', errorMsg);
+                const errorMsg = error.details?.message || error.message || t('blood_test_summary.payment_failed_msg');
+                showAlert(t('common.error'), errorMsg);
             }
         } finally {
             setIsLoading(false);
@@ -215,7 +212,7 @@ export default function CartOrderSummaryScreen() {
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#E8E8E8' : TEXT_DARK} />
                 </TouchableOpacity>
-                <Text style={dynamicStyles.headerTitle}>Order Summary</Text>
+                <Text style={dynamicStyles.headerTitle}>{t('blood_test_summary.header')}</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -223,9 +220,9 @@ export default function CartOrderSummaryScreen() {
                 <View style={dynamicStyles.card}>
                     <View style={dynamicStyles.cardHeader}>
                         <View style={{ flex: 1 }}>
-                            <Text style={dynamicStyles.testName}>{category} Checkout</Text>
+                            <Text style={dynamicStyles.testName}>{t('cart.checkout_category', { category })}</Text>
                             <Text style={dynamicStyles.parametersText}>
-                                {bookingData?.packages?.length || 0} items
+                                {bookingData?.packages?.length || 0} {t('cart.items')}
                             </Text>
                         </View>
                         <View style={dynamicStyles.priceTag}>
@@ -246,7 +243,7 @@ export default function CartOrderSummaryScreen() {
                     <View style={dynamicStyles.detailRow}>
                         <View style={dynamicStyles.detailIcon}><Ionicons name="calendar" size={16} color={colors.primary} /></View>
                         <View style={{ flex: 1 }}>
-                            <Text style={dynamicStyles.detailLabel}>Date & Time</Text>
+                            <Text style={dynamicStyles.detailLabel}>{t('blood_test_summary.date_time')}</Text>
                             <Text style={dynamicStyles.detailValue}>{bookingData?.slot?.date}, {bookingData?.slot?.time}</Text>
                         </View>
                     </View>
@@ -255,21 +252,21 @@ export default function CartOrderSummaryScreen() {
 
                     <View style={dynamicStyles.detailRow}>
                         <View style={dynamicStyles.detailIcon}>
-                            <Ionicons name={params.collectionType === 'LAB' ? 'business' : 'home'} size={16} color={colors.primary} />
+                            <Ionicons name="home" size={16} color={colors.primary} />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={dynamicStyles.detailLabel}>Collection Type</Text>
-                            <Text style={dynamicStyles.detailValue}>{params.collectionType === 'LAB' ? 'Lab Visit' : 'Home Collection'}</Text>
+                            <Text style={dynamicStyles.detailLabel}>{t('blood_test_summary.collection_type')}</Text>
+                            <Text style={dynamicStyles.detailValue}>{t('blood_test_summary.home_collection')}</Text>
                         </View>
                     </View>
 
-                    {params.collectionType !== 'LAB' && bookingData?.address?.line1 && (
+                    {bookingData?.address?.line1 && (
                         <>
                             <View style={dynamicStyles.divider} />
                             <View style={dynamicStyles.detailRow}>
                                 <View style={dynamicStyles.detailIcon}><Ionicons name="location" size={16} color={colors.primary} /></View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={dynamicStyles.detailLabel}>Address</Text>
+                                    <Text style={dynamicStyles.detailLabel}>{t('blood_test_summary.address')}</Text>
                                     <Text style={dynamicStyles.detailValue} numberOfLines={2}>
                                         {bookingData?.address?.line1}, {bookingData?.address?.pincode}
                                     </Text>
@@ -281,31 +278,31 @@ export default function CartOrderSummaryScreen() {
 
                 <View style={dynamicStyles.card}>
                     <View style={dynamicStyles.breakdownRow}>
-                        <Text style={dynamicStyles.breakdownLabel}>Subtotal</Text>
+                        <Text style={dynamicStyles.breakdownLabel}>{t('blood_test_summary.subtotal')}</Text>
                         <Text style={dynamicStyles.breakdownValue}>₹{baseAmount.toFixed(2)}</Text>
                     </View>
                     <View style={dynamicStyles.breakdownRow}>
-                        <Text style={dynamicStyles.breakdownLabel}>GST (18%)</Text>
+                        <Text style={dynamicStyles.breakdownLabel}>{t('blood_test_summary.gst')}</Text>
                         <Text style={dynamicStyles.breakdownValue}>₹{gst.toFixed(2)}</Text>
                     </View>
                     {discount > 0 && (
                         <View style={dynamicStyles.breakdownRow}>
-                            <Text style={[dynamicStyles.breakdownLabel, { color: colors.primary }]}>Discount</Text>
+                            <Text style={[dynamicStyles.breakdownLabel, { color: colors.primary }]}>{t('blood_test_summary.discount')}</Text>
                             <Text style={[dynamicStyles.breakdownValue, { color: colors.primary }]}>-₹{discount.toFixed(2)}</Text>
                         </View>
                     )}
                     <View style={dynamicStyles.breakdownDivider} />
                     <View style={dynamicStyles.totalRow}>
-                        <Text style={dynamicStyles.totalLabel}>Total Amount</Text>
+                        <Text style={dynamicStyles.totalLabel}>{t('blood_test_summary.total')}</Text>
                         <Text style={dynamicStyles.totalValue}>₹{totalAmount.toFixed(2)}</Text>
                     </View>
                 </View>
 
                 <View style={dynamicStyles.card}>
-                    <Text style={dynamicStyles.sectionTitle}>Apply Coupon Code</Text>
+                    <Text style={dynamicStyles.sectionTitle}>{t('blood_test_summary.coupon_label')}</Text>
                     <View style={dynamicStyles.couponRow}>
                         <TextInput
-                            placeholder="Enter coupon code"
+                            placeholder={t('blood_test_summary.coupon_placeholder')}
                             placeholderTextColor={isDarkMode ? '#94A3B8' : TEXT_MUTED}
                             value={couponCode}
                             onChangeText={setCouponCode}
@@ -313,13 +310,13 @@ export default function CartOrderSummaryScreen() {
                             style={dynamicStyles.couponInput}
                         />
                         <TouchableOpacity style={[dynamicStyles.applyBtn, couponApplied && dynamicStyles.applyBtnApplied]} onPress={handleApplyCoupon} disabled={couponApplied}>
-                            <Text style={[dynamicStyles.applyBtnText, couponApplied && dynamicStyles.applyBtnTextApplied]}>{couponApplied ? '✓' : 'Apply'}</Text>
+                            <Text style={[dynamicStyles.applyBtnText, couponApplied && dynamicStyles.applyBtnTextApplied]}>{couponApplied ? '✓' : t('blood_test_summary.apply')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 <View style={dynamicStyles.card}>
-                    <Text style={dynamicStyles.sectionTitle}>Payment Method</Text>
+                    <Text style={dynamicStyles.sectionTitle}>{t('blood_test_summary.payment_method')}</Text>
                     {PAYMENT_METHODS.map(m => (
                         <TouchableOpacity key={m.type} style={[dynamicStyles.methodRow, selectedMethod === m.type && dynamicStyles.methodRowActive]} onPress={() => setSelectedMethod(m.type)} activeOpacity={0.8}>
                             <Ionicons name={m.icon as any} size={20} color={selectedMethod === m.type ? colors.primary : (isDarkMode ? '#94A3B8' : TEXT_MUTED)} />
@@ -334,7 +331,7 @@ export default function CartOrderSummaryScreen() {
                 <TouchableOpacity style={[dynamicStyles.payBtn, isLoading && dynamicStyles.payBtnDisabled]} onPress={handlePayment} disabled={isLoading}>
                     {isLoading ? <ActivityIndicator size="small" color="#FFFFFF" /> : (
                         <Text style={dynamicStyles.payBtnText}>
-                            {selectedMethod === 'CASH' ? 'Confirm Booking' : `Confirm & Pay ₹${totalAmount.toFixed(2)}`}
+                            {selectedMethod === 'CASH' ? t('blood_test_summary.confirm_booking') : t('blood_test_summary.confirm_pay') + ' ₹' + totalAmount.toFixed(2)}
                         </Text>
                     )}
                 </TouchableOpacity>
@@ -345,7 +342,7 @@ export default function CartOrderSummaryScreen() {
                 title={alertConfig.title}
                 message={alertConfig.message}
                 iconName="alert-circle-outline"
-                buttonText="OK"
+                buttonText={t('common.ok')}
                 onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
             />
         </KeyboardAvoidingView>

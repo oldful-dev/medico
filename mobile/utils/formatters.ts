@@ -5,6 +5,18 @@ export const formatters = {
     return `₹${amount.toLocaleString('en-IN')}`;
   },
 
+  /** Whole years from an ISO date-of-birth string. 0 if missing/unparseable. */
+  ageFromDob: (dob: string | undefined | null): number => {
+    if (!dob) return 0;
+    const birth = new Date(dob);
+    if (isNaN(birth.getTime())) return 0;
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    const m = now.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+    return age > 0 ? age : 0;
+  },
+
   phoneNumber: (phone: string): string => {
     const cleaned = phone.replace(/\D/g, '');
     if (cleaned.length === 10) {

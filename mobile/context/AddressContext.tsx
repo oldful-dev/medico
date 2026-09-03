@@ -333,6 +333,7 @@ export function AddressProvider({ children }: { children: ReactNode }) {
 
     const detectCurrentLocationSnapshot = useCallback(async (): Promise<ActiveAddressSnapshot | null> => {
         try {
+            console.log('[AddressContext] detectCurrentLocationSnapshot — will requestPermission (prompt if needed)');
             const hasPermission = await locationService.requestPermission();
             if (!hasPermission) return null;
             const coords = await locationService.getCurrentLocation();

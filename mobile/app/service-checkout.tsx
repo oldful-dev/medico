@@ -703,6 +703,12 @@ export default function ServiceCheckoutScreen() {
   const sessionBookingId = useRef<string | null>(null);
   const pendingOrderId = useRef<string | null>(null);
 
+  const clearPendingOrder = async () => {
+    await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
+    await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
+    await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_AT);
+  };
+
   useEffect(() => {
     const checkPendingOrder = async () => {
       try {
@@ -712,6 +718,20 @@ export default function ServiceCheckoutScreen() {
         const pendingBookingId = await storageService.getItem(
           STORAGE_KEYS.PENDING_BOOKING_ID,
         );
+        const pendingAt = Number(await storageService.getItem(STORAGE_KEYS.PENDING_ORDER_AT)) || 0;
+        const isExpired = pendingAt > 0 && Date.now() - pendingAt > 60 * 60 * 1000;
+
+        // This screen always starts a NEW order (bookingPayload / subscriptionId
+        // / meetupId — never an existing bookingId). So any leftover pending
+        // keys belong to a previous order and must be discarded, not recovered
+        // here — recovering them charged the user the previous order's amount.
+        const isFreshOrder = !!(params.bookingPayload || params.subscriptionId || params.meetupId || params.amount);
+
+        if (pendingOrderIdStr && pendingBookingId && (isExpired || isFreshOrder)) {
+          await clearPendingOrder();
+          return;
+        }
+
         if (pendingOrderIdStr && pendingBookingId) {
           setPendingRecovery(true);
           sessionBookingId.current = pendingBookingId;
@@ -722,12 +742,7 @@ export default function ServiceCheckoutScreen() {
             "Check Status",
             async () => {
               setAlertConfig(prev => ({ ...prev, visible: false }));
-              await storageService.removeItem(
-                STORAGE_KEYS.PENDING_ORDER_ID,
-              );
-              await storageService.removeItem(
-                STORAGE_KEYS.PENDING_BOOKING_ID,
-              );
+              await clearPendingOrder();
               router.replace({
                 pathname: "/service-confirmation",
                 params: { bookingId: pendingBookingId },
@@ -736,12 +751,7 @@ export default function ServiceCheckoutScreen() {
             "Dismiss",
             async () => {
               setAlertConfig(prev => ({ ...prev, visible: false }));
-              await storageService.removeItem(
-                STORAGE_KEYS.PENDING_ORDER_ID,
-              );
-              await storageService.removeItem(
-                STORAGE_KEYS.PENDING_BOOKING_ID,
-              );
+              await clearPendingOrder();
               setPendingRecovery(false);
             }
           );
@@ -751,7 +761,7 @@ export default function ServiceCheckoutScreen() {
       }
     };
     checkPendingOrder();
-  }, [router]);
+  }, [router, params.bookingPayload, params.subscriptionId, params.meetupId, params.amount]);
 
   // ─── Apply coupon ───────────────────────────────────────────────────
   const handleApplyCoupon = useCallback(async () => {
@@ -790,11 +800,6 @@ export default function ServiceCheckoutScreen() {
     setCouponApplied(false);
     setDiscount(0);
     setFinalAmount(amountWithTaxAndFee);
-  };
-
-  const clearPendingOrder = async () => {
-    await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
-    await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
   };
 
   const cancelPaymentOnBackend = async () => {
@@ -921,6 +926,7 @@ export default function ServiceCheckoutScreen() {
 
         if (isZeroPayment) {
           setFlowState("success");
+          await clearPendingOrder();
           triggerAlert(
             "Request Submitted",
             category === "MEDICINES"
@@ -943,6 +949,9 @@ export default function ServiceCheckoutScreen() {
 
         if (selectedMethod === "CASH") {
           setFlowState("success");
+          // COD has no Razorpay order — clear any pending keys so the next
+          // checkout doesn't try to recover this order or its amount.
+          await clearPendingOrder();
           triggerAlert(
             "Booking Received",
             "Your service has been scheduled. Please pay ₹" +
@@ -1020,6 +1029,7 @@ export default function ServiceCheckoutScreen() {
         }
 
         await storageService.setItem(STORAGE_KEYS.PENDING_ORDER_ID, orderId);
+        await storageService.setItem(STORAGE_KEYS.PENDING_ORDER_AT, String(Date.now()));
         if (sessionBookingId.current) {
           await storageService.setItem(
             STORAGE_KEYS.PENDING_BOOKING_ID,
