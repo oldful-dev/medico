@@ -1497,14 +1497,14 @@
     "category_meal_service": "जेवण सेवा"
   },
   "rate_us": {
-    "header": "आम्हाला रेट करा",
-    "title": "Ayuxa आवडत आहे?",
-    "description": "तुमचा अभिप्राय आम्हाला आमच्या सेवा सुधारण्यास आणि अधिक कुटुंबांना मदत करण्यास मदत करतो. तुम्हाला Ayuxa चा वापर आवडला असल्यास, कृपया आम्हाला Play Store वर रेट करण्यासाठी थोडा वेळ काढा.",
-    "why_title": "तुमचा अभिप्राय का महत्त्वाचा आहे",
-    "reason1": "आम्हाला ज्येष्ठ नागरिक काळजी सेवा सुधारण्यास मदत करतो",
-    "reason2": "इतर कुटुंबांना विश्वासू मदत शोधण्यात मदत करतो",
-    "reason3": "आम्हाला सेवांचा उच्च दर्जा राखण्यास मदत करतो",
-    "cta": "Play Store वर Ayuxa ला रेट करा"
+    "header_title": "Ayuxa रेट करा",
+    "enjoying_title": "Ayuxa आवडत आहे का?",
+    "description": "तुमचा अभिप्राय आम्हाला सेवा सुधारण्यास मदत करतो. कृपया Play Store वर आम्हाला रेट करा.",
+    "why_matters_title": "तुमचा अभिप्राय का महत्त्वाचा आहे",
+    "reason_1": "वृद्ध काळजी सेवा सुधारण्यास मदत",
+    "reason_2": "इतर कुटुंबांना विश्वासार्ह मदत शोधण्यास मदत",
+    "reason_3": "उच्च सेवा मानके राखण्यास मदत",
+    "rate_button": "Play Store वर Ayuxa रेट करा"
   },
   "legal": {
     "failed_load": "कागदपत्र लोड करता आले नाही",
@@ -3527,5 +3527,32 @@
     "amount_paid": "भरलेली रक्कम",
     "view_my_bookings": "माझ्या बुकिंग पहा",
     "back_to_home": "होमवर जा"
+  },
+  "my_prescriptions": {
+    "header_title": "माझी प्रिस्क्रिप्शन्स",
+    "no_prescriptions": "प्रिस्क्रिप्शन नाही",
+    "empty_desc": "तुमची प्रिस्क्रिप्शन्स इथे अपलोड करा.",
+    "upload_prescription": "प्रिस्क्रिप्शन अपलोड करा",
+    "permission_required": "परवानगी आवश्यक",
+    "gallery_permission_msg": "अपलोडसाठी गॅलरी अ‍ॅक्सेस हवा.",
+    "upload_success": "प्रिस्क्रिप्शन अपलोड झाले.",
+    "upload_failed": "अपलोड अयशस्वी.",
+    "cannot_open_file": "ही फाइल उघडता आली नाही."
+  },
+  "plan_adjustment": {
+    "change_plan": "प्लॅन बदला",
+    "your_new_plan": "तुमचा नवीन प्लॅन",
+    "switch_subtitle": "{{plan}}मध्ये बदलल्यास काय मिळेल पहा",
+    "plan_features": "{{plan}} वैशिष्ट्ये",
+    "review_your_change": "बदलाचे पुनरावलोकन करा",
+    "new_plan_price": "नवीन प्लॅन किंमत:",
+    "unused_days_credit": "न वापरलेले दिवस क्रेडिट:",
+    "amount_to_pay": "देय रक्कम:",
+    "downgrade_unavailable": "डाउनग्रेड उपलब्ध नाही",
+    "proceed_to_pay": "₹{{amount}} भरा",
+    "downgrade_blocked_msg": "उर्वरित क्रेडिट निवडलेल्या प्लॅन किमतीपेक्षा जास्त असल्याने डाउनग्रेड उपलब्ध नाही.",
+    "load_failed": "डेटा लोड होऊ शकला नाही",
+    "change_to_label": "{{plan}}मध्ये बदला",
+    "new_plan_fallback": "नवीन प्लॅन"
   }
 }

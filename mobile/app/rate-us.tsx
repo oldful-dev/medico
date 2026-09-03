@@ -4,9 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 export default function RateUsScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -26,7 +28,7 @@ export default function RateUsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Rate Ayuxa</Text>
+                <Text style={styles.headerTitle}>{t('rate_us.header_title')}</Text>
             </View>
 
             <View style={styles.contentCard}>
@@ -39,27 +41,27 @@ export default function RateUsScreen() {
                         ))}
                     </View>
 
-                    <Text style={styles.pageTitle}>Enjoying Ayuxa?</Text>
+                    <Text style={styles.pageTitle}>{t('rate_us.enjoying_title')}</Text>
 
                     <Text style={styles.pageDescription}>
-                        Your feedback helps us improve our services and support more families. If you enjoyed using Ayuxa, please take a moment to rate us on the Play Store.
+                        {t('rate_us.description')}
                     </Text>
 
                     {/* Why it matters */}
                     <View style={styles.infoCard}>
-                        <Text style={styles.sectionTitle}>Why Your Feedback Matters</Text>
+                        <Text style={styles.sectionTitle}>{t('rate_us.why_matters_title')}</Text>
 
                         <View style={styles.listItem}>
                             <Ionicons name="heart" size={18} color={Colors.primary} />
-                            <Text style={styles.listText}>Helps us improve elder care services</Text>
+                            <Text style={styles.listText}>{t('rate_us.reason_1')}</Text>
                         </View>
                         <View style={styles.listItem}>
                             <Ionicons name="people" size={18} color={Colors.primary} />
-                            <Text style={styles.listText}>Helps other families discover trusted support</Text>
+                            <Text style={styles.listText}>{t('rate_us.reason_2')}</Text>
                         </View>
                         <View style={styles.listItem}>
                             <Ionicons name="shield-checkmark" size={18} color={Colors.primary} />
-                            <Text style={styles.listText}>Helps us maintain high service standards</Text>
+                            <Text style={styles.listText}>{t('rate_us.reason_3')}</Text>
                         </View>
                     </View>
 
@@ -73,7 +75,7 @@ export default function RateUsScreen() {
                         onPress={handleRateApp}
                     >
                         <Ionicons name="logo-google-playstore" size={20} color={Colors.textWhite} style={{ marginRight: 8 }} />
-                        <Text style={styles.rateButtonText}>Rate Ayuxa on Play Store</Text>
+                        <Text style={styles.rateButtonText}>{t('rate_us.rate_button')}</Text>
                     </TouchableOpacity>
 
                 </ScrollView>

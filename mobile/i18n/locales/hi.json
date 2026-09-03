@@ -1497,14 +1497,14 @@
     "category_meal_service": "भोजन"
   },
   "rate_us": {
-    "header": "रेट करें",
-    "title": "Ayuxa पसंद आया?",
-    "description": "आपकी राय सेवा सुधारने में मदद करेगी। Play Store पर रेट करें।",
-    "why_title": "क्यों ज़रूरी",
-    "reason1": "वरिष्ठ देखभाल सेवा सुधार",
-    "reason2": "भरोसेमंद सहायता ढूँढ़ने में मदद",
-    "reason3": "उच्च सेवा मानक बनाए रखना",
-    "cta": "Play Store पर रेट करें"
+    "header_title": "Ayuxa को रेट करें",
+    "enjoying_title": "Ayuxa पसंद आ रहा है?",
+    "description": "आपकी प्रतिक्रिया हमें सेवाएं बेहतर बनाने में मदद करती है। कृपया Play Store पर हमें रेट करें।",
+    "why_matters_title": "आपकी प्रतिक्रिया क्यों मायने रखती है",
+    "reason_1": "बुजुर्ग देखभाल सेवाएं बेहतर बनाने में मदद",
+    "reason_2": "अन्य परिवारों को भरोसेमंद सहायता खोजने में मदद",
+    "reason_3": "उच्च सेवा मानक बनाए रखने में मदद",
+    "rate_button": "Play Store पर रेट करें"
   },
   "legal": {
     "failed_load": "लोड नहीं हुआ",
@@ -3527,5 +3527,32 @@
     "amount_paid": "भुगतान राशि",
     "view_my_bookings": "मेरी बुकिंग देखें",
     "back_to_home": "होम पर जाएं"
+  },
+  "my_prescriptions": {
+    "header_title": "मेरे प्रिस्क्रिप्शन",
+    "no_prescriptions": "कोई प्रिस्क्रिप्शन नहीं",
+    "empty_desc": "अपने प्रिस्क्रिप्शन व डिस्चार्ज सारांश यहाँ अपलोड करें।",
+    "upload_prescription": "प्रिस्क्रिप्शन अपलोड करें",
+    "permission_required": "अनुमति आवश्यक",
+    "gallery_permission_msg": "प्रिस्क्रिप्शन अपलोड के लिए गैलरी एक्सेस चाहिए।",
+    "upload_success": "प्रिस्क्रिप्शन अपलोड हुआ।",
+    "upload_failed": "अपलोड विफल।",
+    "cannot_open_file": "यह फ़ाइल खोल नहीं सके।"
+  },
+  "plan_adjustment": {
+    "change_plan": "प्लान बदलें",
+    "your_new_plan": "आपका नया प्लान",
+    "switch_subtitle": "{{plan}} में बदलने पर क्या मिलेगा देखें",
+    "plan_features": "{{plan}} सुविधाएं",
+    "review_your_change": "बदलाव की समीक्षा करें",
+    "new_plan_price": "नई प्लान कीमत:",
+    "unused_days_credit": "अप्रयुक्त दिन क्रेडिट:",
+    "amount_to_pay": "देय राशि:",
+    "downgrade_unavailable": "डाउनग्रेड उपलब्ध नहीं",
+    "proceed_to_pay": "₹{{amount}} भुगतान करें",
+    "downgrade_blocked_msg": "शेष क्रेडिट चुने गए प्लान मूल्य से अधिक होने के कारण डाउनग्रेड उपलब्ध नहीं है।",
+    "load_failed": "डेटा लोड नहीं हो सका",
+    "change_to_label": "{{plan}} में बदलें",
+    "new_plan_fallback": "नया प्लान"
   }
 }

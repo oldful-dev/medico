@@ -1,21 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { apiClient } from '@/services/api/apiClient';
 import { useUser } from '@/context/UserContext';
 import { planService, Plan } from '@/services/api/planService';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 export default function AdjustmentScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const colors = useThemeColors();
     const styles = makeStyles(colors);
     const { profile } = useUser();
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'alert-circle-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'alert-circle-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     const { newPlanId, newBillingCycle, currentSubId } = useLocalSearchParams<{
         newPlanId: string;
@@ -49,7 +61,7 @@ export default function AdjustmentScreen() {
                 if (!mathRes.success) {
                     if (mathRes.downgradeBlocked) {
                         setIsDowngradeBlocked(true);
-                        setBlockMessage(mathRes.message || 'Downgrade not available because remaining credit exceeds selected plan value.');
+                        setBlockMessage(mathRes.message || t('plan_adjustment.downgrade_blocked_msg'));
                         setAdjustmentData({
                             newPlanPrice: mathRes.newPlanPrice,
                             proRataCredit: mathRes.proRataCredit,
@@ -63,7 +75,7 @@ export default function AdjustmentScreen() {
                     setAdjustmentData(mathRes.data);
                 }
             } catch (err: any) {
-                Alert.alert('Error', err.message || 'Failed to load adjustment data');
+                triggerAlert(t('common.error'), err.message || t('plan_adjustment.load_failed'));
                 router.back();
             } finally {
                 setIsLoading(false);
@@ -81,7 +93,7 @@ export default function AdjustmentScreen() {
                 upgradeNewPlanId: newPlanId,
                 upgradeBillingCycle: newBillingCycle,
                 amount: String(adjustmentData.amountToPay),
-                label: `Change to ${targetPlan?.name || 'New Plan'}`,
+                label: t('plan_adjustment.change_to_label', { plan: targetPlan?.name || t('plan_adjustment.new_plan_fallback') }),
                 userName: profile?.name ?? '',
                 phone: profile?.phone ?? '',
                 email: profile?.email ?? '',
@@ -108,18 +120,18 @@ export default function AdjustmentScreen() {
                 <TouchableOpacity style={styles.backButton} onPress={() => step === 2 && !isDowngradeBlocked ? setStep(1) : router.back()}>
                     <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Change Plan</Text>
+                <Text style={styles.headerTitle}>{t('plan_adjustment.change_plan')}</Text>
             </View>
 
             <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 120 }}>
                 {step === 1 && !isDowngradeBlocked ? (
                     <View>
-                        <Text style={styles.title}>Your New Plan</Text>
-                        <Text style={styles.subtitle}>See what you get when you switch to the {targetPlan?.name}</Text>
-                        
+                        <Text style={styles.title}>{t('plan_adjustment.your_new_plan')}</Text>
+                        <Text style={styles.subtitle}>{t('plan_adjustment.switch_subtitle', { plan: targetPlan?.name })}</Text>
+
                         <View style={styles.compareCard}>
                             <View style={styles.compareHeader}>
-                                <Text style={styles.compareTitle}>{targetPlan?.name} Features</Text>
+                                <Text style={styles.compareTitle}>{t('plan_adjustment.plan_features', { plan: targetPlan?.name })}</Text>
                             </View>
                             {targetPlan?.benefits?.split(',').map((benefit, idx) => (
                                 <View key={idx} style={styles.featureRow}>
@@ -131,18 +143,18 @@ export default function AdjustmentScreen() {
                     </View>
                 ) : (
                     <View>
-                        <Text style={styles.title}>Review Your Change</Text>
-                        
+                        <Text style={styles.title}>{t('plan_adjustment.review_your_change')}</Text>
+
                         <View style={styles.card}>
                             <View style={styles.row}>
-                                <Text style={styles.label}>New Plan Price:</Text>
+                                <Text style={styles.label}>{t('plan_adjustment.new_plan_price')}</Text>
                                 <Text style={styles.value}>₹{adjustmentData?.newPlanPrice?.toLocaleString()}</Text>
                             </View>
-                            
+
                             <View style={styles.divider} />
-                            
+
                             <View style={styles.row}>
-                                <Text style={styles.label}>Unused Days Credit:</Text>
+                                <Text style={styles.label}>{t('plan_adjustment.unused_days_credit')}</Text>
                                 <Text style={[styles.value, { color: '#0EDD94' }]}>
                                     - ₹{adjustmentData?.proRataCredit?.toLocaleString()}
                                 </Text>
@@ -159,7 +171,7 @@ export default function AdjustmentScreen() {
                                 </View>
                             ) : (
                                 <View style={styles.row}>
-                                    <Text style={styles.totalLabel}>Amount to Pay:</Text>
+                                    <Text style={styles.totalLabel}>{t('plan_adjustment.amount_to_pay')}</Text>
                                     <Text style={styles.totalValue}>₹{adjustmentData?.amountToPay?.toLocaleString()}</Text>
                                 </View>
                             )}
@@ -171,7 +183,7 @@ export default function AdjustmentScreen() {
             <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 {step === 1 && !isDowngradeBlocked ? (
                     <TouchableOpacity style={styles.payButton} onPress={() => setStep(2)}>
-                        <Text style={styles.payButtonText}>Continue</Text>
+                        <Text style={styles.payButtonText}>{t('common.continue')}</Text>
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity 
@@ -183,12 +195,20 @@ export default function AdjustmentScreen() {
                             <ActivityIndicator size="small" color={colors.textWhite} />
                         ) : (
                             <Text style={styles.payButtonText}>
-                                {isDowngradeBlocked ? 'Downgrade Unavailable' : `Proceed to Pay ₹${adjustmentData?.amountToPay?.toLocaleString()}`}
+                                {isDowngradeBlocked ? t('plan_adjustment.downgrade_unavailable') : t('plan_adjustment.proceed_to_pay', { amount: adjustmentData?.amountToPay?.toLocaleString() })}
                             </Text>
                         )}
                     </TouchableOpacity>
                 )}
             </View>
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

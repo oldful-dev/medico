@@ -752,6 +752,43 @@
     "view_my_bookings": "View My Bookings",
     "back_to_home": "Back to Home"
   },
+  "my_prescriptions": {
+    "header_title": "My Prescriptions",
+    "no_prescriptions": "No Prescriptions",
+    "empty_desc": "Upload your prescriptions and discharge summaries here.",
+    "upload_prescription": "Upload Prescription",
+    "permission_required": "Permission Required",
+    "gallery_permission_msg": "Gallery access is needed to upload prescriptions.",
+    "upload_success": "Prescription uploaded.",
+    "upload_failed": "Upload failed.",
+    "cannot_open_file": "Cannot open this file."
+  },
+  "plan_adjustment": {
+    "change_plan": "Change Plan",
+    "your_new_plan": "Your New Plan",
+    "switch_subtitle": "See what you get when you switch to the {{plan}}",
+    "plan_features": "{{plan}} Features",
+    "review_your_change": "Review Your Change",
+    "new_plan_price": "New Plan Price:",
+    "unused_days_credit": "Unused Days Credit:",
+    "amount_to_pay": "Amount to Pay:",
+    "downgrade_unavailable": "Downgrade Unavailable",
+    "proceed_to_pay": "Proceed to Pay ₹{{amount}}",
+    "downgrade_blocked_msg": "Downgrade not available because remaining credit exceeds selected plan value.",
+    "load_failed": "Failed to load adjustment data",
+    "change_to_label": "Change to {{plan}}",
+    "new_plan_fallback": "New Plan"
+  },
+  "rate_us": {
+    "header_title": "Rate Ayuxa",
+    "enjoying_title": "Enjoying Ayuxa?",
+    "description": "Your feedback helps us improve our services and support more families. If you enjoyed using Ayuxa, please take a moment to rate us on the Play Store.",
+    "why_matters_title": "Why Your Feedback Matters",
+    "reason_1": "Helps us improve elder care services",
+    "reason_2": "Helps other families discover trusted support",
+    "reason_3": "Helps us maintain high service standards",
+    "rate_button": "Rate Ayuxa on Play Store"
+  },
   "sos": {
     "title": "My SOS Alerts",
     "slide_to_call": "Slide to Call for Help",

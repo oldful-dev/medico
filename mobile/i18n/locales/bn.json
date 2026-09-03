@@ -1404,14 +1404,14 @@
     "category_meal_service": "খাবার সার্ভিস"
   },
   "rate_us": {
-    "header": "রেট করুন",
-    "title": "Ayuxa ভালো লাগছে?",
-    "description": "মতামত আমাদের মান বাড়াতে সাহায্য করে। ভালো লাগলে Play Store-এ রেট করুন।",
-    "why_title": "মতামত কেন জরুরি",
-    "reason1": "বয়স্কদের যত্ন আরও উন্নত করতে",
-    "reason2": "অন্য পরিবারকে সাহায্য করতে",
-    "reason3": "সার্ভিসের উচ্চ মান বজায় রাখতে",
-    "cta": "Play Store-এ রেট করুন"
+    "header_title": "Ayuxa রেট করুন",
+    "enjoying_title": "Ayuxa ভালো লাগছে?",
+    "description": "আপনার মতামত আমাদের সেবা উন্নত করতে সাহায্য করে। Play Store-এ আমাদের রেট করুন।",
+    "why_matters_title": "আপনার মতামত কেন গুরুত্বপূর্ণ",
+    "reason_1": "প্রবীণ পরিচর্যা সেবা উন্নত করতে সাহায্য করে",
+    "reason_2": "অন্য পরিবারদের বিশ্বস্ত সহায়তা খুঁজে পেতে সাহায্য করে",
+    "reason_3": "উচ্চ সেবার মান বজায় রাখতে সাহায্য করে",
+    "rate_button": "Play Store-এ Ayuxa রেট করুন"
   },
   "legal": {
     "failed_load": "ফাইল লোড ব্যর্থ",
@@ -3527,5 +3527,32 @@
     "amount_paid": "প্রদত্ত পরিমাণ",
     "view_my_bookings": "আমার বুকিং দেখুন",
     "back_to_home": "হোমে ফিরুন"
+  },
+  "my_prescriptions": {
+    "header_title": "আমার প্রেসক্রিপশন",
+    "no_prescriptions": "কোনো প্রেসক্রিপশন নেই",
+    "empty_desc": "আপনার প্রেসক্রিপশন ও ডিসচার্জ সামারি এখানে আপলোড করুন।",
+    "upload_prescription": "প্রেসক্রিপশন আপলোড করুন",
+    "permission_required": "অনুমতি প্রয়োজন",
+    "gallery_permission_msg": "আপলোডের জন্য গ্যালারি অ্যাক্সেস প্রয়োজন।",
+    "upload_success": "প্রেসক্রিপশন আপলোড হয়েছে।",
+    "upload_failed": "আপলোড ব্যর্থ।",
+    "cannot_open_file": "এই ফাইল খোলা যায়নি।"
+  },
+  "plan_adjustment": {
+    "change_plan": "প্ল্যান পরিবর্তন করুন",
+    "your_new_plan": "আপনার নতুন প্ল্যান",
+    "switch_subtitle": "{{plan}}-এ পরিবর্তনে কী পাবেন দেখুন",
+    "plan_features": "{{plan}} বৈশিষ্ট্য",
+    "review_your_change": "পরিবর্তন পর্যালোচনা করুন",
+    "new_plan_price": "নতুন প্ল্যান মূল্য:",
+    "unused_days_credit": "অব্যবহৃত দিনের ক্রেডিট:",
+    "amount_to_pay": "প্রদেয় পরিমাণ:",
+    "downgrade_unavailable": "ডাউনগ্রেড উপলব্ধ নয়",
+    "proceed_to_pay": "₹{{amount}} পরিশোধ করুন",
+    "downgrade_blocked_msg": "অবশিষ্ট ক্রেডিট নির্বাচিত প্ল্যানের মূল্যের বেশি হওয়ায় ডাউনগ্রেড উপলব্ধ নয়।",
+    "load_failed": "ডেটা লোড করা যায়নি",
+    "change_to_label": "{{plan}}-এ পরিবর্তন করুন",
+    "new_plan_fallback": "নতুন প্ল্যান"
   }
 }

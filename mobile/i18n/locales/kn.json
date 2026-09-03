@@ -1404,14 +1404,14 @@
     "category_meal_service": "ಊಟದ ಸೇವೆ"
   },
   "rate_us": {
-    "header": "ರೇಟ್ ಮಾಡಿ",
-    "title": "ಆಯುಕ್ಸಾ ಇಷ್ಟವಾಯಿತೇ?",
-    "description": "ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆ ಸೇವೆ ಸುಧಾರಿಸಲು ನೆರವಾಗುತ್ತದೆ. ಇಷ್ಟವಾದಲ್ಲಿ Play Store ನಲ್ಲಿ ರೇಟ್ ಮಾಡಿ.",
-    "why_title": "ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆ ಏಕೆ ಮುಖ್ಯ?",
-    "reason1": "ಹಿರಿಯರ ಆರೈಕೆ ಸೇವೆ ಸುಧಾರಿಸಲು",
-    "reason2": "ಇತರ ಕುಟುಂಬಗಳು ನೆರವು ಪಡೆಯಲು",
-    "reason3": "ಉತ್ತಮ ಗುಣಮಟ್ಟ ಕಾಯ್ದುಕೊಳ್ಳಲು",
-    "cta": "Play Store ನಲ್ಲಿ ರೇಟ್ ಮಾಡಿ"
+    "header_title": "Ayuxa ರೇಟ್ ಮಾಡಿ",
+    "enjoying_title": "Ayuxa ಇಷ್ಟವಾಯಿತೇ?",
+    "description": "ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆ ನಮ್ಮ ಸೇವೆಗಳನ್ನು ಸುಧಾರಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ. Play Store ನಲ್ಲಿ ನಮ್ಮನ್ನು ರೇಟ್ ಮಾಡಿ.",
+    "why_matters_title": "ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆ ಏಕೆ ಮುಖ್ಯ",
+    "reason_1": "ಹಿರಿಯರ ಆರೈಕೆ ಸೇವೆಗಳನ್ನು ಸುಧಾರಿಸಲು ಸಹಾಯ",
+    "reason_2": "ಇತರ ಕುಟುಂಬಗಳಿಗೆ ವಿಶ್ವಾಸಾರ್ಹ ಬೆಂಬಲ ಕಂಡುಕೊಳ್ಳಲು ಸಹಾಯ",
+    "reason_3": "ಉನ್ನತ ಸೇವಾ ಗುಣಮಟ್ಟ ಕಾಪಾಡಲು ಸಹಾಯ",
+    "rate_button": "Play Store ನಲ್ಲಿ Ayuxa ರೇಟ್ ಮಾಡಿ"
   },
   "legal": {
     "failed_load": "ದಾಖಲೆ ಲೋಡ್ ಆಗಿಲ್ಲ",
@@ -3527,5 +3527,32 @@
     "amount_paid": "ಪಾವತಿಸಿದ ಮೊತ್ತ",
     "view_my_bookings": "ನನ್ನ ಬುಕಿಂಗ್‌ಗಳು",
     "back_to_home": "ಹೋಮ್‌ಗೆ ಹೋಗಿ"
+  },
+  "my_prescriptions": {
+    "header_title": "ನನ್ನ ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್‌ಗಳು",
+    "no_prescriptions": "ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಇಲ್ಲ",
+    "empty_desc": "ನಿಮ್ಮ ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್‌ಗಳನ್ನು ಇಲ್ಲಿ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
+    "upload_prescription": "ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
+    "permission_required": "ಅನುಮತಿ ಅಗತ್ಯ",
+    "gallery_permission_msg": "ಅಪ್‌ಲೋಡ್‌ಗೆ ಗ್ಯಾಲರಿ ಪ್ರವೇಶ ಬೇಕು.",
+    "upload_success": "ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಅಪ್‌ಲೋಡ್ ಆಗಿದೆ.",
+    "upload_failed": "ಅಪ್‌ಲೋಡ್ ವಿಫಲವಾಗಿದೆ.",
+    "cannot_open_file": "ಈ ಫೈಲ್ ತೆರೆಯಲಾಗಲಿಲ್ಲ."
+  },
+  "plan_adjustment": {
+    "change_plan": "ಪ್ಲಾನ್ ಬದಲಿಸಿ",
+    "your_new_plan": "ನಿಮ್ಮ ಹೊಸ ಪ್ಲಾನ್",
+    "switch_subtitle": "{{plan}}ಗೆ ಬದಲಾದರೆ ಏನು ಸಿಗುತ್ತದೆ ನೋಡಿ",
+    "plan_features": "{{plan}} ವೈಶಿಷ್ಟ್ಯಗಳು",
+    "review_your_change": "ಬದಲಾವಣೆಯನ್ನು ಪರಿಶೀಲಿಸಿ",
+    "new_plan_price": "ಹೊಸ ಪ್ಲಾನ್ ಬೆಲೆ:",
+    "unused_days_credit": "ಬಳಸದ ದಿನಗಳ ಕ್ರೆಡಿಟ್:",
+    "amount_to_pay": "ಪಾವತಿಸಬೇಕಾದ ಮೊತ್ತ:",
+    "downgrade_unavailable": "ಡೌನ್‌ಗ್ರೇಡ್ ಲಭ್ಯವಿಲ್ಲ",
+    "proceed_to_pay": "₹{{amount}} ಪಾವತಿಸಿ",
+    "downgrade_blocked_msg": "ಉಳಿದ ಕ್ರೆಡಿಟ್ ಆಯ್ದ ಪ್ಲಾನ್ ಮೌಲ್ಯವನ್ನು ಮೀರುವುದರಿಂದ ಡೌನ್‌ಗ್ರೇಡ್ ಲಭ್ಯವಿಲ್ಲ.",
+    "load_failed": "ಡೇಟಾ ಲೋಡ್ ಆಗಲಿಲ್ಲ",
+    "change_to_label": "{{plan}}ಗೆ ಬದಲಿಸಿ",
+    "new_plan_fallback": "ಹೊಸ ಪ್ಲಾನ್"
   }
 }
