@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { useCart } from '@/context/CartContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY_GREEN = '#02743F';
 const CARD_BORDER = '#E5E7EB';
@@ -14,6 +15,7 @@ const TEXT_DARK = '#2F2F2F';
 const TEXT_MUTED = '#888888';
 
 export default function CartScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { 
         groupedItems, removeItem, itemCount, getCategoryTotal, getGrandTotal, items,
@@ -61,13 +63,13 @@ export default function CartScreen() {
                     <TouchableOpacity onPress={() => router.back()}>
                         <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#E8E8E8' : TEXT_DARK} />
                     </TouchableOpacity>
-                    <Text style={dynamicStyles.headerTitle}>Your Cart</Text>
+                    <Text style={dynamicStyles.headerTitle}>{t('cart.header_title')}</Text>
                     <View style={{ width: 24 }} />
                 </View>
                 <View style={dynamicStyles.emptyContainer}>
                     <Ionicons name="cart-outline" size={64} color={isDarkMode ? '#505050' : '#E5E7EB'} />
-                    <Text style={dynamicStyles.emptyTitle}>Your cart is empty</Text>
-                    <Text style={dynamicStyles.emptySubtitle}>Add some services or products to get started.</Text>
+                    <Text style={dynamicStyles.emptyTitle}>{t('cart.empty_title')}</Text>
+                    <Text style={dynamicStyles.emptySubtitle}>{t('cart.empty_subtitle')}</Text>
                 </View>
             </SafeAreaView>
         );
@@ -107,7 +109,7 @@ export default function CartScreen() {
                                     />
                                 </TouchableOpacity>
                                 <Text style={dynamicStyles.categoryTitle}>{category}</Text>
-                                <Text style={dynamicStyles.itemCount}>{items.length} {items.length === 1 ? 'Item' : 'Items'}</Text>
+                                <Text style={dynamicStyles.itemCount}>{items.length} {items.length === 1 ? t('cart.item') : t('cart.items')}</Text>
                             </View>
 
                             {items.map(item => (
@@ -164,7 +166,7 @@ export default function CartScreen() {
                                                 } as any);
                                             }}
                                         >
-                                            <Text style={dynamicStyles.sepCheckoutBtnText}>Checkout</Text>
+                                            <Text style={dynamicStyles.sepCheckoutBtnText}>{t('cart.checkout')}</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={dynamicStyles.removeBtn} onPress={() => removeItem(item.id)}>
                                             <Ionicons name="trash-outline" size={18} color="#EF4444" />
@@ -174,7 +176,7 @@ export default function CartScreen() {
                             ))}
 
                             <View style={dynamicStyles.categoryFooter}>
-                                <Text style={dynamicStyles.categorySubtotal}>Subtotal: ₹{categoryTotal}</Text>
+                                <Text style={dynamicStyles.categorySubtotal}>{t('cart.subtotal', { amount: categoryTotal })}</Text>
                                 <TouchableOpacity
                                     style={[
                                         dynamicStyles.checkoutBtn,
@@ -183,7 +185,7 @@ export default function CartScreen() {
                                     onPress={() => handleCheckoutCategory(category)}
                                     disabled={categorySelectedItems.length === 0}
                                 >
-                                    <Text style={[dynamicStyles.checkoutBtnText, categorySelectedItems.length === 0 && { color: colors.textMuted }]}>Checkout {category}</Text>
+                                    <Text style={[dynamicStyles.checkoutBtnText, categorySelectedItems.length === 0 && { color: colors.textMuted }]}>{t('cart.checkout_category', { category })}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -191,13 +193,13 @@ export default function CartScreen() {
                 })}
 
                 <View style={dynamicStyles.grandTotalContainer}>
-                    <Text style={dynamicStyles.grandTotalText}>Grand Total: ₹{items.filter(i => selectedItemIds.includes(i.id)).reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0)}</Text>
+                    <Text style={dynamicStyles.grandTotalText}>{t('cart.grand_total', { amount: items.filter(i => selectedItemIds.includes(i.id)).reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0) })}</Text>
                     <TouchableOpacity
                         style={items.filter(i => selectedItemIds.includes(i.id)).length > 0 ? dynamicStyles.checkoutAllBtn : dynamicStyles.checkoutAllBtnDisabled}
                         disabled={items.filter(i => selectedItemIds.includes(i.id)).length === 0}
                         onPress={handleCheckoutAll}
                     >
-                        <Text style={items.filter(i => selectedItemIds.includes(i.id)).length > 0 ? dynamicStyles.checkoutAllTextEnabled : dynamicStyles.checkoutAllText}>Checkout All</Text>
+                        <Text style={items.filter(i => selectedItemIds.includes(i.id)).length > 0 ? dynamicStyles.checkoutAllTextEnabled : dynamicStyles.checkoutAllText}>{t('cart.checkout_all')}</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { labService, type LabSlot } from "@/services/api/labService";
+import { labService, resolvePatient, type LabSlot } from "@/services/api/labService";
 import { locationService } from "@/services/device/locationService";
 import { useUser } from "@/context/UserContext";
 import { useAddress } from "@/context/AddressContext";
@@ -23,6 +23,7 @@ import { useCart } from "@/context/CartContext";
 import { useThemeColors } from "@/hooks/use-theme-colors";
 import { useTheme } from "@/context/ThemeContext";
 import { CustomAlertModal } from "@/components/common/CustomAlertModal";
+import { useTranslation } from "react-i18next";
 
 const PRIMARY_GREEN = "#02743F";
 const TEXT_DARK = "#2F2F2F";
@@ -31,6 +32,7 @@ const CARD_BORDER = "#E5E7EB";
 const LIGHT_GREEN_BG = "#F0FDF4";
 
 export default function CartScheduleScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { profile } = useUser();
@@ -56,7 +58,8 @@ export default function CartScheduleScreen() {
   );
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [coords, setCoords] = useState({ lat: "12.9716", long: "77.5946" });
+  // No hardcoded city — coords come from the chosen/detected address.
+  const [coords, setCoords] = useState({ lat: "", long: "" });
 
   // Step 1: Date & Time
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -64,8 +67,7 @@ export default function CartScheduleScreen() {
   const [slots, setSlots] = useState<LabSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
 
-  // Step 2: Collection type + Address
-  const [collectionType, setCollectionType] = useState<"HOME" | "LAB">("HOME");
+  // Step 2: Address (home collection only)
   const [selectedAddress, setSelectedAddress] = useState("");
   const [pincode, setPincode] = useState("");
   const [landmark, setLandmark] = useState("");
@@ -126,7 +128,7 @@ export default function CartScheduleScreen() {
 
   useEffect(() => {
     if (cartItems.length === 0) {
-      triggerAlert("Error", "No items found in this category", "warning-outline", () => router.back());
+      triggerAlert(t("common.error"), t("cart_schedule.error_no_items"), "warning-outline", () => router.back());
     }
     const today = new Date();
     if (today.getHours() >= 16) today.setDate(today.getDate() + 1);
@@ -155,7 +157,8 @@ export default function CartScheduleScreen() {
   }, [activeAddress]);
 
   useEffect(() => {
-    if (!selectedDate || cartItems.length === 0) return;
+    // Redcliffe slots are location-specific — wait for coords (address chosen).
+    if (!selectedDate || cartItems.length === 0 || !coords.lat || !coords.long) return;
     setSlotsLoading(true);
     const dateStr = selectedDate.toISOString().split("T")[0];
     labService
@@ -199,6 +202,12 @@ export default function CartScheduleScreen() {
   const handleDetectLocation = async () => {
     setDetectingLocation(true);
     try {
+      // Explicit user action — OK to prompt here.
+      const granted = await locationService.requestPermission();
+      if (!granted) {
+        triggerAlert(t("cart_schedule.location_error_title"), t("cart_schedule.location_error_msg"));
+        return;
+      }
       const c = await locationService.getCurrentLocation();
       const address = await locationService.getAddressFromCoordinates(c);
       const pc = await locationService.getPincodeFromAddress(c, address);
@@ -207,7 +216,7 @@ export default function CartScheduleScreen() {
       if (pc) setPincode(pc);
       checkServiceability(String(c.latitude), String(c.longitude));
     } catch {
-      triggerAlert("Location Error", "Unable to detect your location.");
+      triggerAlert(t("cart_schedule.location_error_title"), t("cart_schedule.location_error_msg"));
     } finally {
       setDetectingLocation(false);
     }
@@ -216,6 +225,10 @@ export default function CartScheduleScreen() {
   const checkServiceability = async (lat: string, lng: string) => {
     if (category !== "Bloodwork") {
       setServiceabilityStatus("serviceable");
+      return;
+    }
+    if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) {
+      setServiceabilityStatus("unchecked");
       return;
     }
     setServiceabilityStatus("checking");
@@ -233,11 +246,11 @@ export default function CartScheduleScreen() {
 
   const handleSaveNewAddress = async () => {
     if (!newAddrText.trim()) {
-      triggerAlert("Required", "Please select or enter an address");
+      triggerAlert(t("common.required"), t("cart_schedule.required_address"));
       return;
     }
     if (newAddrPincode.length !== 6) {
-      triggerAlert("Required", "Please enter a valid 6-digit pincode");
+      triggerAlert(t("common.required"), t("cart_schedule.required_pincode"));
       return;
     }
     if (!profile?.id) return;
@@ -266,7 +279,7 @@ export default function CartScheduleScreen() {
       setNewAddrLabel("Home");
       setAddingNewAddr(false);
     } catch {
-      triggerAlert("Error", "Could not save address. Please try again.");
+      triggerAlert(t("common.error"), t("cart_schedule.save_address_failed"));
     } finally {
       setSavingNewAddr(false);
     }
@@ -275,20 +288,18 @@ export default function CartScheduleScreen() {
   const handleContinue = async () => {
     if (step === 1) {
       if (!selectedDate || !selectedTime) {
-        triggerAlert("Required", "Please select date and time");
+        triggerAlert(t("common.required"), t("cart_schedule.required_date_time"));
         return;
       }
       setStep(2);
     } else if (step === 2) {
-      if (collectionType === "HOME") {
-        if (!selectedAddress.trim() || pincode.length !== 6) {
-          triggerAlert("Required", "Please enter valid address and pincode");
-          return;
-        }
-        if (serviceabilityStatus === "non-serviceable") {
-          triggerAlert("Not Serviceable", "This location is not serviceable.");
-          return;
-        }
+      if (!selectedAddress.trim() || pincode.length !== 6) {
+        triggerAlert(t("common.required"), t("cart_schedule.required_address_pincode"));
+        return;
+      }
+      if (serviceabilityStatus === "non-serviceable") {
+        triggerAlert(t("cart_schedule.not_serviceable_title"), t("cart_schedule.not_serviceable_msg"));
+        return;
       }
       setStep(3);
     } else if (step === 3) {
@@ -298,12 +309,14 @@ export default function CartScheduleScreen() {
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) return;
-    if (!phoneNumber.trim()) {
-      triggerAlert("Required", "Please enter a valid phone number");
-      return;
-    }
     setIsBooking(true);
     try {
+      // Throws a friendly message if name/DOB/gender/phone missing from profile.
+      const patient = resolvePatient(profile, phoneNumber);
+      if (!coords.lat || !coords.long) {
+        throw new Error("Please choose your collection address so we can confirm the slot.");
+      }
+
       const selectedSlot = slots.find(
         (s) => (s.slot || s.slot_time) === selectedTime,
       );
@@ -313,15 +326,8 @@ export default function CartScheduleScreen() {
         cost: item.price,
       }));
       const bookingPayload = {
-        bookingType: collectionType,
-        patient: {
-          name: profile?.name || "",
-          age: 30,
-          gender: profile?.gender || "M",
-          phone: phoneNumber.startsWith("+91")
-            ? phoneNumber
-            : `+91${phoneNumber}`,
-        },
+        bookingType: "HOME" as const,
+        patient,
         address: {
           lat: coords.lat,
           long: coords.long,
@@ -337,24 +343,18 @@ export default function CartScheduleScreen() {
         },
       };
 
-      // Address persistence now happens at selection time (saved-address
-      // chip tap or inline "Save & Use") via AddressContext — never here.
-      // Silently upserting the default address on every booking confirm
-      // would overwrite the user's saved default with whatever text is in
-      // the form (the same bug fixed in blood-test/schedule.tsx, Phase 5).
-
       router.push({
         pathname: "/cart/order-summary",
         params: {
           category,
           bookingPayload: JSON.stringify(bookingPayload),
           amount: String(totalAmount),
-          collectionType,
+          collectionType: "HOME",
           selectedItemIds: params.selectedItemIds || "",
         },
       } as any);
-    } catch {
-      triggerAlert("Error", "Failed to proceed with booking");
+    } catch (error: any) {
+      triggerAlert(t("common.required"), error?.message || t("cart_schedule.booking_failed"));
     } finally {
       setIsBooking(false);
     }
@@ -363,7 +363,7 @@ export default function CartScheduleScreen() {
   const renderStep1 = () => (
     <ScrollView showsVerticalScrollIndicator={false} style={styles.stepContent}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Select Date</Text>
+        <Text style={styles.sectionTitle}>{t("cart_schedule.select_date")}</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -393,7 +393,7 @@ export default function CartScheduleScreen() {
         </ScrollView>
       </View>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Select Time Slot</Text>
+        <Text style={styles.sectionTitle}>{t("cart_schedule.select_time_slot")}</Text>
         {slotsLoading ? (
           <ActivityIndicator size="small" color={PRIMARY_GREEN} />
         ) : (
@@ -429,77 +429,22 @@ export default function CartScheduleScreen() {
 
   const renderStep2 = () => (
     <ScrollView showsVerticalScrollIndicator={false} style={styles.stepContent}>
-      {/* Collection Type */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Collection Type</Text>
-        <TouchableOpacity
-          style={[
-            styles.collectionOption,
-            collectionType === "HOME" && styles.collectionOptionActive,
-          ]}
-          onPress={() => setCollectionType("HOME")}
-          activeOpacity={0.75}
-        >
-          <Ionicons
-            name="home"
-            size={20}
-            color={collectionType === "HOME" ? PRIMARY_GREEN : TEXT_MUTED}
-            style={{ marginRight: 12 }}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.optionTitle}>Home Collection</Text>
-            <Text style={styles.optionDesc}>
-              We&apos;ll collect sample from your home
-            </Text>
-          </View>
-          <Ionicons
-            name={
-              collectionType === "HOME"
-                ? "checkmark-circle"
-                : "radio-button-off"
-            }
-            size={24}
-            color={collectionType === "HOME" ? PRIMARY_GREEN : "#D1D5DB"}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.collectionOption,
-            collectionType === "LAB" && styles.collectionOptionActive,
-          ]}
-          onPress={() => setCollectionType("LAB")}
-          activeOpacity={0.75}
-        >
-          <Ionicons
-            name="business"
-            size={20}
-            color={collectionType === "LAB" ? PRIMARY_GREEN : TEXT_MUTED}
-            style={{ marginRight: 12 }}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.optionTitle}>Lab Visit</Text>
-            <Text style={styles.optionDesc}>
-              Drop your sample at the nearest lab
-            </Text>
-          </View>
-          <Ionicons
-            name={
-              collectionType === "LAB" ? "checkmark-circle" : "radio-button-off"
-            }
-            size={24}
-            color={collectionType === "LAB" ? PRIMARY_GREEN : "#D1D5DB"}
-          />
-        </TouchableOpacity>
+      <View style={[styles.collectionOption, styles.collectionOptionActive]}>
+        <Ionicons name="home" size={20} color={PRIMARY_GREEN} style={{ marginRight: 12 }} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.optionTitle}>{t("cart_schedule.home_collection")}</Text>
+          <Text style={styles.optionDesc}>{t("cart_schedule.home_collection_desc")}</Text>
+        </View>
+        <Ionicons name="checkmark-circle" size={24} color={PRIMARY_GREEN} />
       </View>
 
-      {/* Address — only for Home Collection */}
-      {collectionType === "HOME" && (
+      {(
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Collection Address</Text>
+          <Text style={styles.sectionTitle}>{t("cart_schedule.collection_address")}</Text>
 
           {/* Saved address chips + Add New */}
           <View style={{ marginBottom: 12 }}>
-            <Text style={styles.subLabel}>Saved Addresses</Text>
+            <Text style={styles.subLabel}>{t("manage_addresses.saved_addresses")}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -537,7 +482,7 @@ export default function CartScheduleScreen() {
                       ]}
                       numberOfLines={1}
                     >
-                      {addr.label || `Address ${idx + 1}`}
+                      {addr.label || t("cart_schedule.address_n", { n: idx + 1 })}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -566,7 +511,7 @@ export default function CartScheduleScreen() {
                     addingNewAddr && styles.savedAddrChipTextActive,
                   ]}
                 >
-                  Add New
+                  {t("cart_schedule.add_new")}
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -575,7 +520,7 @@ export default function CartScheduleScreen() {
           {/* Inline Add New Address form */}
           {addingNewAddr && (
             <View style={styles.newAddrBox}>
-              <Text style={styles.newAddrTitle}>New Address</Text>
+              <Text style={styles.newAddrTitle}>{t("cart_schedule.new_address")}</Text>
               <View style={styles.labelRow}>
                 {["Home", "Office", "Other"].map((lbl) => (
                   <TouchableOpacity
@@ -592,7 +537,7 @@ export default function CartScheduleScreen() {
                         newAddrLabel === lbl && styles.labelChipTextActive,
                       ]}
                     >
-                      {lbl}
+                      {t(`manage_addresses.labels.${lbl.toLowerCase()}`, { defaultValue: lbl })}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -608,11 +553,11 @@ export default function CartScheduleScreen() {
                   style={{ marginRight: 8 }}
                 />
                 <Text style={styles.pickLocationBtnText} numberOfLines={1}>
-                  {newAddrText || "Search & pick location"}
+                  {newAddrText || t("cart_schedule.search_pick_location")}
                 </Text>
               </TouchableOpacity>
               <TextInput
-                placeholder="Full address"
+                placeholder={t("cart_schedule.full_address_placeholder")}
                 placeholderTextColor={TEXT_MUTED}
                 value={newAddrText}
                 onChangeText={setNewAddrText}
@@ -621,7 +566,7 @@ export default function CartScheduleScreen() {
               />
               <View style={styles.row}>
                 <TextInput
-                  placeholder="Pincode *"
+                  placeholder={t("manage_addresses.pincode")}
                   placeholderTextColor={TEXT_MUTED}
                   value={newAddrPincode}
                   onChangeText={setNewAddrPincode}
@@ -630,7 +575,7 @@ export default function CartScheduleScreen() {
                   style={[styles.input, { flex: 1, marginRight: 8 }]}
                 />
                 <TextInput
-                  placeholder="Landmark (optional)"
+                  placeholder={t("cart_schedule.landmark_optional_placeholder")}
                   placeholderTextColor={TEXT_MUTED}
                   value={newAddrLandmark}
                   onChangeText={setNewAddrLandmark}
@@ -642,7 +587,7 @@ export default function CartScheduleScreen() {
                   style={[styles.backButton, { flex: 1 }]}
                   onPress={() => setAddingNewAddr(false)}
                 >
-                  <Text style={styles.backButtonText}>Cancel</Text>
+                  <Text style={styles.backButtonText}>{t("common.cancel")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -656,7 +601,7 @@ export default function CartScheduleScreen() {
                   {savingNewAddr ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
-                    <Text style={styles.continueButtonText}>Save & Use</Text>
+                    <Text style={styles.continueButtonText}>{t("cart_schedule.save_and_use")}</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -689,9 +634,9 @@ export default function CartScheduleScreen() {
                       color={PRIMARY_GREEN}
                       style={{ marginBottom: 8 }}
                     />
-                    <Text style={styles.locationOptionTitle}>Auto Detect</Text>
+                    <Text style={styles.locationOptionTitle}>{t("cart_schedule.auto_detect")}</Text>
                     <Text style={styles.locationOptionDesc}>
-                      Current location
+                      {t("cart_schedule.current_location")}
                     </Text>
                   </>
                 )}
@@ -714,8 +659,8 @@ export default function CartScheduleScreen() {
                   color={PRIMARY_GREEN}
                   style={{ marginBottom: 8 }}
                 />
-                <Text style={styles.locationOptionTitle}>Manual</Text>
-                <Text style={styles.locationOptionDesc}>Search & select</Text>
+                <Text style={styles.locationOptionTitle}>{t("cart_schedule.manual")}</Text>
+                <Text style={styles.locationOptionDesc}>{t("cart_schedule.search_and_select")}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -735,7 +680,7 @@ export default function CartScheduleScreen() {
               <Text
                 style={{ fontSize: 12, color: "#92400E", fontWeight: "500" }}
               >
-                Checking serviceability...
+                {t("cart_schedule.checking_serviceability")}
               </Text>
             </View>
           )}
@@ -759,7 +704,7 @@ export default function CartScheduleScreen() {
                   fontWeight: "600",
                 }}
               >
-                Location is serviceable
+                {t("cart_schedule.serviceable")}
               </Text>
             </View>
           )}
@@ -779,13 +724,13 @@ export default function CartScheduleScreen() {
               <Text
                 style={{ fontSize: 12, color: "#DC2626", fontWeight: "600" }}
               >
-                Location not serviceable
+                {t("cart_schedule.non_serviceable")}
               </Text>
             </View>
           )}
 
           <TextInput
-            placeholder="Enter full address"
+            placeholder={t("cart_schedule.enter_full_address")}
             placeholderTextColor={TEXT_MUTED}
             value={selectedAddress}
             onChangeText={setSelectedAddress}
@@ -794,7 +739,7 @@ export default function CartScheduleScreen() {
           />
           <View style={styles.row}>
             <TextInput
-              placeholder="Pincode"
+              placeholder={t("manage_addresses.pincode")}
               placeholderTextColor={TEXT_MUTED}
               value={pincode}
               onChangeText={setPincode}
@@ -803,7 +748,7 @@ export default function CartScheduleScreen() {
               style={[styles.input, { flex: 1, marginRight: 8 }]}
             />
             <TextInput
-              placeholder="Landmark (optional)"
+              placeholder={t("cart_schedule.landmark_optional_placeholder")}
               placeholderTextColor={TEXT_MUTED}
               value={landmark}
               onChangeText={setLandmark}
@@ -814,7 +759,7 @@ export default function CartScheduleScreen() {
             <Text style={dynamicStyles.phonePrefix}>+91</Text>
             <View style={dynamicStyles.phoneDivider} />
             <TextInput
-              placeholder="Phone Number"
+              placeholder={t("cart_schedule.phone_number_placeholder")}
               placeholderTextColor={TEXT_MUTED}
               value={
                 phoneNumber.startsWith("+91")
@@ -839,9 +784,9 @@ export default function CartScheduleScreen() {
     <ScrollView showsVerticalScrollIndicator={false} style={styles.stepContent}>
       <View style={styles.summaryCard}>
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Items</Text>
+          <Text style={styles.summaryLabel}>{t("cart_schedule.items")}</Text>
           <Text style={styles.summaryValue}>
-            {cartItems.length} {cartItems.length === 1 ? "test" : "tests"}
+            {cartItems.length} {cartItems.length === 1 ? t("cart_schedule.test") : t("cart_schedule.tests")}
           </Text>
         </View>
         {cartItems.map((item, idx) => (
@@ -858,7 +803,7 @@ export default function CartScheduleScreen() {
           </View>
         ))}
         <View style={[styles.summaryRow, styles.summaryRowDivider]}>
-          <Text style={styles.summaryLabel}>Date & Time</Text>
+          <Text style={styles.summaryLabel}>{t("cart_schedule.date_time")}</Text>
           <Text style={styles.summaryValue}>
             {selectedDate?.toLocaleDateString("en-US", {
               day: "numeric",
@@ -869,14 +814,12 @@ export default function CartScheduleScreen() {
           </Text>
         </View>
         <View style={[styles.summaryRow, styles.summaryRowDivider]}>
-          <Text style={styles.summaryLabel}>Collection Type</Text>
-          <Text style={styles.summaryValue}>
-            {collectionType === "HOME" ? "Home Collection" : "Lab Visit"}
-          </Text>
+          <Text style={styles.summaryLabel}>{t("cart_schedule.collection_type")}</Text>
+          <Text style={styles.summaryValue}>{t("cart_schedule.home_collection")}</Text>
         </View>
-        {collectionType === "HOME" && !!selectedAddress && (
+        {!!selectedAddress && (
           <View style={[styles.summaryRow, styles.summaryRowDivider]}>
-            <Text style={styles.summaryLabel}>Address</Text>
+            <Text style={styles.summaryLabel}>{t("cart_schedule.address")}</Text>
             <Text
               style={[styles.summaryValue, { maxWidth: "60%" }]}
               numberOfLines={2}
@@ -886,11 +829,11 @@ export default function CartScheduleScreen() {
           </View>
         )}
         <View style={[styles.summaryRow, styles.summaryRowDivider]}>
-          <Text style={styles.summaryLabel}>Convenience Fee</Text>
-          <Text style={styles.summaryValue}>₹0 (Free)</Text>
+          <Text style={styles.summaryLabel}>{t("cart_schedule.convenience_fee")}</Text>
+          <Text style={styles.summaryValue}>{t("cart_schedule.free")}</Text>
         </View>
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Payable Amount</Text>
+          <Text style={styles.summaryLabel}>{t("cart_schedule.payable_amount")}</Text>
           <Text style={styles.summaryAmount}>₹{totalAmount}</Text>
         </View>
       </View>
@@ -925,7 +868,7 @@ export default function CartScheduleScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Schedule {category}</Text>
+        <Text style={styles.headerTitle}>{t("cart_schedule.header_title", { category })}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -953,13 +896,13 @@ export default function CartScheduleScreen() {
 
       <View style={styles.stepLabels}>
         <Text style={[styles.stepLabel, step === 1 && styles.stepLabelActive]}>
-          Date & Time
+          {t("cart_schedule.step_date_time")}
         </Text>
         <Text style={[styles.stepLabel, step === 2 && styles.stepLabelActive]}>
-          Collection
+          {t("cart_schedule.step_collection")}
         </Text>
         <Text style={[styles.stepLabel, step === 3 && styles.stepLabelActive]}>
-          Confirm
+          {t("cart_schedule.step_confirm")}
         </Text>
       </View>
 
@@ -971,31 +914,27 @@ export default function CartScheduleScreen() {
             style={styles.backButton}
             onPress={() => setStep((s) => (s - 1) as 1 | 2 | 3)}
           >
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
           style={[
             styles.continueButton,
             (isBooking ||
-              (step === 2 &&
-                collectionType === "HOME" &&
-                serviceabilityStatus === "non-serviceable")) &&
+              (step === 2 && serviceabilityStatus === "non-serviceable")) &&
               styles.continueButtonDisabled,
           ]}
           onPress={handleContinue}
           disabled={
             isBooking ||
-            (step === 2 &&
-              collectionType === "HOME" &&
-              serviceabilityStatus === "non-serviceable")
+            (step === 2 && serviceabilityStatus === "non-serviceable")
           }
         >
           {isBooking ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <Text style={styles.continueButtonText}>
-              {step === 3 ? "Continue to Payment" : "Continue"}
+              {step === 3 ? t("cart_schedule.continue_to_payment") : t("common.continue")}
             </Text>
           )}
         </TouchableOpacity>
@@ -1034,7 +973,7 @@ export default function CartScheduleScreen() {
         title={alertConfig.title}
         message={alertConfig.message}
         iconName={alertConfig.iconName as any}
-        buttonText="OK"
+        buttonText={t("common.ok")}
         onClose={closeAlert}
       />
     </KeyboardAvoidingView>
