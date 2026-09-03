@@ -2706,7 +2706,9 @@
     "booking_fee": "Booking Fee",
     "cost_note": "Total service cost will be discussed over call.",
     "call_support": "Call Support",
-    "back_home": "Back to Home"
+    "back_home": "Back to Home",
+    "qualified_nurse": "Qualified Nurse",
+    "default_duration": "12 Hours (Night Shift)"
   },
   "profile_bookings": {
     "header": "My Bookings",

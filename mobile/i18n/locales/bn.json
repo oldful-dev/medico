@@ -2637,7 +2637,9 @@
     "booking_fee": "বুকিং ফি",
     "cost_note": "মোট খরচ ফোনে আলোচনা করা হবে।",
     "call_support": "কল সাপোর্ট",
-    "back_home": "হোমে ফিরুন"
+    "back_home": "হোমে ফিরুন",
+    "qualified_nurse": "যোগ্য নার্স",
+    "default_duration": "১২ ঘণ্টা (নাইট শিফট)"
   },
   "profile_bookings": {
     "header": "আমার বুকিং",

@@ -2730,7 +2730,9 @@
     "booking_fee": "பதிவு கட்டணம்",
     "cost_note": "மொத்த செலவு அழைப்பில் விவாதிக்கப்படும்",
     "call_support": "அழைப்பு",
-    "back_home": "முகப்பு"
+    "back_home": "முகப்பு",
+    "qualified_nurse": "தகுதியான நர்ஸ்",
+    "default_duration": "12 மணி நேரம் (இரவு ஷிப்ட்)"
   },
   "profile_bookings": {
     "header": "என் பதிவுகள்",

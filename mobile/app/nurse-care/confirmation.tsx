@@ -4,9 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 export default function NurseCareConfirmationScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
@@ -25,7 +27,7 @@ export default function NurseCareConfirmationScreen() {
                 <TouchableOpacity onPress={() => router.replace('/(tabs)' as any)} style={styles.backButton}>
                     <Ionicons name="close" size={28} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Booking Confirmed</Text></View>
+                <Text style={styles.headerTitle}>{t('nurse_confirmation.header')}</Text></View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
@@ -34,74 +36,74 @@ export default function NurseCareConfirmationScreen() {
                     <View style={styles.iconCircle}>
                         <Ionicons name="checkmark" size={40} color={Colors.primary} />
                     </View>
-                    <Text style={styles.statusTitle}>Request Sent Successfully!</Text>
+                    <Text style={styles.statusTitle}>{t('nurse_confirmation.title')}</Text>
                     <Text style={styles.statusSubTitle}>
-                        We have received your home nursing request. Our team will contact you shortly to confirm the assignment.
+                        {t('nurse_confirmation.message')}
                     </Text>
                 </View>
 
                 {/* ─── Request Details Card ─── */}
                 <View style={styles.detailsCard}>
                     <View style={styles.cardHeader}>
-                        <Text style={styles.cardSectionTitle}>Request Summary</Text>
+                        <Text style={styles.cardSectionTitle}>{t('nurse_confirmation.request_summary')}</Text>
                         <View style={styles.badge}>
-                            <Text style={styles.badgeText}>Pending</Text>
+                            <Text style={styles.badgeText}>{t('nurse_confirmation.pending')}</Text>
                         </View>
                     </View>
 
                     <View style={styles.divider} />
 
                     <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Request ID</Text>
+                        <Text style={styles.detailLabel}>{t('nurse_confirmation.request_id')}</Text>
                         <Text style={[styles.detailValue, { fontFamily: Fonts.semiBold }]}>#{bookingId}</Text>
                     </View>
 
                     <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Patient</Text>
-                        <Text style={styles.detailValue}>{params.recipient || 'Not specified'}</Text>
+                        <Text style={styles.detailLabel}>{t('nurse_confirmation.patient')}</Text>
+                        <Text style={styles.detailValue}>{params.recipient || t('nurse_confirmation.not_specified')}</Text>
                     </View>
 
                     <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Staff Type</Text>
-                        <Text style={styles.detailValue}>{params.staff || 'Qualified Nurse'}</Text>
+                        <Text style={styles.detailLabel}>{t('nurse_confirmation.staff_type')}</Text>
+                        <Text style={styles.detailValue}>{params.staff || t('nurse_confirmation.qualified_nurse')}</Text>
                     </View>
 
                     <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Duration</Text>
-                        <Text style={styles.detailValue}>{params.duration || '12 Hours (Night Shift)'}</Text>
+                        <Text style={styles.detailLabel}>{t('nurse_confirmation.duration')}</Text>
+                        <Text style={styles.detailValue}>{params.duration || t('nurse_confirmation.default_duration')}</Text>
                     </View>
 
                     <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Patient Condition</Text>
-                        <Text style={styles.detailValue}>{params.condition || 'Not specified'}</Text>
+                        <Text style={styles.detailLabel}>{t('nurse_confirmation.condition')}</Text>
+                        <Text style={styles.detailValue}>{params.condition || t('nurse_confirmation.not_specified')}</Text>
                     </View>
 
                     <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Gender Pref.</Text>
-                        <Text style={styles.detailValue}>{params.gender || 'Any'}</Text>
+                        <Text style={styles.detailLabel}>{t('nurse_confirmation.gender_pref')}</Text>
+                        <Text style={styles.detailValue}>{params.gender || t('nurse_confirmation.any')}</Text>
                     </View>
 
                     <View style={styles.divider} />
 
                     <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Booking Fee</Text>
+                        <Text style={styles.totalLabel}>{t('nurse_confirmation.booking_fee')}</Text>
                         <Text style={styles.totalValue}>₹299</Text>
                     </View>
-                    <Text style={styles.feeNote}>Total service cost will be discussed over call.</Text>
+                    <Text style={styles.feeNote}>{t('nurse_confirmation.cost_note')}</Text>
                 </View>
 
                 {/* ─── Actions ─── */}
                 <View style={styles.actionContainer}>
                     <TouchableOpacity style={[styles.actionButton, styles.primaryOutlineButton]}>
                         <Ionicons name="call-outline" size={20} color={Colors.primary} style={{ marginRight: 8 }} />
-                        <Text style={styles.primaryOutlineButtonText}>Call Support</Text>
+                        <Text style={styles.primaryOutlineButtonText}>{t('nurse_confirmation.call_support')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={styles.primaryFilledButton}
                         onPress={() => router.replace('/(tabs)' as any)}
                     >
-                        <Text style={styles.primaryFilledButtonText}>Back to Home</Text>
+                        <Text style={styles.primaryFilledButtonText}>{t('nurse_confirmation.back_home')}</Text>
                     </TouchableOpacity>
                 </View>
 

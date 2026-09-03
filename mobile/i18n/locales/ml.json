@@ -2730,7 +2730,9 @@
     "booking_fee": "ബുക്കിംഗ് ഫീ",
     "cost_note": "ആകെ ചെലവ് കോളിൽ ചർച്ച ചെയ്യും",
     "call_support": "കോൾ",
-    "back_home": "ഹോം"
+    "back_home": "ഹോം",
+    "qualified_nurse": "യോഗ്യതയുള്ള നഴ്‌സ്",
+    "default_duration": "12 മണിക്കൂർ (നൈറ്റ് ഷിഫ്റ്റ്)"
   },
   "profile_bookings": {
     "header": "എന്റെ ബുക്കിംഗുകൾ",

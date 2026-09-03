@@ -2637,7 +2637,9 @@
     "booking_fee": "ಬುಕಿಂಗ್ ಫೀಸ್",
     "cost_note": "ಒಟ್ಟು ವೆಚ್ಚವನ್ನು ಕರೆಯಲ್ಲಿ ಚರ್ಚಿಸಲಾಗುವುದು.",
     "call_support": "ಕರೆ ಬೆಂಬಲ",
-    "back_home": "ಹೋಮ್‌ಗೆ ಹೋಗಿ"
+    "back_home": "ಹೋಮ್‌ಗೆ ಹೋಗಿ",
+    "qualified_nurse": "ಅರ್ಹ ನರ್ಸ್",
+    "default_duration": "12 ಗಂಟೆಗಳು (ರಾತ್ರಿ ಶಿಫ್ಟ್)"
   },
   "profile_bookings": {
     "header": "ನನ್ನ ಬುಕಿಂಗ್ಸ್",

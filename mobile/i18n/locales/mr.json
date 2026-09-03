@@ -2730,7 +2730,9 @@
     "booking_fee": "बुकिंग फी",
     "cost_note": "एकूण सेवा खर्चावर कॉलवर चर्चा केली जाईल.",
     "call_support": "कॉल सपोर्ट",
-    "back_home": "मुख्यपृष्ठावर जा"
+    "back_home": "मुख्यपृष्ठावर जा",
+    "qualified_nurse": "पात्र नर्स",
+    "default_duration": "12 तास (नाईट शिफ्ट)"
   },
   "profile_bookings": {
     "header": "माझे बुकिंग्स",
