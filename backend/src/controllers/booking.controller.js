@@ -6,6 +6,8 @@ const { logger } = require('../config/logger');
 const { getNotificationRecipients } = require('../services/companyConfig.service');
 const { assertCaregiverIsAssignable } = require('../utils/assignmentEligibility');
 const { computeStandardRateFloor } = require('../utils/standardRateFloor');
+const { resolveOptionPrice } = require('./checkout.controller');
+const { BOOKING_TRANSITIONS, isValidTransition, recordStatusTransition } = require('../utils/statusTransitions');
 
 // ─── Admin Booking Notification Helper ──────────────────────────────────────
 // Sends SMS, WhatsApp, and Email to dynamic admin recipients configured in
@@ -299,18 +301,28 @@ const createBooking = async (req, res, next) => {
         const finalServiceId = service.id;
 
         // ─── Security: Server-Side Price Floor Enforcement ─────────────────────
-        // Prevent amount manipulation. Use DB basePrice as the authority.
-        // Skip validation for BLOOD_TEST (dynamic pricing from Redcliffe Labs).
-        // Other services: Only validate if basePrice is explicitly set (> 0).
-        const serverBasePrice = service.basePrice || 0;
+        // Prevent amount manipulation. The floor is the DB-resolved standard
+        // rate (service/option base price + un-waived fees + tax) — the same
+        // computation Scenario C below already trusts — not a bare fraction
+        // of basePrice, so it also (a) accounts for a selected per-option
+        // price (e.g. Nurse Care duration) instead of only the flat
+        // basePrice, and (b) is NOT skipped just because the client sent
+        // amount=0 — a paid service must clear the floor, no exceptions.
+        // Skip validation for BLOOD_TEST (dynamic pricing from Redcliffe Labs)
+        // and INQUIRY services (no fixed price to floor against).
         const clientAmount = parseFloat(amount) || 0;
         const isBloodTest = service.slug === 'blood-test';
+        const selectedOptionForFloor = (formDataJson && typeof formDataJson === 'object') ? formDataJson.selectedOption : null;
+        const resolvedVendorFee = resolveOptionPrice(service, selectedOptionForFloor) ?? (service.basePrice || 0);
 
-        if (!isBloodTest && serverBasePrice > 0 && clientAmount > 0 && clientAmount < serverBasePrice * 0.8) {
-            return res.status(400).json({
-                success: false,
-                message: `Invalid booking amount. Minimum: ₹${(serverBasePrice * 0.8).toFixed(0)}. Please refresh and try again.`
-            });
+        if (!isBloodTest && service.paymentMode === 'PAID' && resolvedVendorFee > 0) {
+            const bookingFloor = await computeStandardRateFloor(service, resolvedVendorFee);
+            if (clientAmount < bookingFloor * 0.95) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid booking amount. Minimum: ₹${Math.round(bookingFloor * 0.95)}. Please refresh and try again.`
+                });
+            }
         }
         const safeAmount = clientAmount;
 
@@ -393,10 +405,11 @@ const createBooking = async (req, res, next) => {
                             // total (still reflecting the now-exhausted subscription waiver) must
                             // not silently pass here just because the flag was set. Require the
                             // charge to actually cover the un-waived standard rate. Use the
-                            // service's own basePrice as the vendor-fee component — chargeAmount
-                            // is the client's grand TOTAL (service+booking+platform+tax combined),
-                            // not the vendor fee alone, so it must not be passed in as vendorFee.
-                            const standardRateFloor = await computeStandardRateFloor(service, service.basePrice || 0);
+                            // resolved vendor-fee component (respects a selected per-option price,
+                            // same as the Scenario A floor above) — chargeAmount is the client's
+                            // grand TOTAL (service+booking+platform+tax combined), not the vendor
+                            // fee alone, so it must not be passed in as vendorFee.
+                            const standardRateFloor = await computeStandardRateFloor(service, resolvedVendorFee);
                             if (chargeAmount < standardRateFloor * 0.95) {
                                 return res.status(400).json({
                                     success: false,
@@ -565,10 +578,22 @@ const assignCaregiver = async (req, res, next) => {
         const { caregiverId } = req.body;
         await assertCaregiverIsAssignable(caregiverId);
 
+        const existing = await prisma.booking.findUnique({ where: { id: req.params.id }, select: { status: true } });
+        if (!existing) return res.status(404).json({ success: false, message: 'Booking not found' });
+        if (!req.body.forceStatus && !isValidTransition(BOOKING_TRANSITIONS, existing.status, 'ASSIGNED')) {
+            return res.status(400).json({ success: false, message: `Cannot assign a caregiver — booking is currently ${existing.status}` });
+        }
+
         const booking = await prisma.booking.update({
             where: { id: req.params.id },
             data: { caregiverId, status: 'ASSIGNED' },
             include: { caregiver: { select: { id: true, name: true, phone: true, profileImageUrl: true } }, service: { select: { name: true } } },
+        });
+        await recordStatusTransition({
+            entityType: 'Booking', entityId: booking.id,
+            fromStatus: existing.status, toStatus: 'ASSIGNED',
+            changedBy: req.admin?.id || req.user?.id || null,
+            forced: !!req.body.forceStatus,
         });
 
         // Emit real-time update to user via Socket.io (for activity feed)
@@ -672,7 +697,17 @@ const reassignCaregiver = async (req, res, next) => {
 // PUT /api/bookings/:id/status
 const updateBookingStatus = async (req, res, next) => {
     try {
-        const { status, adminNotes } = req.body;
+        const { status, adminNotes, forceStatus } = req.body;
+
+        const existing = await prisma.booking.findUnique({ where: { id: req.params.id }, select: { status: true } });
+        if (!existing) return res.status(404).json({ success: false, message: 'Booking not found' });
+        if (!forceStatus && !isValidTransition(BOOKING_TRANSITIONS, existing.status, status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid status transition: ${existing.status} → ${status}. Pass forceStatus:true to override.`,
+            });
+        }
+
         const data = { status };
         if (adminNotes !== undefined) data.adminNotes = adminNotes;
 
@@ -685,6 +720,13 @@ const updateBookingStatus = async (req, res, next) => {
                 user: { select: { name: true } },
                 caregiver: { select: { name: true, phone: true } },
             }
+        });
+
+        await recordStatusTransition({
+            entityType: 'Booking', entityId: booking.id,
+            fromStatus: existing.status, toStatus: booking.status,
+            changedBy: req.admin?.id || null,
+            forced: !!forceStatus,
         });
 
         // Emit real-time event to admins
@@ -887,6 +929,11 @@ const cancelBooking = async (req, res, next) => {
         const updated = await prisma.booking.update({
             where: { id: req.params.id },
             data: { status: 'CANCELLED' },
+        });
+        await recordStatusTransition({
+            entityType: 'Booking', entityId: updated.id,
+            fromStatus: booking.status, toStatus: 'CANCELLED',
+            changedBy: req.user?.id || null,
         });
 
         // 🛡️ If there was a successful payment, mark it for refund

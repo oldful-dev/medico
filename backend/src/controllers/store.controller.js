@@ -5,6 +5,7 @@
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
 const { logger } = require('../config/logger');
+const { PRODUCT_ORDER_STATUSES, PRODUCT_ORDER_TRANSITIONS, isValidTransition, recordStatusTransition } = require('../utils/statusTransitions');
 
 // ═══════════════════════════════════════════
 //  PRODUCTS
@@ -203,10 +204,18 @@ const getAdminOrders = async (req, res, next) => {
 // PUT /api/products/admin/orders/:id/status — update order status, fires MEDICINE_OUT_FOR_DELIVERY SMS
 const updateOrderStatus = async (req, res, next) => {
     try {
-        const { status, estimatedDelivery } = req.body;
-        const validStatuses = ['PENDING', 'CONFIRMED', 'DISPATCHED', 'DELIVERED', 'CANCELLED'];
-        if (!validStatuses.includes(status)) {
+        const { status, estimatedDelivery, forceStatus } = req.body;
+        if (!PRODUCT_ORDER_STATUSES.includes(status)) {
             return res.status(400).json({ success: false, message: 'Invalid status' });
+        }
+
+        const existing = await prisma.productOrder.findUnique({ where: { id: req.params.id }, select: { status: true } });
+        if (!existing) return res.status(404).json({ success: false, message: 'Order not found' });
+        if (!forceStatus && !isValidTransition(PRODUCT_ORDER_TRANSITIONS, existing.status, status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid status transition: ${existing.status} → ${status}. Pass forceStatus:true to override.`,
+            });
         }
 
         const order = await prisma.productOrder.update({
@@ -216,6 +225,12 @@ const updateOrderStatus = async (req, res, next) => {
                 user: { select: { id: true, name: true, phone: true, smsEnabled: true } },
                 product: { select: { name: true } },
             },
+        });
+        await recordStatusTransition({
+            entityType: 'ProductOrder', entityId: order.id,
+            fromStatus: existing.status, toStatus: status,
+            changedBy: req.admin?.id || null,
+            forced: !!forceStatus,
         });
 
         // DLT SMS — MEDICINE_OUT_FOR_DELIVERY (215398) when status changes to DISPATCHED

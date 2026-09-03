@@ -68,7 +68,7 @@ const RC_DEFAULT_HOME_CONFIG = JSON.stringify({
         },
         {
             id: 'ayuxa_services',
-            title: 'Diagnostics & Fitness',
+            title: 'Care & Diagnostics',
             type: 'service_grid',
             enabled: true,
             sort_order: 2,

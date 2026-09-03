@@ -15,6 +15,7 @@ const { dispatch } = require('./fast2sms.provider');
 const { validateSendPayload, WhatsAppValidationError } = require('./validators');
 const { logger } = require('../../config/logger');
 const prisma = require('../../config/database');
+const { canSendTo } = require('../../utils/communicationGate');
 
 // ── Idempotency / Rate-limit store ────────────────────────────────────────────
 // key → { lastSentAt: timestamp, count: number }
@@ -128,14 +129,22 @@ const sendWhatsApp = async ({ template, mobile, variables = [], userId = null, m
         throw err;
     }
 
-    // ── 2. User preference check ───────────────────────────────────────
+    // ── 2. Recipient eligibility (deleted/blocked user) ──────────────────
+    const gate = await canSendTo(userId);
+    if (!gate.allowed) {
+        logger.info(`[WA Service] Blocked (${gate.reason}) — skipping ${template} to user ${userId}`);
+        await _log({ userId, template, mobile: cleanMobile, variables, waba: wabaConfig?.name, success: false, error: gate.reason });
+        return false;
+    }
+
+    // ── 3. User preference check ───────────────────────────────────────
     const enabled = await _isWhatsAppEnabled(userId);
     if (!enabled) {
         logger.info(`[WA Service] User ${userId} has WhatsApp disabled — skipping ${template}`);
         return false;
     }
 
-    // ── 3. Idempotency / rate-limit ────────────────────────────────────
+    // ── 4. Idempotency / rate-limit ────────────────────────────────────
     const guard = _checkRateAndIdempotency(template, cleanMobile);
     if (guard.blocked) {
         logger.warn(`[WA Service] Blocked (${guard.reason}) — ${template} → +91${cleanMobile} (retry in ${guard.retryAfter}s)`);

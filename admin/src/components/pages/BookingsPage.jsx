@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Search, Eye, UserPlus, AlertTriangle, ChevronLeft, ChevronRight, Edit2, Save, X, Clock, Phone } from "lucide-react";
-import { bookingAPI, caregiverAPI, cityAPI, labAPI, activityAPI } from "@/lib/api";
+import { Search, Eye, UserPlus, AlertTriangle, ChevronLeft, ChevronRight, Edit2, Save, X, Clock, Phone, History, Loader2 } from "lucide-react";
+import { bookingAPI, caregiverAPI, cityAPI, labAPI, activityAPI, statusHistoryAPI } from "@/lib/api";
 import { formatDate, formatDateTime, formatCurrency, showToast } from "@/lib/hooks";
 import { getSocket } from "@/lib/socket";
 import PaymentsPanel, { PaymentsSummaryWarning } from "@/components/common/PaymentsPanel";
@@ -53,6 +53,11 @@ export default function BookingsPage() {
     const [editData, setEditData] = useState({});
     const [servicePersonModal, setServicePersonModal] = useState(false);
     const [servicePerson, setServicePerson] = useState({ name: '', phone: '', notes: '' });
+
+    // Status transition history panel
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [history, setHistory] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
 
     // ── Lab orders tab inside detail modal ──────────
     const [labOrders, setLabOrders] = useState([]);
@@ -174,13 +179,31 @@ export default function BookingsPage() {
         } catch (e) { showToast(e.response?.data?.message || 'Assign failed', 'error'); }
     }
 
-    async function updateStatus(id, status) {
+    async function updateStatus(id, status, forceStatus = false) {
         try {
-            await bookingAPI.updateStatus(id, { status });
+            await bookingAPI.updateStatus(id, { status, ...(forceStatus && { forceStatus: true }) });
             showToast(`Status updated to ${status}`);
             loadBookings();
             setSelected(null);
-        } catch { showToast('Update failed', 'error'); }
+        } catch (e) {
+            const msg = e.response?.data?.message || 'Update failed';
+            if (e.response?.status === 400 && /transition/i.test(msg) && confirm(`${msg}\n\nForce this status anyway?`)) {
+                return updateStatus(id, status, true);
+            }
+            showToast(msg, 'error');
+        }
+    }
+
+    async function openHistory(bookingId) {
+        setHistoryOpen(true);
+        setHistoryLoading(true);
+        try {
+            const res = await statusHistoryAPI.get('Booking', bookingId);
+            setHistory(res.data?.data || []);
+        } catch (e) {
+            console.error(e);
+            showToast('Failed to load status history', 'error');
+        } finally { setHistoryLoading(false); }
     }
 
     async function escalateBooking(id) {
@@ -192,11 +215,11 @@ export default function BookingsPage() {
         } catch { showToast('Escalation failed', 'error'); }
     }
 
-    async function updateBookingDetails() {
+    async function updateBookingDetails(forceStatus = false) {
         try {
             const calls = [];
             if (editData.status && editData.status !== selected.status)
-                calls.push(bookingAPI.updateStatus(selected.id, { status: editData.status }));
+                calls.push(bookingAPI.updateStatus(selected.id, { status: editData.status, ...(forceStatus && { forceStatus: true }) }));
             if (editData.paymentStatus && editData.paymentStatus !== (selected.paymentStatus || 'PENDING'))
                 calls.push(bookingAPI.updatePaymentStatus(selected.id, { paymentStatus: editData.paymentStatus }));
             if (!calls.length) { showToast('No changes', 'info'); setEditMode(false); return; }
@@ -204,7 +227,13 @@ export default function BookingsPage() {
             showToast('Updated successfully', 'success');
             setEditMode(false);
             await viewBooking(selected.id);
-        } catch (e) { showToast(e.response?.data?.message || 'Update failed', 'error'); }
+        } catch (e) {
+            const msg = e.response?.data?.message || 'Update failed';
+            if (e.response?.status === 400 && /transition/i.test(msg) && confirm(`${msg}\n\nForce this status anyway?`)) {
+                return updateBookingDetails(true);
+            }
+            showToast(msg, 'error');
+        }
     }
 
     async function addServicePerson() {
@@ -501,7 +530,17 @@ export default function BookingsPage() {
                                 {/* Status & Payment */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
                                     <div>
-                                        <label className="form-label">Status</label>
+                                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            Status
+                                            <button
+                                                type="button"
+                                                title="Status history"
+                                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-secondary)' }}
+                                                onClick={() => openHistory(selected.id)}
+                                            >
+                                                <History size={12} />
+                                            </button>
+                                        </label>
                                         {editMode
                                             ? <select className="form-select" value={editData.status || ''} onChange={e => setEditData({ ...editData, status: e.target.value })}>{Object.keys(statusColors).map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}</select>
                                             : <span className={`badge ${statusColors[selected.status]}`}>{selected.status?.replace(/_/g, ' ')}</span>}
@@ -877,6 +916,39 @@ export default function BookingsPage() {
                             <div className="form-group mb-4"><label className="form-label">Notes</label><textarea className="form-input" rows="3" value={servicePerson.notes} onChange={e => setServicePerson({ ...servicePerson, notes: e.target.value })} /></div>
                         </div>
                         <div className="modal-footer"><button className="btn btn-secondary" onClick={() => setServicePersonModal(false)}>Cancel</button><button className="btn btn-primary" onClick={addServicePerson}>Save</button></div>
+                    </div>
+                </div>
+            )}
+
+            {/* ══════════════════════════════════════════
+                STATUS TRANSITION HISTORY MODAL
+            ══════════════════════════════════════════ */}
+            {historyOpen && (
+                <div className="modal-overlay" onClick={() => setHistoryOpen(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
+                        <div className="modal-header"><h3>Status History</h3><button onClick={() => setHistoryOpen(false)} className="btn btn-sm btn-secondary">✕</button></div>
+                        <div className="modal-body">
+                            {historyLoading ? (
+                                <div style={{ padding: 24, textAlign: 'center' }}><Loader2 className="spin" size={20} /></div>
+                            ) : history.length === 0 ? (
+                                <p className="text-muted">No transitions recorded yet.</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {history.map(h => (
+                                        <div key={h.id} style={{ padding: '10px 12px', border: '1px solid var(--border-color)', borderRadius: 8 }}>
+                                            <div style={{ fontWeight: 600 }}>
+                                                {h.fromStatus ? `${h.fromStatus.replace(/_/g, ' ')} → ` : ''}{h.toStatus.replace(/_/g, ' ')}
+                                                {h.forced && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, color: '#EF4444', background: '#FEF2F2', padding: '1px 6px', borderRadius: 8 }}>FORCED</span>}
+                                            </div>
+                                            <div className="text-sm text-muted">
+                                                {new Date(h.createdAt).toLocaleString()} · {h.changedBy || 'system'}
+                                                {h.reason && ` · ${h.reason}`}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

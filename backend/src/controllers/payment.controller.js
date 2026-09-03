@@ -86,15 +86,17 @@ const initiatePayment = async (req, res, next) => {
         // The client sends total (base + GST + optional service fee), so we check
         // that it is at least 90% of the service basePrice (no GST floor).
         // EXCEPTION: Skip validation for BLOOD_TEST (uses dynamic Redcliffe pricing) and MEETUP.
-        if (bookingId && finalAmount > 0 && !upgradePlanId) {
+        if (bookingId && !upgradePlanId) {
             const linkedBooking = await prisma.booking.findUnique({
                 where: { id: bookingId },
-                include: { service: { select: { basePrice: true, slug: true } } }
+                include: { service: { select: { basePrice: true, slug: true, paymentMode: true } } }
             });
             const dbBasePrice = linkedBooking?.service?.basePrice;
             const isBloodTest = linkedBooking?.service?.slug === 'blood-test';
 
-            if (!isBloodTest && dbBasePrice && dbBasePrice > 0 && finalAmount < dbBasePrice * 0.9) {
+            // No `finalAmount > 0` bypass — a paid service must clear the floor
+            // even if the client sends amount: 0.
+            if (!isBloodTest && linkedBooking?.service?.paymentMode === 'PAID' && dbBasePrice && dbBasePrice > 0 && finalAmount < dbBasePrice * 0.9) {
                 return res.status(400).json({
                     success: false,
                     message: 'Payment amount does not match service price. Please refresh and try again.'

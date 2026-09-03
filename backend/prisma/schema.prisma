@@ -684,6 +684,25 @@ model UIConfigVersion {
   @@map("ui_config_versions")
 }
 
+// Every Booking/ProductOrder status change, written by
+// utils/statusTransitions.js's recordStatusTransition() — replaces the old
+// auditMiddleware, which logged that a mutation happened but never the
+// old/new status values.
+model StatusTransitionLog {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  fromStatus String?
+  toStatus   String
+  changedBy  String?
+  forced     Boolean  @default(false)
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@map("status_transition_logs")
+}
+
 model InsuranceApplication {
   id                    String             @id @default(uuid())
   userId                String

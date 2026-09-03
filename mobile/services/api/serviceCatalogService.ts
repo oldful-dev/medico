@@ -35,11 +35,15 @@ export interface ServiceItem {
 
 export const serviceCatalogService = {
     /**
-     * GET /api/services
-     * Fetch all enabled services for the app.
+     * GET /api/services?isEnabled=true
+     * Fetch all enabled services for the app. Filtered server-side so a
+     * disabled service never reaches the client at all — the app previously
+     * fetched the full unfiltered catalog and relied on filtering it out at
+     * render time, which meant disabled services were still present in the
+     * network response and in-memory.
      */
     getServices: async (): Promise<ApiResponse<ServiceItem[]>> => {
-        return apiClient.get<ServiceItem[]>('/services');
+        return apiClient.get<ServiceItem[]>('/services?isEnabled=true');
     },
 
     /**

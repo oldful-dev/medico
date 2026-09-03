@@ -18,6 +18,7 @@ import { getAssetUrl } from '@/utils/getAssetUrl';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { apiClient } from '@/services/api/apiClient';
+import { toDisplayStage } from '@/utils/productOrderStatus';
 
 // ─── Status → Icon/Color mapping ────────────────
 const STATUS_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; labelKey: string }> = {
@@ -127,8 +128,9 @@ export default function OrderTrackingScreen() {
     };
 
     const currentStatus = order?.status || 'PENDING';
-    const statusMeta = STATUS_META[currentStatus] || STATUS_META.PENDING;
-    const stageIndex = ORDER_STAGES.indexOf(currentStatus as any);
+    const displayStatus = toDisplayStage(currentStatus);
+    const statusMeta = STATUS_META[currentStatus] || STATUS_META[displayStatus] || STATUS_META.PENDING;
+    const stageIndex = ORDER_STAGES.indexOf(displayStatus as any);
 
     // ─── Render ───────────────────────────────────────────
     return (
@@ -191,7 +193,7 @@ export default function OrderTrackingScreen() {
                     </View>
 
                     {/* Progress Bar */}
-                    {currentStatus !== 'CANCELLED' && (
+                    {currentStatus !== 'CANCELLED' && currentStatus !== 'RETURNED' && (
                         <View style={styles.progressSection}>
                             <Text style={styles.sectionTitle}>{t('wellness.order_progress') || 'Order Progress'}</Text>
                             <View style={styles.progressRow}>

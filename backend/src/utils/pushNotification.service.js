@@ -14,11 +14,15 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
     try {
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            select: { fcmDeviceToken: true, pushEnabled: true },
+            select: { fcmDeviceToken: true, pushEnabled: true, status: true },
         });
 
-        if (!user?.fcmDeviceToken || user.pushEnabled === false) {
-            const reason = !user?.fcmDeviceToken ? 'No FCM token' : 'User disabled push';
+        if (!user?.fcmDeviceToken || user.pushEnabled === false || user.status !== 'ACTIVE') {
+            const reason = !user
+                ? 'Recipient user not found'
+                : user.status !== 'ACTIVE'
+                    ? `Recipient user is ${user.status.toLowerCase()}`
+                    : !user.fcmDeviceToken ? 'No FCM token' : 'User disabled push';
             logger.info(`[Push] Skipped for user ${userId}: ${reason}`);
             
             await prisma.notificationLog.create({

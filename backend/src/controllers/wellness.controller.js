@@ -99,11 +99,10 @@ const getShippingRates = async (req, res, next) => {
     }
 };
 
-// POST /api/wellness/shipping/create
+// POST /api/wellness/shipping/create  (admin only — see wellness.routes.js)
 const createShipment = async (req, res, next) => {
     try {
         const { orderId, total, pincode, weight } = req.body;
-        const userId = req.user.id;
 
         // Mock Delhivery Order Creation
         // Generate a random AWB for MVP demonstration

@@ -219,11 +219,16 @@ const notificationWorker = new Worker('notification-queue', async job => {
 
     const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, name: true, phone: true, email: true, whatsappEnabled: true }
+        select: { id: true, name: true, phone: true, email: true, whatsappEnabled: true, status: true }
     });
 
     if (!user) {
         logger.warn(`[Notification] Lab report: user ${userId} not found`);
+        return;
+    }
+
+    if (user.status !== 'ACTIVE') {
+        logger.info(`[Notification] Lab report: skipping ${userId} (user is ${user.status.toLowerCase()})`);
         return;
     }
 

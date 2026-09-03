@@ -25,6 +25,7 @@ const DIAGNOSTIC_FITNESS_CATEGORIES = [
  * server resolves to the same option the UI displayed.
  * Returns the option's price, or null if no formFieldsJson/options/match exists.
  */
+exports.resolveOptionPrice = resolveOptionPrice;
 function resolveOptionPrice(serviceRecord, selectedOption) {
     if (!serviceRecord || !selectedOption) {
         console.log('[resolveOptionPrice] skipped — serviceRecord:', !!serviceRecord, 'selectedOption:', JSON.stringify(selectedOption));

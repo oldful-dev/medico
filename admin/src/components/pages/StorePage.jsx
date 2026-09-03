@@ -1,7 +1,16 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Package, Tag, Layers, Eye, ShoppingCart, RefreshCw } from "lucide-react";
-import { productAPI, categoryAPI } from "@/lib/api";
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Package, Tag, Layers, Eye, ShoppingCart, RefreshCw, History, Loader2 } from "lucide-react";
+import { productAPI, categoryAPI, statusHistoryAPI } from "@/lib/api";
+
+// Single source of truth for ProductOrder statuses — must match
+// PRODUCT_ORDER_STATUSES in backend/src/utils/statusTransitions.js.
+const PRODUCT_ORDER_STATUSES = [
+    'PENDING', 'CONFIRMED', 'PAID', 'ACCEPTED', 'DELIVERY_CREATED',
+    'PICKUP_ASSIGNED', 'PICKED_UP', 'DISPATCHED', 'IN_TRANSIT',
+    'DELIVERED', 'RETURNED', 'CANCELLED',
+];
+const PRODUCT_ORDER_TERMINAL = new Set(['DELIVERED', 'CANCELLED']);
 import { showToast, formatCurrency } from "@/lib/hooks";
 import { onSocketEvent, offSocketEvent } from "@/lib/socket";
 
@@ -33,6 +42,11 @@ export default function StorePage() {
     // Orders tab
     const [orders, setOrders] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
+
+    // Order status history panel
+    const [historyOrderId, setHistoryOrderId] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
     const [newOrderCount, setNewOrderCount] = useState(0);
     const [updatingOrderId, setUpdatingOrderId] = useState(null);
 
@@ -82,15 +96,34 @@ export default function StorePage() {
         }
     }
 
-    async function updateOrderStatus(orderId, status) {
+    async function updateOrderStatus(orderId, status, forceStatus = false) {
         try {
             setUpdatingOrderId(orderId);
-            await productAPI.updateOrderStatus(orderId, { status });
+            await productAPI.updateOrderStatus(orderId, { status, ...(forceStatus && { forceStatus: true }) });
             setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
             showToast(`Order status updated to ${status}`);
         } catch (e) {
-            showToast(e.response?.data?.message || 'Failed to update status', 'error');
+            const msg = e.response?.data?.message || 'Failed to update status';
+            // Backend rejected an out-of-sequence transition (e.g. skipping
+            // straight to DELIVERED) — offer the same override path admins
+            // already have for bookings, instead of just failing silently.
+            if (e.response?.status === 400 && /transition/i.test(msg) && confirm(`${msg}\n\nForce this status anyway?`)) {
+                return updateOrderStatus(orderId, status, true);
+            }
+            showToast(msg, 'error');
         } finally { setUpdatingOrderId(null); }
+    }
+
+    async function openHistory(orderId) {
+        setHistoryOrderId(orderId);
+        setHistoryLoading(true);
+        try {
+            const res = await statusHistoryAPI.get('ProductOrder', orderId);
+            setHistory(res.data?.data || []);
+        } catch (e) {
+            console.error(e);
+            showToast('Failed to load status history', 'error');
+        } finally { setHistoryLoading(false); }
     }
 
 
@@ -315,12 +348,13 @@ export default function StorePage() {
                                 <th>Status</th>
                                 <th>Date</th>
                                 <th>Update Status</th>
+                                <th></th>
                             </tr></thead>
                             <tbody>
                                 {ordersLoading
-                                    ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 24 }}>Loading orders...</td></tr>
+                                    ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: 24 }}>Loading orders...</td></tr>
                                     : orders.length === 0
-                                        ? <tr><td colSpan={7} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>
+                                        ? <tr><td colSpan={8} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>
                                             No orders yet. Click Refresh to load.
                                           </td></tr>
                                         : orders.map(order => {
@@ -365,7 +399,7 @@ export default function StorePage() {
                                                         {new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                                                     </td>
                                                     <td>
-                                                        {!['DELIVERED', 'CANCELLED'].includes(order.status) && (
+                                                        {!PRODUCT_ORDER_TERMINAL.has(order.status) && (
                                                             <select
                                                                 className="form-select"
                                                                 style={{ fontSize: 12, padding: '4px 8px', minWidth: 120 }}
@@ -373,14 +407,24 @@ export default function StorePage() {
                                                                 disabled={updatingOrderId === order.id}
                                                                 onChange={e => updateOrderStatus(order.id, e.target.value)}
                                                             >
-                                                                {['PENDING','PAID','CONFIRMED','DISPATCHED','DELIVERED','CANCELLED'].map(s => (
-                                                                    <option key={s} value={s}>{s}</option>
+                                                                {PRODUCT_ORDER_STATUSES.map(s => (
+                                                                    <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                                                                 ))}
                                                             </select>
                                                         )}
-                                                        {['DELIVERED', 'CANCELLED'].includes(order.status) && (
+                                                        {PRODUCT_ORDER_TERMINAL.has(order.status) && (
                                                             <span className="text-sm" style={{ color: '#aaa' }}>Final</span>
                                                         )}
+                                                    </td>
+                                                    <td>
+                                                        <button
+                                                            className="btn btn-sm btn-secondary"
+                                                            style={{ padding: '4px 8px' }}
+                                                            title="Status history"
+                                                            onClick={() => openHistory(order.id)}
+                                                        >
+                                                            <History size={13} />
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             );
@@ -388,6 +432,45 @@ export default function StorePage() {
                             </tbody>
                         </table>
                     </div></div>
+
+                    {historyOrderId && (
+                        <div
+                            style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
+                            onClick={() => setHistoryOrderId(null)}
+                        >
+                            <div
+                                style={{ backgroundColor: "var(--card-bg)", borderRadius: 12, padding: 20, width: 480, maxHeight: "70vh", overflowY: "auto", border: "1px solid var(--border-color)" }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                    <h3 style={{ margin: 0 }}>Status History</h3>
+                                    <button style={{ background: "transparent", border: "none", cursor: "pointer" }} onClick={() => setHistoryOrderId(null)}>
+                                        <X size={18} />
+                                    </button>
+                                </div>
+                                {historyLoading ? (
+                                    <div style={{ padding: 24, textAlign: "center" }}><Loader2 className="spin" size={20} /></div>
+                                ) : history.length === 0 ? (
+                                    <p style={{ color: "var(--text-secondary)" }}>No transitions recorded yet.</p>
+                                ) : (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                        {history.map((h) => (
+                                            <div key={h.id} style={{ padding: "10px 12px", border: "1px solid var(--border-color)", borderRadius: 8 }}>
+                                                <div style={{ fontWeight: 600 }}>
+                                                    {h.fromStatus ? `${h.fromStatus.replace(/_/g, ' ')} → ` : ''}{h.toStatus.replace(/_/g, ' ')}
+                                                    {h.forced && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, color: '#EF4444', background: '#FEF2F2', padding: '1px 6px', borderRadius: 8 }}>FORCED</span>}
+                                                </div>
+                                                <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                                                    {new Date(h.createdAt).toLocaleString()} · {h.changedBy || 'system'}
+                                                    {h.reason && ` · ${h.reason}`}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
             {/* ── CATEGORIES TAB ── */}

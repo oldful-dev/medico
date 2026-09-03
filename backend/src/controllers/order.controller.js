@@ -9,6 +9,7 @@ const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/help
 const { logger } = require('../config/logger');
 const delhivery = require('../services/delhivery.service');
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
+const { PRODUCT_ORDER_STATUSES, PRODUCT_ORDER_TRANSITIONS, isValidTransition, recordStatusTransition } = require('../utils/statusTransitions');
 
 // Warehouse origin pincode (change to your actual warehouse pincode)
 const WAREHOUSE_PINCODE = process.env.WAREHOUSE_PINCODE || '560001';
@@ -385,6 +386,9 @@ const fulfillOrder = async (req, res, next) => {
         if (order.shiprocketOrderId) {
             return res.status(409).json({ success: false, message: 'Order already fulfilled on Delhivery' });
         }
+        if (!isValidTransition(PRODUCT_ORDER_TRANSITIONS, order.status, 'DISPATCHED')) {
+            return res.status(400).json({ success: false, message: `Cannot fulfill — order is currently ${order.status}` });
+        }
 
         // Parse address
         let addr = {};
@@ -516,6 +520,11 @@ const fulfillOrder = async (req, res, next) => {
                 shippingStatus: 'DISPATCHED',
             },
         });
+        await recordStatusTransition({
+            entityType: 'ProductOrder', entityId: updated.id,
+            fromStatus: order.status, toStatus: 'DISPATCHED',
+            changedBy: req.admin?.id || null,
+        });
 
         logger.info(`[OrderCtrl] Order ${order.orderCode} fulfilled → Delhivery:${shiprocketOrderId}, AWB:${awbCode}`);
         sendResponse(res, 200, updated, 'Order fulfilled and dispatched via Delhivery');
@@ -531,10 +540,18 @@ const fulfillOrder = async (req, res, next) => {
 
 const updateOrderStatus = async (req, res, next) => {
     try {
-        const { status, estimatedDelivery } = req.body;
-        const validStatuses = ['PENDING', 'CONFIRMED', 'PAID', 'DISPATCHED', 'DELIVERED', 'CANCELLED'];
-        if (!validStatuses.includes(status)) {
+        const { status, estimatedDelivery, forceStatus } = req.body;
+        if (!PRODUCT_ORDER_STATUSES.includes(status)) {
             return res.status(400).json({ success: false, message: 'Invalid status' });
+        }
+
+        const existing = await prisma.productOrder.findUnique({ where: { id: req.params.id }, select: { status: true } });
+        if (!existing) return res.status(404).json({ success: false, message: 'Order not found' });
+        if (!forceStatus && !isValidTransition(PRODUCT_ORDER_TRANSITIONS, existing.status, status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid status transition: ${existing.status} → ${status}. Pass forceStatus:true to override.`,
+            });
         }
 
         const order = await prisma.productOrder.update({
@@ -543,6 +560,12 @@ const updateOrderStatus = async (req, res, next) => {
             include: {
                 user: { select: { id: true, name: true, phone: true, smsEnabled: true } },
             },
+        });
+        await recordStatusTransition({
+            entityType: 'ProductOrder', entityId: order.id,
+            fromStatus: existing.status, toStatus: status,
+            changedBy: req.admin?.id || null,
+            forced: !!forceStatus,
         });
 
         // Fire MEDICINE_OUT_FOR_DELIVERY SMS on DISPATCHED

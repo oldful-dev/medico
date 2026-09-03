@@ -9,6 +9,7 @@ const { sendExpiryReminder } = require('../utils/notifications');
 const { sendPlanExpiryFamily, sendHealthCheckFamily, sendPaymentReceived, sendSOSAlertOps } = require('../services/whatsapp');
 const { calculateExpiryDate } = require('../utils/helpers');
 const { sendSMS } = require('../services/sms');
+const { recordStatusTransition } = require('../utils/statusTransitions');
 
 const initCronJobs = () => {
     // ─── 1. Plan Expiry Reminder (Daily at 9 AM) ─────────
@@ -28,6 +29,7 @@ const initCronJobs = () => {
                         gte: new Date(sevenDaysFromNow.toDateString()),
                         lt: new Date(new Date(sevenDaysFromNow.getTime() + 24 * 60 * 60 * 1000).toDateString()),
                     },
+                    user: { status: 'ACTIVE' },
                 },
                 include: { user: { select: { id: true, name: true, phone: true, email: true, uniqueUserId: true, whatsappEnabled: true, smsEnabled: true, emailMarketingEnabled: true } }, plan: true },
             });
@@ -41,7 +43,7 @@ const initCronJobs = () => {
                 });
                 // Notify emergency contacts (AYUXA_FAMILY WABA) — non-fatal
                 try {
-                    const contacts = await prisma.emergencyContact.findMany({ where: { userId: sub.userId } });
+                    const contacts = await prisma.emergencyContact.findMany({ where: { userId: sub.userId, user: { status: 'ACTIVE' } } });
                     for (const contact of contacts) {
                         await sendPlanExpiryFamily({
                             phone: contact.phone,
@@ -60,6 +62,7 @@ const initCronJobs = () => {
                         gte: new Date(threeDaysFromNow.toDateString()),
                         lt: new Date(new Date(threeDaysFromNow.getTime() + 24 * 60 * 60 * 1000).toDateString()),
                     },
+                    user: { status: 'ACTIVE' },
                 },
                 include: { user: { select: { id: true, name: true, phone: true, uniqueUserId: true } }, plan: true },
             });
@@ -73,7 +76,7 @@ const initCronJobs = () => {
                 });
                 // 3-day alert also goes to family contacts — non-fatal
                 try {
-                    const contacts = await prisma.emergencyContact.findMany({ where: { userId: sub.userId } });
+                    const contacts = await prisma.emergencyContact.findMany({ where: { userId: sub.userId, user: { status: 'ACTIVE' } } });
                     for (const contact of contacts) {
                         await sendPlanExpiryFamily({
                             phone: contact.phone,
@@ -111,6 +114,7 @@ const initCronJobs = () => {
                     status: { in: ['ACTIVE', 'EXPIRING'] },
                     autoRenew: true,
                     expiryDate: { lt: new Date() },
+                    user: { status: 'ACTIVE' },
                 },
                 include: { plan: true, user: { select: { id: true, name: true, phone: true, smsEnabled: true } } },
             });
@@ -236,7 +240,7 @@ const initCronJobs = () => {
         logger.info('⏰ CRON: Running wellness check-in SMS...');
         try {
             const activeUsers = await prisma.subscription.findMany({
-                where: { status: 'ACTIVE' },
+                where: { status: 'ACTIVE', user: { status: 'ACTIVE' } },
                 include: { user: { select: { id: true, name: true, phone: true, smsEnabled: true } } },
                 distinct: ['userId'],
             });
@@ -269,7 +273,7 @@ const initCronJobs = () => {
         logger.info('⏰ CRON: Running weekly family health check reminder...');
         try {
             const activeSubs = await prisma.subscription.findMany({
-                where: { status: 'ACTIVE' },
+                where: { status: 'ACTIVE', user: { status: 'ACTIVE' } },
                 include: { user: { select: { id: true, name: true } } },
                 distinct: ['userId'],
             });
@@ -277,7 +281,7 @@ const initCronJobs = () => {
             let sent = 0;
             for (const sub of activeSubs) {
                 try {
-                    const contacts = await prisma.emergencyContact.findMany({ where: { userId: sub.userId } });
+                    const contacts = await prisma.emergencyContact.findMany({ where: { userId: sub.userId, user: { status: 'ACTIVE' } } });
                     for (const contact of contacts) {
                         await sendHealthCheckFamily({
                             phone: contact.phone,
@@ -307,7 +311,7 @@ const initCronJobs = () => {
             // Find all in-transit orders that have an AWB code
             const inTransitOrders = await prisma.productOrder.findMany({
                 where: {
-                    status: { in: ['CONFIRMED', 'DISPATCHED'] },
+                    status: { in: ['CONFIRMED', 'DISPATCHED', 'IN_TRANSIT'] },
                     awbCode: { not: null },
                 },
                 select: { id: true, awbCode: true, orderCode: true, status: true },
@@ -320,12 +324,16 @@ const initCronJobs = () => {
                     const tracking = await delhivery.trackShipment(order.awbCode);
                     const newStatus = tracking.currentStatus || 'Unknown';
 
-                    // Map Delhivery status to our status
+                    // Map Delhivery status to our status. RTO (Return to
+                    // Origin — the carrier failed/couldn't deliver and is
+                    // sending it back) is distinct from a real customer
+                    // CANCELLED and must not be collapsed into it.
                     let dbStatus = order.status;
                     const upper = newStatus.toUpperCase();
                     if (upper.includes('DELIVERED') || upper.includes('DLV')) dbStatus = 'DELIVERED';
-                    else if (upper.includes('OUT FOR DELIVERY') || upper.includes('OFD')) dbStatus = 'DISPATCHED';
-                    else if (upper.includes('CANCELLED') || upper.includes('RTO')) dbStatus = 'CANCELLED';
+                    else if (upper.includes('OUT FOR DELIVERY') || upper.includes('OFD')) dbStatus = 'IN_TRANSIT';
+                    else if (upper.includes('RTO')) dbStatus = 'RETURNED';
+                    else if (upper.includes('CANCELLED')) dbStatus = 'CANCELLED';
 
                     await prisma.productOrder.update({
                         where: { id: order.id },
@@ -336,6 +344,13 @@ const initCronJobs = () => {
                             status: dbStatus,
                         },
                     });
+                    if (dbStatus !== order.status) {
+                        await recordStatusTransition({
+                            entityType: 'ProductOrder', entityId: order.id,
+                            fromStatus: order.status, toStatus: dbStatus,
+                            changedBy: 'cron', reason: `Delhivery: ${newStatus}`,
+                        });
+                    }
                     updated++;
                 } catch (trackErr) {
                     logger.warn(`[CRON] Tracking sync failed for order ${order.orderCode}: ${trackErr.message}`);

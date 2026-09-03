@@ -203,6 +203,11 @@ export const bookingAPI = {
     }
 };
 
+// ── Status Transition History (Booking + ProductOrder) ─
+export const statusHistoryAPI = {
+    get: (entityType, entityId) => api.get(`/status-history/${entityType}/${entityId}`),
+};
+
 // ── Caregivers ───────────────────────────────────────
 export const caregiverAPI = {
     getAll: (params) => api.get('/caregivers', { params }),

@@ -18,7 +18,7 @@ const CATEGORIES = [
     { value: "TECH_HELPER", label: "💻 Tech Helper" },
     { value: "HOME_ESSENTIALS", label: "🏠 Home Essentials" },
     { value: "CLUB_EVENTS", label: "🎭 Club & Events" },
-    { value: "DIAGNOSTICS_FITNESS", label: "📊 Diagnostics & Fitness" },
+    { value: "DIAGNOSTICS_FITNESS", label: "📊 Care & Diagnostics" },
     { value: "OTHER", label: "❓ Other Services" }
 ];
 

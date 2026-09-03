@@ -91,7 +91,7 @@ export interface ProductOrder {
     shippingCharge: number;
     discount: number;
     address?: string;
-    status: 'PENDING' | 'PAID' | 'CONFIRMED' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED';
+    status: 'PENDING' | 'PAID' | 'CONFIRMED' | 'ACCEPTED' | 'DELIVERY_CREATED' | 'PICKUP_ASSIGNED' | 'PICKED_UP' | 'DISPATCHED' | 'IN_TRANSIT' | 'DELIVERED' | 'RETURNED' | 'CANCELLED';
     shippingStatus?: string;
     trackingStatus?: string;
     awbCode?: string;

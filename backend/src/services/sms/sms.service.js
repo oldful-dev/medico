@@ -8,6 +8,7 @@ const { SMS_TEMPLATES } = require('./templates');
 const { dispatchSMS } = require('./fast2sms.provider');
 const { logger } = require('../../config/logger');
 const prisma = require('../../config/database');
+const { canSendTo } = require('../../utils/communicationGate');
 
 // In-memory idempotency store: key → timestamp
 // Prevents duplicate sends within 30 seconds for OTP templates.
@@ -98,12 +99,35 @@ const sendSMS = async ({ template, mobile, variables = [], userId = null }) => {
     // ── 3. Validate mobile ─────────────────────────────────────────────
     const cleanMobile = validateMobile(mobile);
 
-    // ── 4. Idempotency check (OTP templates only) ──────────────────────
+    // ── 4. Recipient eligibility (deleted/blocked user) ──────────────────
+    // userId is optional (e.g. signup OTP to a not-yet-registered number),
+    // so this only blocks when a known account is the target.
+    const gate = await canSendTo(userId);
+    if (!gate.allowed) {
+        logger.info(`[SMS] Blocked (${gate.reason}) — skipping ${template} to user ${userId}`);
+        try {
+            await prisma.notificationLog.create({
+                data: {
+                    channel: 'SMS',
+                    recipientId: userId,
+                    recipientType: 'user',
+                    body: `[${template}]`,
+                    isSent: false,
+                    errorMessage: gate.reason,
+                },
+            });
+        } catch (logErr) {
+            logger.warn('[SMS] Failed to persist notification log:', logErr.message);
+        }
+        return false;
+    }
+
+    // ── 5. Idempotency check (OTP templates only) ──────────────────────
     if (isDuplicate(template, cleanMobile)) {
         return false;
     }
 
-    // ── 5. Dispatch ────────────────────────────────────────────────────
+    // ── 6. Dispatch ────────────────────────────────────────────────────
     const variablesStr = buildVariablesString(variables);
 
     const result = await dispatchSMS({

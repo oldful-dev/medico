@@ -7,6 +7,7 @@
 
 const { logger } = require('../../config/logger');
 const prisma = require('../../config/database');
+const { canSendTo } = require('../../utils/communicationGate');
 
 const ZEPTOMAIL_URL = 'https://api.zeptomail.in/v1.1/email';
 const ZEPTOMAIL_TOKEN = process.env.ZEPTOMAIL_API_KEY;
@@ -47,6 +48,23 @@ const sendViaZeptoMail = async (body) => {
  * @param {Array<{content: Buffer, mimeType: string, name: string}>} [opts.attachments]
  */
 const sendEmail = async ({ to, subject, html, userId = null, isMarketing = false, attachments = [] }) => {
+    // ── Recipient eligibility (deleted/blocked user) ──────────────────
+    const gate = await canSendTo(userId);
+    if (!gate.allowed) {
+        logger.info(`📧 Blocked (${gate.reason}) — skipping email to user ${userId}`);
+        await prisma.notificationLog.create({
+            data: {
+                channel: 'EMAIL',
+                recipientId: userId,
+                recipientType: 'user',
+                subject,
+                isSent: false,
+                errorMessage: gate.reason,
+            },
+        }).catch(logErr => logger.warn('Email notification log failed:', logErr.message));
+        return false;
+    }
+
     // ── Preference gate ──────────────────────
     if (userId) {
         try {

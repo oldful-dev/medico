@@ -273,6 +273,9 @@ app.use('/api/wellness', require('./routes/wellness.routes'));
 // Orders (Shiprocket logistics)
 app.use('/api/orders', paymentLimiter, orderRoutes);
 
+// Status transition history (Booking + ProductOrder, admin-only, read-only)
+app.use('/api/status-history', require('./routes/statusHistory.routes'));
+
 
 // ═══ ERROR HANDLING ═════════════════════════════════════════
 app.use(notFoundHandler);

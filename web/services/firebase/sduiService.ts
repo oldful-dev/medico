@@ -88,7 +88,7 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
         },
         {
             id: 'ayuxa_services',
-            title: 'Diagnostics & Fitness',
+            title: 'Care & Diagnostics',
             type: 'service_grid',
             enabled: true,
             sort_order: 2,

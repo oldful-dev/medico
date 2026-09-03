@@ -61,6 +61,7 @@ export default function ServicesPage() {
         route: "",
         headline: "",
         subhead: "",
+        description: "",
         checkoutGroup: "D",
         basePrice: 0,
         pricingText: "Submit Request",
@@ -103,6 +104,26 @@ export default function ServicesPage() {
         }
     };
 
+    // Swaps a service with its neighbor (by sortOrder among all real DB
+    // services, not the filtered/search view) and persists the new order
+    // via the existing PUT /services/reorder endpoint.
+    const handleReorder = async (service, direction) => {
+        const ordered = [...services].sort((a, b) => a.sortOrder - b.sortOrder);
+        const index = ordered.findIndex(s => s.id === service.id);
+        const swapWith = direction === "up" ? index - 1 : index + 1;
+        if (index === -1 || swapWith < 0 || swapWith >= ordered.length) return;
+
+        [ordered[index], ordered[swapWith]] = [ordered[swapWith], ordered[index]];
+
+        try {
+            await serviceAPI.reorder({ orderedIds: ordered.map(s => s.id) });
+            loadServices();
+        } catch (e) {
+            console.error(e);
+            showToast("Failed to reorder services", "error");
+        }
+    };
+
     const handleDelete = async (s, isForce = false) => {
         if (!isForce && !confirm(`Are you sure you want to delete "${s.name}"? This action cannot be undone.`)) {
             return;
@@ -137,6 +158,7 @@ export default function ServicesPage() {
             route: "",
             headline: "",
             subhead: "",
+            description: "",
             checkoutGroup: "D",
             basePrice: 0,
             pricingText: "Submit Request",
@@ -194,6 +216,7 @@ export default function ServicesPage() {
             route: s.route || "",
             headline: s.headline || "",
             subhead: s.subhead || "",
+            description: s.description || "",
             checkoutGroup: s.checkoutGroup || "D",
             basePrice: s.basePrice !== null && s.basePrice !== undefined ? s.basePrice : 0,
             pricingText: s.pricingText || "",
@@ -511,6 +534,24 @@ export default function ServicesPage() {
                                     </a>
                                 ) : (
                                     <>
+                                        <button
+                                            className="btn btn-sm btn-secondary"
+                                            style={{ padding: "6px 8px" }}
+                                            title="Move up"
+                                            disabled={categoryFilter !== "all" || !!searchFilter}
+                                            onClick={() => handleReorder(item, "up")}
+                                        >
+                                            <ArrowUp size={13} />
+                                        </button>
+                                        <button
+                                            className="btn btn-sm btn-secondary"
+                                            style={{ padding: "6px 8px" }}
+                                            title="Move down"
+                                            disabled={categoryFilter !== "all" || !!searchFilter}
+                                            onClick={() => handleReorder(item, "down")}
+                                        >
+                                            <ArrowDown size={13} />
+                                        </button>
                                         <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => openEditDynamic(item)}>
                                             <Edit2 size={13} style={{ marginRight: 4 }} /> Edit
                                         </button>
@@ -575,7 +616,7 @@ export default function ServicesPage() {
                                                 onChange={e => setForm({ ...form, category: e.target.value })}
                                             >
                                                 <option value="CARE">Care Services (Doctor, Nurse, Physio, Hospital)</option>
-                                                <option value="DIAGNOSTICS_FITNESS">Diagnostics & Fitness</option>
+                                                <option value="DIAGNOSTICS_FITNESS">Care & Diagnostics</option>
                                             </select>
                                             <p className="text-muted text-xs" style={{ marginTop: 4 }}>
                                                 Home Essentials services are managed under Operations → Home Essential, not here.
@@ -697,16 +738,28 @@ export default function ServicesPage() {
                                         />
                                     </div>
 
-                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <div className="form-group" style={{ marginBottom: "16px" }}>
                                         <label className="form-label">App Subhead *</label>
-                                        <textarea 
-                                            className="form-textarea" 
-                                            required 
+                                        <textarea
+                                            className="form-textarea"
+                                            required
                                             rows={2}
                                             style={{ minHeight: "80px" }}
                                             placeholder="One descriptive line below the headline"
-                                            value={form.subhead} 
+                                            value={form.subhead}
                                             onChange={e => setForm({ ...form, subhead: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                        <label className="form-label">Description (internal — not shown in the app)</label>
+                                        <textarea
+                                            className="form-textarea"
+                                            rows={3}
+                                            style={{ minHeight: "100px" }}
+                                            placeholder="Longer notes for admin reference — what this service covers, eligibility, ops notes, etc."
+                                            value={form.description}
+                                            onChange={e => setForm({ ...form, description: e.target.value })}
                                         />
                                     </div>
                                 </div>

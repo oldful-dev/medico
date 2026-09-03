@@ -237,7 +237,7 @@ const triggerSOS = async (req, res) => {
     // 7. Notify family contacts via WhatsApp + SMS — non-fatal
     let familyNotified = false;
     try {
-        const contacts = await prisma.emergencyContact.findMany({ where: { userId: user.id } });
+        const contacts = await prisma.emergencyContact.findMany({ where: { userId: user.id, user: { status: 'ACTIVE' } } });
         logger.info(`[SOS] Notifying ${contacts.length} emergency contact(s)`);
 
         for (const contact of contacts) {

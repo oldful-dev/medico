@@ -302,7 +302,7 @@ const cancelSubscription = async (req, res, next) => {
                 });
                 // WA: notify family emergency contacts (AYUXA_FAMILY — PLAN_EXPIRED_FAMILY)
                 const { sendPlanExpiredFamily } = require('../services/whatsapp');
-                const contacts = await prisma.emergencyContact.findMany({ where: { userId: subscription.userId } });
+                const contacts = await prisma.emergencyContact.findMany({ where: { userId: subscription.userId, user: { status: 'ACTIVE' } } });
                 for (const contact of contacts) {
                     await sendPlanExpiredFamily({
                         phone: contact.phone,

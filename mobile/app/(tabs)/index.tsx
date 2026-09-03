@@ -178,7 +178,7 @@ const translateSectionTitle = (id: string, fallbackTitle: string, t: any, lang: 
 
   const defaultTitles: Record<string, string> = {
     'quick_services': 'Quick Services',
-    'ayuxa_services': 'Diagnostics & Fitness',
+    'ayuxa_services': 'Care & Diagnostics',
     'essentials': 'Home Essentials Services',
   };
 

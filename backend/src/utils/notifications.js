@@ -10,6 +10,7 @@
 
 const { logger } = require('../config/logger');
 const prisma = require('../config/database');
+const { canSendTo } = require('./communicationGate');
 
 // ─── Email (ZeptoMail via email service) ──────────────────────
 
@@ -41,6 +42,24 @@ const WABA_TO_SMS_MAP = {
  * Send a WhatsApp template message via Fast2SMS WABA.
  */
 const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId = null, mediaUrl = null, documentFilename = null }) => {
+    // Gate covers BOTH the WhatsApp attempt below and its direct SMS fallback
+    // (fast2smsUtils.sendDLTSMS), which bypasses sms.service.js's own gate.
+    const gate = await canSendTo(userId);
+    if (!gate.allowed) {
+        logger.info(`🚫 Blocked (${gate.reason}) — skipping WhatsApp/SMS to ${phoneNumber} for ${templateName}`);
+        await prisma.notificationLog.create({
+            data: {
+                channel: 'WHATSAPP',
+                recipientId: userId,
+                recipientType: 'user',
+                body: `Template: ${templateName}`,
+                isSent: false,
+                errorMessage: gate.reason,
+            },
+        }).catch(logErr => logger.warn('WhatsApp notification log failed:', logErr.message));
+        return false;
+    }
+
     try {
         if (userId) {
             const user = await prisma.user.findUnique({ where: { id: userId }, select: { whatsappEnabled: true, smsEnabled: true } });

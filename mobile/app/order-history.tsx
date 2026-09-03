@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { apiClient } from '@/services/api/apiClient';
+import { PRODUCT_ORDER_TERMINAL, toDisplayStage } from '@/utils/productOrderStatus';
 
 type TabType = 'Active' | 'Payment' | 'History' | 'Products';
 type ProductFilterType = 'All' | 'Active' | 'Completed' | 'Cancelled';
@@ -166,12 +167,16 @@ export default function OrderHistoryScreen() {
     }, [bookings, activeTab]);
 
     // ─── Product Orders Filtering ───
+    // "Active" is everything not yet in a terminal state, rather than an
+    // explicit list of in-progress statuses — a granular carrier status
+    // (IN_TRANSIT, PICKED_UP, etc.) the app doesn't otherwise special-case
+    // still counts as active instead of silently vanishing from every tab.
     const filteredProductOrders = useMemo(() => {
         return productOrders.filter(o => {
             if (productFilter === 'All') return true;
-            if (productFilter === 'Active') return ['PENDING', 'PAID', 'CONFIRMED', 'DISPATCHED'].includes(o.status);
+            if (productFilter === 'Active') return !PRODUCT_ORDER_TERMINAL.has(o.status);
             if (productFilter === 'Completed') return o.status === 'DELIVERED';
-            if (productFilter === 'Cancelled') return o.status === 'CANCELLED';
+            if (productFilter === 'Cancelled') return o.status === 'CANCELLED' || o.status === 'RETURNED';
             return true;
         }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [productOrders, productFilter]);
@@ -194,8 +199,8 @@ export default function OrderHistoryScreen() {
 
     // ─── Product Order Card ───
     const renderProductCard = (order: ProductOrder) => {
-        const meta = PRODUCT_STATUS_META[order.status] || PRODUCT_STATUS_META.PENDING;
-        const isActive = !['DELIVERED', 'CANCELLED'].includes(order.status);
+        const meta = PRODUCT_STATUS_META[order.status] || PRODUCT_STATUS_META[toDisplayStage(order.status)] || PRODUCT_STATUS_META.PENDING;
+        const isActive = !PRODUCT_ORDER_TERMINAL.has(order.status);
         const items = Array.isArray(order.items) ? order.items : [];
         const itemCount = items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0);
 
@@ -272,7 +277,7 @@ export default function OrderHistoryScreen() {
                                 <Text style={styles.trackBtnText}>{t('order_history.track_btn') || 'Track'}</Text>
                             </TouchableOpacity>
                         )}
-                        {order.status === 'PAID' || order.status === 'CONFIRMED' || order.status === 'DISPATCHED' || order.status === 'DELIVERED' ? (
+                        {!['PENDING', 'CANCELLED', 'RETURNED'].includes(order.status) ? (
                             <TouchableOpacity
                                 style={[styles.invoiceBtn, downloadingInvoiceId === order.id && { opacity: 0.6 }]}
                                 onPress={() => handleDownloadOrderInvoice(order)}
