@@ -16,4 +16,7 @@ router.get('/default',authenticateAdmin, authorize('SUPER_ADMIN'), ctrl.getDefau
 router.put('/home',       authenticateAdmin, authorize('SUPER_ADMIN'), ctrl.updateHomeConfig);
 router.post('/home/reset', authenticateAdmin, authorize('SUPER_ADMIN'), ctrl.resetHomeConfig);
 
+router.get('/:configKey/history',            authenticateAdmin, authorize('SUPER_ADMIN'), ctrl.getConfigHistory);
+router.post('/:configKey/rollback/:versionId', authenticateAdmin, authorize('SUPER_ADMIN'), ctrl.rollbackConfig);
+
 module.exports = router;

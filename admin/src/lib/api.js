@@ -346,6 +346,8 @@ export const appConfigAPI = {
     getHomeConfig: () => api.get('/app-config/home'),
     updateHomeConfig: (config) => api.put('/app-config/home', { config }),
     resetHomeConfig: () => api.post('/app-config/home/reset'),
+    getHistory: (configKey) => api.get(`/app-config/${configKey}/history`),
+    rollback: (configKey, versionId) => api.post(`/app-config/${configKey}/rollback/${versionId}`),
 };
 
 // ── Reports ──────────────────────────────────────────

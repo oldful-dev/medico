@@ -36,6 +36,29 @@ import { cityService } from "@/services/api/cityService";
 const CACHE_KEY = "@ayuxacare_app_config";
 const CACHE_VERSION_KEY = "@ayuxacare_app_config_version";
 
+// Module-level escape hatch so non-React code (socket handlers) can force a
+// refetch without needing a hook. Set by the provider on mount.
+let forceRefreshRef: (() => void) | null = null;
+
+// Structural guard mirroring backend/src/utils/sduiValidator.js's
+// validateAppConfig — just enough to keep the derived-values block below from
+// dereferencing undefined and crashing the whole app on a malformed publish
+// or a corrupted cache entry.
+const isPlainObject = (v: unknown): v is Record<string, any> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+const isValidAppConfig = (data: unknown): data is AppConfig => {
+  if (!isPlainObject(data)) return false;
+  if (!isPlainObject(data.feature_flags)) return false;
+  if (!isPlainObject(data.screens)) return false;
+  if (!isPlainObject(data.screens.home) || !Array.isArray(data.screens.home.sections)) return false;
+  if (!isPlainObject(data.screens.plans) || !Array.isArray(data.screens.plans.plans)) return false;
+  if (!isPlainObject(data.screens.city_selection) || !Array.isArray(data.screens.city_selection.cities)) return false;
+  if (!isPlainObject(data.screens.language_selection) || !Array.isArray(data.screens.language_selection.languages)) return false;
+  return true;
+};
+export const forceRefreshAppConfig = () => forceRefreshRef?.();
+
 // ─── Embedded fallback (identical to backend DEFAULT_CONFIG) ─────────────────
 // Ensures the app works fully offline on first install, before any API call.
 
@@ -1000,8 +1023,12 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
     try {
       const res = await appConfigService.getConfig();
       if (res.success && res.data) {
-        applyConfig(res.data);
-        lastFetchRef.current = Date.now();
+        if (isValidAppConfig(res.data)) {
+          applyConfig(res.data);
+          lastFetchRef.current = Date.now();
+        } else {
+          console.warn('[AppConfig] Fetched config failed shape validation — keeping existing config');
+        }
       }
 
       // Dynamic cities fetch from database
@@ -1030,7 +1057,12 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
       try {
         const cached = await AsyncStorage.getItem(CACHE_KEY);
         if (cached) {
-          setConfig(JSON.parse(cached));
+          const parsed = JSON.parse(cached);
+          if (isValidAppConfig(parsed)) {
+            setConfig(parsed);
+          } else {
+            console.warn('[AppConfig] Cached config failed shape validation — using fallback');
+          }
         }
       } catch {
         // ignore parse errors — use fallback
@@ -1048,6 +1080,15 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
     };
     const sub = AppState.addEventListener("change", handleAppState);
     return () => sub.remove();
+  }, [fetchFresh]);
+
+  // Let the socket's CACHE_PURGE_FORCE_REFRESH handler bypass the 24h throttle
+  useEffect(() => {
+    forceRefreshRef = () => {
+      AsyncStorage.removeItem(CACHE_KEY).catch(() => {});
+      fetchFresh(true);
+    };
+    return () => { forceRefreshRef = null; };
   }, [fetchFresh]);
 
   // ── Derived values ──────────────────────────────────────────────────────

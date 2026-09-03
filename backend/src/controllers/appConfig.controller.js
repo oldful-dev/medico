@@ -8,6 +8,39 @@
 const prisma = require('../config/database');
 const { logger } = require('../config/logger');
 const { syncUIConfigToDbServices } = require('../utils/sduiSync');
+const { validateAppConfig, validateHomeConfig } = require('../utils/sduiValidator');
+
+// The only two UIConfig keys this controller's history/rollback endpoints may
+// touch — keeps /rollback from becoming a generic "overwrite any row" primitive.
+const ROLLBACKABLE_KEYS = new Set(['sdui_app_config', 'home_config']);
+const HISTORY_KEEP = 3;
+
+// Snapshot a config row's CURRENT configJson before it gets overwritten, then
+// prune to the last HISTORY_KEEP snapshots for that key.
+const snapshotBeforeOverwrite = async (key, adminId) => {
+    const current = await prisma.uIConfig.findUnique({ where: { key } });
+    if (!current?.configJson) return; // nothing to snapshot on first publish
+
+    await prisma.uIConfigVersion.create({
+        data: {
+            configKey: key,
+            configJson: current.configJson,
+            version: current.version,
+            publishedBy: adminId || null,
+            publishedAt: current.publishedAt,
+        },
+    });
+
+    const stale = await prisma.uIConfigVersion.findMany({
+        where: { configKey: key },
+        orderBy: { createdAt: 'desc' },
+        skip: HISTORY_KEEP,
+        select: { id: true },
+    });
+    if (stale.length > 0) {
+        await prisma.uIConfigVersion.deleteMany({ where: { id: { in: stale.map(s => s.id) } } });
+    }
+};
 
 // ─── Default SDUI Config ─────────────────────────────────────────────────────
 // This is the source-of-truth fallback. The DB overrides this when an admin
@@ -433,6 +466,9 @@ const DEFAULT_CONFIG = {
  */
 const getAppConfig = async (req, res) => {
     try {
+        // Never let a proxy/CDN cache stale SDUI config over the admin's published one
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
         const stored = await prisma.uIConfig.findUnique({
             where: { key: 'sdui_app_config' },
         });
@@ -460,6 +496,12 @@ const updateAppConfig = async (req, res, next) => {
         if (!config || typeof config !== 'object') {
             return res.status(400).json({ success: false, message: 'config object required' });
         }
+        const { valid, errors } = validateAppConfig(config);
+        if (!valid) {
+            return res.status(400).json({ success: false, message: 'Invalid config shape', errors });
+        }
+
+        await snapshotBeforeOverwrite('sdui_app_config', req.admin?.id);
 
         await prisma.uIConfig.upsert({
             where:  { key: 'sdui_app_config' },
@@ -722,6 +764,8 @@ const DEFAULT_HOME_CONFIG = {
  */
 const getHomeConfig = async (req, res) => {
     try {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
         const stored = await prisma.uIConfig.findUnique({
             where: { key: 'home_config' },
         });
@@ -747,6 +791,12 @@ const updateHomeConfig = async (req, res, next) => {
         if (!config || typeof config !== 'object') {
             return res.status(400).json({ success: false, message: 'config object required' });
         }
+        const { valid, errors } = validateHomeConfig(config);
+        if (!valid) {
+            return res.status(400).json({ success: false, message: 'Invalid config shape', errors });
+        }
+
+        await snapshotBeforeOverwrite('home_config', req.admin?.id);
 
         await prisma.uIConfig.upsert({
             where:  { key: 'home_config' },
@@ -793,6 +843,78 @@ const resetHomeConfig = async (req, res, next) => {
     }
 };
 
+/**
+ * GET /api/app-config/:configKey/history
+ * SUPER_ADMIN only. Lists recent published snapshots for a config key
+ * (metadata only — full payload is fetched at rollback time, not here).
+ */
+const getConfigHistory = async (req, res, next) => {
+    try {
+        const { configKey } = req.params;
+        if (!ROLLBACKABLE_KEYS.has(configKey)) {
+            return res.status(400).json({ success: false, message: `Unknown config key: ${configKey}` });
+        }
+
+        const versions = await prisma.uIConfigVersion.findMany({
+            where: { configKey },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, version: true, publishedBy: true, publishedAt: true, createdAt: true },
+        });
+
+        return res.json({ success: true, data: versions });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * POST /api/app-config/:configKey/rollback/:versionId
+ * SUPER_ADMIN only. Republishes an older snapshot as the current config.
+ * The state being replaced is itself snapshotted first, so a rollback can
+ * always be undone the same way.
+ */
+const rollbackConfig = async (req, res, next) => {
+    try {
+        const { configKey, versionId } = req.params;
+        if (!ROLLBACKABLE_KEYS.has(configKey)) {
+            return res.status(400).json({ success: false, message: `Unknown config key: ${configKey}` });
+        }
+
+        const snapshot = await prisma.uIConfigVersion.findUnique({ where: { id: versionId } });
+        if (!snapshot || snapshot.configKey !== configKey) {
+            return res.status(404).json({ success: false, message: 'Version not found' });
+        }
+
+        const validator = configKey === 'home_config' ? validateHomeConfig : validateAppConfig;
+        const { valid, errors } = validator(snapshot.configJson);
+        if (!valid) {
+            return res.status(400).json({ success: false, message: 'Snapshot failed validation, refusing to restore', errors });
+        }
+
+        await snapshotBeforeOverwrite(configKey, req.admin?.id);
+
+        await prisma.uIConfig.update({
+            where: { key: configKey },
+            data: {
+                configJson:  snapshot.configJson,
+                version:     { increment: 1 },
+                publishedAt: new Date(),
+            },
+        });
+
+        if (configKey === 'home_config') {
+            await syncUIConfigToDbServices(snapshot.configJson);
+        } else {
+            await syncUIConfigToDbServices(snapshot.configJson, 'sdui_app_config');
+        }
+
+        logger.info(`SDUI ${configKey} rolled back to version ${snapshot.version} by admin:`, req.admin?.id);
+        return res.json({ success: true, message: 'Config rolled back' });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getAppConfig,
     updateAppConfig,
@@ -802,5 +924,7 @@ module.exports = {
     getHomeConfig,
     updateHomeConfig,
     resetHomeConfig,
-    DEFAULT_HOME_CONFIG
+    DEFAULT_HOME_CONFIG,
+    getConfigHistory,
+    rollbackConfig,
 };

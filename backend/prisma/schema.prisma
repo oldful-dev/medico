@@ -9,24 +9,24 @@ datasource db {
 }
 
 model Admin {
-  id           String     @id @default(uuid())
-  name         String
-  email        String     @unique
-  phone        String?
-  passwordHash String
-  role         AdminRole  @default(CITY_ADMIN)
-  cityId       String?
-  isActive     Boolean    @default(true)
-  isStaffProfile Boolean  @default(false)
-  lastLoginAt  DateTime?
-  refreshToken String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id              String         @id @default(uuid())
+  name            String
+  email           String         @unique
+  phone           String?
+  passwordHash    String
+  role            AdminRole      @default(CITY_ADMIN)
+  cityId          String?
+  isActive        Boolean        @default(true)
+  isStaffProfile  Boolean        @default(false)
+  lastLoginAt     DateTime?
+  refreshToken    String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   profileImageUrl String?
   documentsJson   Json?
-  city         City?      @relation(fields: [cityId], references: [id])
-  auditLogs    AuditLog[]
-  sessions     AdminSession[]
+  city            City?          @relation(fields: [cityId], references: [id])
+  auditLogs       AuditLog[]
+  sessions        AdminSession[]
 
   @@index([name, email, role, isActive])
   @@map("admins")
@@ -53,29 +53,29 @@ model City {
 }
 
 model User {
-  id                    String                 @id @default(uuid())
-  uniqueUserId          String                 @unique
+  id                    String                       @id @default(uuid())
+  uniqueUserId          String                       @unique
   name                  String
-  phone                 String                 @unique
+  phone                 String                       @unique
   email                 String?
   gender                String?
   dateOfBirth           DateTime?
   profileImageUrl       String?
-  preferredLanguage     String                 @default("en")
-  healthTag             HealthTag              @default(NORMAL)
-  status                UserStatus             @default(ACTIVE)
+  preferredLanguage     String                       @default("en")
+  healthTag             HealthTag                    @default(NORMAL)
+  status                UserStatus                   @default(ACTIVE)
   cityId                String
   otpCode               String?
   otpExpiresAt          DateTime?
   refreshToken          String?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
   deletedAt             DateTime?
   fcmDeviceToken        String?
-  emailMarketingEnabled Boolean                @default(false)
-  pushEnabled           Boolean                @default(true)
-  smsEnabled            Boolean                @default(true)
-  whatsappEnabled       Boolean                @default(true)
+  emailMarketingEnabled Boolean                      @default(false)
+  pushEnabled           Boolean                      @default(true)
+  smsEnabled            Boolean                      @default(true)
+  whatsappEnabled       Boolean                      @default(true)
   addresses             Address[]
   bookings              Booking[]
   emergencyContacts     EmergencyContact[]
@@ -90,7 +90,7 @@ model User {
   sosAlerts             SOSAlert[]
   subscriptions         Subscription[]
   upgradeHistory        SubscriptionUpgradeHistory[]
-  city                  City                   @relation(fields: [cityId], references: [id])
+  city                  City                         @relation(fields: [cityId], references: [id])
   waitlistEntries       WaitlistEntry[]
   meetupRegistrations   MeetupRegistration[]
   sessions              UserSession[]
@@ -139,19 +139,19 @@ model EmergencyContact {
 }
 
 model FamilyMember {
-  id                 String   @id @default(uuid())
-  userId             String
-  name               String
-  relation           String   // Father, Mother, Spouse, Child, Other
-  gender             String?
-  dateOfBirth        DateTime?
-  bloodGroup         String?
-  allergies          String?
-  chronicConditions  String?
-  emergencyNotes     String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String    @id @default(uuid())
+  userId            String
+  name              String
+  relation          String // Father, Mother, Spouse, Child, Other
+  gender            String?
+  dateOfBirth       DateTime?
+  bloodGroup        String?
+  allergies         String?
+  chronicConditions String?
+  emergencyNotes    String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("family_members")
 }
@@ -174,26 +174,26 @@ model MedicalCard {
 }
 
 model HealthReport {
-  id              String    @id @default(uuid())
-  userId          String
-  title           String
-  fileUrl         String
-  fileType        String
-  uploadedBy      String    @default("user")
-  category        String?   @default("Other")
-  flagSeverity    String?
-  flagNote        String?
+  id                String    @id @default(uuid())
+  userId            String
+  title             String
+  fileUrl           String
+  fileType          String
+  uploadedBy        String    @default("user")
+  category          String?   @default("Other")
+  flagSeverity      String?
+  flagNote          String?
   suggestedAllergen String?
-  reportDate      DateTime  @default(now())
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  ocrFlags        Json?
-  ocrHealthTags   String[]  @default([])
-  ocrParsedValues Json?
-  ocrProcessedAt  DateTime?
-  ocrRawText      String?
-  ocrStatus       String    @default("pending")
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reportDate        DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  ocrFlags          Json?
+  ocrHealthTags     String[]  @default([])
+  ocrParsedValues   Json?
+  ocrProcessedAt    DateTime?
+  ocrRawText        String?
+  ocrStatus         String    @default("pending")
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("health_reports")
 }
@@ -300,27 +300,27 @@ model Caregiver {
 }
 
 model Plan {
-  id             String             @id @default(uuid())
-  name           String             @unique
-  description    String?
-  benefits       String?
-  quarterlyPrice Float              @default(0)
-  biannualPrice  Float              @default(0)
-  yearlyPrice    Float              @default(0)
-  isVisible      Boolean            @default(true)
-  sortOrder      Int                @default(0)
-  tierLevel      Int                @default(0)
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  planType       String             @default("CARE")
-  maxConcurrent  Int                @default(1)  // max active subs of this planType per user (CARE=4, HOME=2)
-  metadata       Json?
-  planBenefits      PlanBenefit[]
-  billingCycles     PlanBillingCycle[]
-  subscriptions     Subscription[]
-  oldPlanHistory    SubscriptionUpgradeHistory[] @relation("OldPlan")
-  newPlanHistory    SubscriptionUpgradeHistory[] @relation("NewPlan")
-  scheduledForSubs  Subscription[]              @relation("ScheduledPlan")
+  id               String                       @id @default(uuid())
+  name             String                       @unique
+  description      String?
+  benefits         String?
+  quarterlyPrice   Float                        @default(0)
+  biannualPrice    Float                        @default(0)
+  yearlyPrice      Float                        @default(0)
+  isVisible        Boolean                      @default(true)
+  sortOrder        Int                          @default(0)
+  tierLevel        Int                          @default(0)
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime                     @updatedAt
+  planType         String                       @default("CARE")
+  maxConcurrent    Int                          @default(1) // max active subs of this planType per user (CARE=4, HOME=2)
+  metadata         Json?
+  planBenefits     PlanBenefit[]
+  billingCycles    PlanBillingCycle[]
+  subscriptions    Subscription[]
+  oldPlanHistory   SubscriptionUpgradeHistory[] @relation("OldPlan")
+  newPlanHistory   SubscriptionUpgradeHistory[] @relation("NewPlan")
+  scheduledForSubs Subscription[]               @relation("ScheduledPlan")
 
   @@map("plans")
 }
@@ -343,10 +343,10 @@ model PlanBenefit {
   id              String   @id @default(uuid())
   planId          String
   // ─── Structured fields (V2) ───────────────────────────────────────────────
-  benefitCode     String   @default("")   // SOS | TELECONSULT | MEDICINE | etc.
-  title           String   @default("")   // Human-readable display label
-  description     String?                 // Optional subtitle / detail
-  usageLimit      Int      @default(0)    // 0 = unlimited; N = N uses per usagePeriod
+  benefitCode     String   @default("") // SOS | TELECONSULT | MEDICINE | etc.
+  title           String   @default("") // Human-readable display label
+  description     String? // Optional subtitle / detail
+  usageLimit      Int      @default(0) // 0 = unlimited; N = N uses per usagePeriod
   usagePeriod     String   @default("MONTH") // MONTH | QUARTER | YEAR
   displayOrder    Int      @default(0)
   // ─── Legacy fields kept for backward compat ───────────────────────────────
@@ -378,11 +378,11 @@ model Subscription {
   updatedAt                  DateTime            @updatedAt
   billingCycleId             String?
   // ─── Upgrade / Downgrade tracking ───────────────────────────────────
-  scheduledPlanId            String?             // for SCHEDULED_DOWNGRADE
-  scheduledChangeDate        DateTime?           // when downgrade activates
-  proRataCredit              Float?              // credit from old plan
-  creditApplied              Float?              // credit used in upgrade
-  upgradeFromSubId           String?             // previous subscription id
+  scheduledPlanId            String? // for SCHEDULED_DOWNGRADE
+  scheduledChangeDate        DateTime? // when downgrade activates
+  proRataCredit              Float? // credit from old plan
+  creditApplied              Float? // credit used in upgrade
+  upgradeFromSubId           String? // previous subscription id
   payments                   Payment[]
   usage                      SubscriptionUsage[]
   planBillingCycle           PlanBillingCycle?   @relation(fields: [billingCycleId], references: [id], onDelete: Cascade)
@@ -469,10 +469,10 @@ model Invoice {
   invoiceNumber  String    @unique
   invoiceDate    DateTime  @default(now())
   subtotal       Float
-  gstRate        Float     @default(18)  // legacy — overall rate (kept for compat)
+  gstRate        Float     @default(18) // legacy — overall rate (kept for compat)
   gstAmount      Float
   totalAmount    Float
-  lineItemGst    Json?     // { carePlan: 0, homePlan: 18, product: 18, fees: 18 } per-line breakdown
+  lineItemGst    Json? // { carePlan: 0, homePlan: 18, product: 18, fees: 18 } per-line breakdown
   pdfUrl         String?
   emailSentAt    DateTime?
   billingName    String?
@@ -666,6 +666,22 @@ model UIConfig {
   updatedAt    DateTime     @updatedAt
 
   @@map("ui_configs")
+}
+
+// Snapshot of a UIConfig row taken right before it gets overwritten, so an
+// admin can roll a bad SDUI publish back. Only sdui_app_config/home_config
+// currently write here (see appConfig.controller.js).
+model UIConfigVersion {
+  id          String    @id @default(uuid())
+  configKey   String
+  configJson  Json
+  version     Int
+  publishedBy String?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([configKey, createdAt])
+  @@map("ui_config_versions")
 }
 
 model InsuranceApplication {
@@ -880,10 +896,10 @@ model ServiceCharge {
   // scope tells the UI whether this row is a single-service override
   // or a shared CATEGORY/SERVICE_TYPE default covering many services —
   // the actual cause of price drift between this table and Service.
-  basePrice              Float?   @map("base_price")
-  pricingText            String?  @map("pricing_text")
-  scope                  String   @default("SERVICE") @map("scope") // SERVICE | CATEGORY | SERVICE_TYPE
-  serviceId              String?  @map("service_id")
+  basePrice   Float?  @map("base_price")
+  pricingText String? @map("pricing_text")
+  scope       String  @default("SERVICE") @map("scope") // SERVICE | CATEGORY | SERVICE_TYPE
+  serviceId   String? @map("service_id")
 
   @@map("service_charges")
 }
@@ -892,7 +908,7 @@ model FAQ {
   id        String   @id @default(uuid())
   question  String   @db.VarChar(300)
   answer    String   @db.Text
-  category  String   @db.VarChar(30) @default("GENERAL")
+  category  String   @default("GENERAL") @db.VarChar(30)
   order     Int      @default(0)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -903,17 +919,17 @@ model FAQ {
 }
 
 model Banner {
-  id          String    @id @default(uuid())
-  imageUrl    String
-  heading     String    @db.VarChar(60)
-  subheading  String    @db.VarChar(80)
-  ctaText     String?   @db.VarChar(30)
-  ctaRoute    String?   @db.VarChar(100)
-  category    String    @db.VarChar(20) @default("HOME")
-  order       Int       @default(0)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String   @id @default(uuid())
+  imageUrl   String
+  heading    String   @db.VarChar(60)
+  subheading String   @db.VarChar(80)
+  ctaText    String?  @db.VarChar(30)
+  ctaRoute   String?  @db.VarChar(100)
+  category   String   @default("HOME") @db.VarChar(20)
+  order      Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([isActive, order])
   @@map("banners")
@@ -1100,7 +1116,7 @@ enum LabBookingType {
 }
 
 model Meetup {
-  id               String              @id @default(uuid())
+  id               String               @id @default(uuid())
   title            String
   description      String?
   venue            String
@@ -1110,47 +1126,47 @@ model Meetup {
   eventDate        DateTime
   startTime        String
   endTime          String?
-  capacity         Int                 @default(50)
-  serviceCharge    Float               @default(299)
-  isActive         Boolean             @default(true)
-  isFeatured       Boolean             @default(false)
+  capacity         Int                  @default(50)
+  serviceCharge    Float                @default(299)
+  isActive         Boolean              @default(true)
+  isFeatured       Boolean              @default(false)
   organizerName    String?
   organizerContact String?
-  includedItems    String[]            @default([])
-  extraCharges     String[]            @default([])
+  includedItems    String[]             @default([])
+  extraCharges     String[]             @default([])
   imageUrl         String?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
   registrations    MeetupRegistration[]
 
   @@map("meetups")
 }
 
 model MeetupRegistration {
-  id               String               @id @default(uuid())
-  meetupId         String
-  userId           String
-  bookingCode      String               @unique
-  fullName         String
-  mobile           String
-  age              Int
-  gender           String
-  assistanceJson   Json?
-  specialNotes     String?
-  pickupEnabled    Boolean              @default(false)
-  pickupAddress    String?
-  pickupLandmark   String?
-  pickupContact    String?
+  id                  String                   @id @default(uuid())
+  meetupId            String
+  userId              String
+  bookingCode         String                   @unique
+  fullName            String
+  mobile              String
+  age                 Int
+  gender              String
+  assistanceJson      Json?
+  specialNotes        String?
+  pickupEnabled       Boolean                  @default(false)
+  pickupAddress       String?
+  pickupLandmark      String?
+  pickupContact       String?
   preferredPickupTime String?
-  status           MeetupRegistrationStatus @default(CONFIRMED)
-  paymentStatus    String               @default("PAID")
-  amountPaid       Float                @default(299)
-  razorpayOrderId  String?
-  razorpayPaymentId String?
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-  meetup           Meetup               @relation(fields: [meetupId], references: [id])
-  user             User                 @relation(fields: [userId], references: [id])
+  status              MeetupRegistrationStatus @default(CONFIRMED)
+  paymentStatus       String                   @default("PAID")
+  amountPaid          Float                    @default(299)
+  razorpayOrderId     String?
+  razorpayPaymentId   String?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  meetup              Meetup                   @relation(fields: [meetupId], references: [id])
+  user                User                     @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([meetupId])

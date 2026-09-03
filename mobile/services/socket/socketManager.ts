@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../api/apiClient';
 import { sduiService } from '../firebase/sduiService';
 import { bannerService } from '../api/bannerService';
+import { forceRefreshAppConfig } from '../../context/AppConfigContext';
 
 const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'https://api.ayuxacare.com';
 
@@ -100,6 +101,8 @@ export const initSocket = async (): Promise<Socket | null> => {
 
                     bannerService.clearCache();
                     await bannerService.getHomeBanners(true);
+
+                    forceRefreshAppConfig();
 
                     await AsyncStorage.multiRemove(['@ayuxacare_rc_cache', '@ayuxacare_rc_cache_ts']);
                     console.log('[Socket] ✅ Real-time data force refreshed across mobile app');

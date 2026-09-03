@@ -18,7 +18,9 @@ import {
   Info,
   Sliders,
   Upload,
-  Loader2
+  Loader2,
+  History,
+  X
 } from "lucide-react";
 import { appConfigAPI, mediaAPI, bannerAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
@@ -34,6 +36,11 @@ export default function ServerUIPage() {
   const [carouselBanners, setCarouselBanners] = useState([]);
   const [activeTab, setActiveTab] = useState("form-sections");
   const [editorMode, setEditorMode] = useState("form"); // "form" | "json"
+
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [rollingBackId, setRollingBackId] = useState(null);
 
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [uploadingTarget, setUploadingTarget] = useState(null); // { type: "service", sIdx, svIdx } or { type: "banner", bIdx } or { type: "sos_icon" } or { type: "sos_illustration" }
@@ -220,9 +227,45 @@ export default function ServerUIPage() {
       showToast("Home layout configuration published successfully", "success");
     } catch (e) {
       console.error(e);
-      showToast("Failed to publish home layout configuration", "error");
+      const apiErrors = e.response?.data?.errors;
+      showToast(
+        apiErrors?.length ? `Rejected: ${apiErrors.join("; ")}` : "Failed to publish home layout configuration",
+        "error"
+      );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const openHistory = async () => {
+    setHistoryOpen(true);
+    setHistoryLoading(true);
+    try {
+      const res = await appConfigAPI.getHistory("home_config");
+      setHistory(res.data?.data || []);
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to load version history", "error");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleRollback = async (versionId) => {
+    if (!confirm("Roll back to this version? The current config will be saved to history first, so this can be undone.")) {
+      return;
+    }
+    try {
+      setRollingBackId(versionId);
+      await appConfigAPI.rollback("home_config", versionId);
+      showToast("Rolled back to selected version", "success");
+      setHistoryOpen(false);
+      await loadConfig();
+    } catch (e) {
+      console.error(e);
+      showToast("Rollback failed", "error");
+    } finally {
+      setRollingBackId(null);
     }
   };
 
@@ -419,6 +462,9 @@ export default function ServerUIPage() {
                 </button>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-sm btn-secondary" onClick={openHistory} disabled={saving}>
+                  <History size={14} /> Version History
+                </button>
                 <button className="btn btn-sm btn-danger" onClick={handleReset} disabled={saving}>
                   <RotateCcw size={14} /> Reset Default
                 </button>
@@ -427,6 +473,50 @@ export default function ServerUIPage() {
                 </button>
               </div>
             </div>
+
+            {historyOpen && (
+              <div
+                style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
+                onClick={() => setHistoryOpen(false)}
+              >
+                <div
+                  style={{ backgroundColor: "var(--card-bg)", borderRadius: 12, padding: 20, width: 480, maxHeight: "70vh", overflowY: "auto", border: "1px solid var(--border-color)" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <h3 style={{ margin: 0 }}>Version History</h3>
+                    <button style={{ background: "transparent", border: "none", cursor: "pointer" }} onClick={() => setHistoryOpen(false)}>
+                      <X size={18} />
+                    </button>
+                  </div>
+                  {historyLoading ? (
+                    <div style={{ padding: 24, textAlign: "center" }}><Loader2 className="spin" size={20} /></div>
+                  ) : history.length === 0 ? (
+                    <p style={{ color: "var(--text-secondary)" }}>No previous versions yet — history is recorded starting from the next publish.</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {history.map((v) => (
+                        <div key={v.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", border: "1px solid var(--border-color)", borderRadius: 8 }}>
+                          <div>
+                            <div style={{ fontWeight: 600 }}>Version {v.version}</div>
+                            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                              {v.publishedAt ? new Date(v.publishedAt).toLocaleString() : "—"}
+                            </div>
+                          </div>
+                          <button
+                            className="btn btn-sm btn-secondary"
+                            onClick={() => handleRollback(v.id)}
+                            disabled={rollingBackId === v.id}
+                          >
+                            {rollingBackId === v.id ? "Rolling back..." : "Rollback"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Validation Notification Banner */}
             {error && editorMode === "json" && (

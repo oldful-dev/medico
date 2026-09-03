@@ -247,9 +247,10 @@ interface QuickServicesProps {
   itemWidth: number;
   cardHeight: number;
   colors: ThemeColors;
+  skeleton?: boolean;
 }
 
-function QuickServicesStrip({ section, colors }: QuickServicesProps) {
+function QuickServicesStrip({ section, colors, skeleton }: QuickServicesProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const s = makeStyles(colors);
@@ -265,7 +266,11 @@ function QuickServicesStrip({ section, colors }: QuickServicesProps) {
             style={s.quickServiceBox}
             onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
           >
-            <Image source={{ uri: getAssetUrl(item.icon) }} style={s.quickServiceIcon} resizeMode="contain" />
+            {skeleton ? (
+              <View style={[s.quickServiceIcon, { backgroundColor: colors.bgCardMuted || '#E5E7EB', borderRadius: 8 }]} />
+            ) : (
+              <Image source={{ uri: getAssetUrl(item.icon) }} style={s.quickServiceIcon} resizeMode="contain" />
+            )}
             <Text style={s.quickServiceLabel}>{line1}</Text>
             {line2 ? <Text style={s.quickServiceLabel}>{line2}</Text> : null}
           </TouchableOpacity>
@@ -281,9 +286,10 @@ interface ServiceGridProps {
   imageHeight: number;
   cardHeight: number;
   colors: ThemeColors;
+  skeleton?: boolean;
 }
 
-function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: ServiceGridProps) {
+function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skeleton }: ServiceGridProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const s = makeStyles(colors);
@@ -338,7 +344,9 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
               style={[s.serviceGridItem, { width: itemWidth, height: cardHeight }]}
               onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
             >
-              {isEmoji(item.icon) ? (
+              {skeleton ? (
+                <View style={[s.serviceGridImage, { width: itemWidth, height: imageHeight, backgroundColor: colors.bgCardMuted || '#E5E7EB' }]} />
+              ) : isEmoji(item.icon) ? (
                 <View style={[s.serviceGridImage, { width: itemWidth, height: imageHeight, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgCardMuted || '#F8FAFC' }]}>
                   <Text style={{ fontSize: 32 }}>{item.icon}</Text>
                 </View>
@@ -381,13 +389,14 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
 }
 
 interface EssentialsGridProps {
+  skeleton?: boolean;
   section: HomeSection;
   itemWidth: number;
   cardHeight: number;
   colors: ThemeColors;
 }
 
-function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGridProps) {
+function EssentialsGrid({ section, itemWidth, cardHeight, colors, skeleton }: EssentialsGridProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const s = makeStyles(colors);
@@ -472,7 +481,11 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
                 onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
               >
                 <View style={s.essentialIconCircle}>
-                  <Image source={item.iconAsset} style={s.essentialIcon} resizeMode="contain" />
+                  {skeleton ? (
+                    <View style={[s.essentialIcon, { backgroundColor: colors.bgCardMuted || '#E5E7EB', borderRadius: 8 }]} />
+                  ) : (
+                    <Image source={item.iconAsset} style={s.essentialIcon} resizeMode="contain" />
+                  )}
                 </View>
                 <Text style={s.essentialLabel}>{line1}</Text>
                 {line2 ? <Text style={s.essentialLabel}>{line2}</Text> : null}
@@ -989,6 +1002,7 @@ export default function HomeScreen() {
                     itemWidth={exactEssentialItemWidth}
                     cardHeight={exactEssentialCardHeight}
                     colors={colors}
+                    skeleton={isLoading}
                   />
                 );
               case 'service_grid':
@@ -1000,6 +1014,7 @@ export default function HomeScreen() {
                     imageHeight={exactAyuxaImageHeight}
                     cardHeight={exactAyuxaCardHeight}
                     colors={colors}
+                    skeleton={isLoading}
                   />
                 );
               case 'essentials_grid':
@@ -1010,6 +1025,7 @@ export default function HomeScreen() {
                     itemWidth={exactEssentialItemWidth}
                     cardHeight={exactEssentialCardHeight}
                     colors={colors}
+                    skeleton={isLoading}
                   />
                 );
               case 'custom_card':
