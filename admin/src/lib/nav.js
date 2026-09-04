@@ -9,7 +9,7 @@ export const NAV_SECTIONS = [
     {
         title: "Overview",
         items: [
-            { id: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'SUPPORT_AGENT', 'BILLING_EXECUTIVE'] },
+            { id: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'SUPPORT_AGENT', 'BILLING_EXECUTIVE', 'CONTENT_ADMIN'] },
         ],
     },
     {
@@ -39,8 +39,8 @@ export const NAV_SECTIONS = [
             { id: "sos", href: "/sos", label: "SOS & Emergency", icon: AlertTriangle, badge: "Live", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'SUPPORT_AGENT'] },
             { id: "cities", href: "/cities", label: "City Management", icon: MapPin, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },
             { id: "meetups", href: "/meetups", label: "Local Meetups", icon: PartyPopper, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },
-            { id: "banners", href: "/banners", label: "Home Banner", icon: Sparkles, badge: "New", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
-            { id: "media", href: "/media", label: "Media Library", icon: ImageIcon, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },
+            { id: "banners", href: "/banners", label: "Home Banner", icon: Sparkles, badge: "New", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'CONTENT_ADMIN'] },
+            { id: "media", href: "/media", label: "Media Library", icon: ImageIcon, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CONTENT_ADMIN'] },
             { id: "lab-orders", href: "/lab-orders", label: "Blood Test Orders", icon: TestTube2, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "notifications", href: "/notifications", label: "Notification Management", icon: Bell, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },
         ],

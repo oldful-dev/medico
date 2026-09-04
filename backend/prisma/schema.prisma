@@ -966,6 +966,7 @@ enum AdminRole {
   CARE_MANAGER
   SUPPORT_AGENT
   BILLING_EXECUTIVE
+  CONTENT_ADMIN
 }
 
 enum UserStatus {

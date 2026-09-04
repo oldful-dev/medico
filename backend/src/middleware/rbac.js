@@ -46,11 +46,17 @@ const cityRestriction = (req, res, next) => {
 /**
  * Block payment & financial modules for non-billing roles.
  * Allowed: SUPER_ADMIN, BILLING_EXECUTIVE only.
+ *
+ * Was a denylist of 4 named roles — any role NOT on that list (including a
+ * newly-added one like CONTENT_ADMIN) passed through by default, silently
+ * contradicting this function's own doc comment. An allowlist can't drift
+ * that way: a new role is excluded by default until someone deliberately
+ * adds it here.
  */
 const blockPaymentModulesForNonBilling = (req, res, next) => {
     if (!req.user || req.user.type !== 'admin') return next();
-    const RESTRICTED_ROLES = ['CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'SUPPORT_AGENT'];
-    if (RESTRICTED_ROLES.includes(req.user.role)) {
+    const ALLOWED_ROLES = ['SUPER_ADMIN', 'BILLING_EXECUTIVE'];
+    if (!ALLOWED_ROLES.includes(req.user.role)) {
         return res.status(403).json({
             success: false,
             message: 'Access Denied: Payment and financial modules are restricted to Billing team only.',
