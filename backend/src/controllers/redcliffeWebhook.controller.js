@@ -34,6 +34,7 @@ exports.handleRedcliffeWebhook = async (req, res) => {
 
         // 2. Validate payload structure
         if (!payload || !payload.booking_id || !payload.event_type) {
+            logger.warn('[WebhookController] Malformed Redcliffe payload — dropped', { payload });
             return res.status(400).json({ success: false, message: 'Malformed payload' });
         }
 

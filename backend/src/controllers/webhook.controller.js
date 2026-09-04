@@ -44,7 +44,8 @@ const razorpayWebhook = async (req, res) => {
     let body;
     try {
         body = JSON.parse(rawBody.toString('utf8'));
-    } catch {
+    } catch (err) {
+        logger.warn('[Webhook] Malformed JSON payload — event dropped', { message: err.message });
         return res.status(400).json({ success: false, message: 'Invalid JSON' });
     }
 

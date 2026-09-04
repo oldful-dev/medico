@@ -59,15 +59,18 @@ const adminLogin = async (req, res, next) => {
 
         const admin = await prisma.admin.findUnique({ where: { email } });
         if (!admin) {
+            logger.warn('Admin login failed — unknown email', { email, ip: req.ip });
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
         if (!admin.isActive) {
+            logger.warn('Admin login blocked — deactivated account', { adminId: admin.id, ip: req.ip });
             return res.status(403).json({ success: false, message: 'Account deactivated' });
         }
 
         const isValid = await comparePassword(password, admin.passwordHash);
         if (!isValid) {
+            logger.warn('Admin login failed — wrong password', { adminId: admin.id, ip: req.ip });
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
@@ -262,6 +265,7 @@ const verifyOTP = async (req, res, next) => {
         const verification = await verifySmsOTP(phoneNumber, otp);
 
         if (!verification.success) {
+            logger.warn('OTP verification failed', { phoneNumber, ip: req.ip });
             return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
         }
 
@@ -491,6 +495,7 @@ const googleSignIn = async (req, res, next) => {
         }
 
         if (!verified) {
+            logger.warn('Google login failed — token/email mismatch', { email, ip: req.ip });
             return res.status(401).json({ success: false, message: 'Invalid Google token' });
         }
 

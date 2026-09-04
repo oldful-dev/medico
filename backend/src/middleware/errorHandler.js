@@ -26,6 +26,14 @@ const errorHandler = (err, req, res, next) => {
         statusCode = 404;
         message = 'Record not found';
     }
+    if (err.code === 'P2003') {
+        statusCode = 409;
+        message = `Related record not found for field: ${err.meta?.field_name || 'unknown'}`;
+    }
+    if (typeof err.code === 'string' && err.code.startsWith('P1')) {
+        statusCode = 503;
+        message = 'Database connection error';
+    }
 
     // JWT errors
     if (err.name === 'JsonWebTokenError') {
@@ -48,7 +56,10 @@ const errorHandler = (err, req, res, next) => {
     logger.error(`[${statusCode}] ${message}`, {
         path: req.path,
         method: req.method,
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+        requestId: req.id,
+        userId: req.user?.id || req.admin?.id,
+        prismaCode: err.code,
+        stack: err.stack,
     });
 
     res.status(statusCode).json({

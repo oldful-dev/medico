@@ -53,6 +53,7 @@ const authenticate = async (req, res, next) => {
         req.user = decoded;
         next();
     } catch (error) {
+        logger.warn('Auth failed', { path: req.path, ip: req.ip, reason: error.name });
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ success: false, message: 'Token expired' });
         }
@@ -113,6 +114,7 @@ const authenticateAdmin = async (req, res, next) => {
         req.user = decoded;
         next();
     } catch (error) {
+        logger.warn('Admin auth failed', { path: req.path, ip: req.ip, reason: error.name });
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ success: false, message: 'Token expired' });
         }
@@ -164,6 +166,7 @@ const authenticateUser = async (req, res, next) => {
         req.user = decoded;
         next();
     } catch (error) {
+        logger.warn('User auth failed', { path: req.path, ip: req.ip, reason: error.name });
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ success: false, message: 'Token expired' });
         }

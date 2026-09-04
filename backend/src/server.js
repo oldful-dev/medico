@@ -18,6 +18,7 @@
 // ══════════════════════════════════════════════════════════════
 
 require('dotenv').config();
+const { randomUUID } = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -79,6 +80,13 @@ const PORT = process.env.PORT || 5000;
 // Cloudflare sets X-Forwarded-For; Render sets it too.
 app.set('trust proxy', 1);
 app.use(cookieParser(process.env.JWT_SECRET));
+
+// Correlation id — lets a logged error be traced back to the exact request.
+app.use((req, res, next) => {
+    req.id = randomUUID();
+    res.set('X-Request-Id', req.id);
+    next();
+});
 
 // ─── SECURITY HEADERS ──────────────────────────────────────────
 app.use(helmet({
@@ -300,6 +308,20 @@ server.listen(PORT, '0.0.0.0', () => {
     // Initialize background cron jobs
     initCronJobs();
     logger.info('⏰ Cron jobs initialized');
+});
+
+// Log the reason before pm2 restarts the process — otherwise a crash
+// leaves nothing but an exit code in pm2's own logs.
+process.on('uncaughtException', (err) => {
+    logger.error('Uncaught exception — process will exit', { message: err.message, stack: err.stack });
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+    logger.error('Unhandled promise rejection', {
+        message: reason instanceof Error ? reason.message : String(reason),
+        stack: reason instanceof Error ? reason.stack : undefined,
+    });
 });
 
 module.exports = app;
