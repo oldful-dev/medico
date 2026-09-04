@@ -7,6 +7,7 @@ const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/help
 const { sendEmail, sendWhatsApp } = require('../utils/notifications');
 const { sendPushToUsers } = require('../utils/pushNotification.service');
 const { sendSMS } = require('../utils/fast2sms');
+const { logger } = require('../config/logger');
 
 // GET /api/notifications/logs
 const getNotificationLogs = async (req, res, next) => {
@@ -35,56 +36,18 @@ const getNotificationLogs = async (req, res, next) => {
     }
 };
 
-// ─── Templates ─────────────────────────────
-
-// GET /api/notifications/templates
-const getTemplates = async (req, res, next) => {
-    try {
-        const { channel } = req.query;
-        const where = {};
-        if (channel) where.channel = channel;
-
-        const templates = await prisma.notificationTemplate.findMany({ where, orderBy: { name: 'asc' } });
-        sendResponse(res, 200, templates);
-    } catch (error) {
-        next(error);
-    }
-};
-
-// POST /api/notifications/templates
-const createTemplate = async (req, res, next) => {
-    try {
-        const template = await prisma.notificationTemplate.create({ data: req.body });
-        sendResponse(res, 201, template, 'Template created');
-    } catch (error) {
-        next(error);
-    }
-};
-
-// PUT /api/notifications/templates/:id
-const updateTemplate = async (req, res, next) => {
-    try {
-        const template = await prisma.notificationTemplate.update({
-            where: { id: req.params.id },
-            data: req.body,
-        });
-        sendResponse(res, 200, template, 'Template updated');
-    } catch (error) {
-        next(error);
-    }
-};
-
-// DELETE /api/notifications/templates/:id
-const deleteTemplate = async (req, res, next) => {
-    try {
-        await prisma.notificationTemplate.delete({ where: { id: req.params.id } });
-        sendResponse(res, 200, null, 'Template deleted');
-    } catch (error) {
-        next(error);
-    }
-};
-
 // ─── Campaign ──────────────────────────────
+//
+// Note: there is no admin-editable "template" concept for real transactional
+// sends — WhatsApp/SMS templates are DLT-registered with the telecom
+// regulator (see services/whatsapp/templates.js, services/sms/templates.js)
+// and cannot be created or edited via any API; the template text stored
+// there is documentation only. A NotificationTemplate CRUD API + admin UI
+// used to exist here implying otherwise (editing a row had zero effect on
+// what was actually sent) — removed rather than left as a misleading
+// no-op. The campaign feature below uses its own hardcoded, pre-approved
+// marketing template list (see admin's NotificationsPage.jsx), unrelated
+// to that removed table.
 
 // POST /api/notifications/send-campaign
 const sendCampaign = async (req, res, next) => {
@@ -100,13 +63,19 @@ const sendCampaign = async (req, res, next) => {
         });
 
         let sentCount = 0;
+        let failedCount = 0;
 
         // EMAIL Channel
         if (channel === 'EMAIL') {
             for (const user of users) {
                 if (user.email) {
-                    const sent = await sendEmail({ to: user.email, subject, html: body, userId: user.id, isMarketing: true });
-                    if (sent) sentCount++;
+                    try {
+                        const sent = await sendEmail({ to: user.email, subject, html: body, userId: user.id, isMarketing: true });
+                        if (sent) sentCount++; else failedCount++;
+                    } catch (err) {
+                        failedCount++;
+                        logger.warn('Campaign email failed for recipient', { userId: user.id, message: err.message });
+                    }
                 }
             }
         }
@@ -119,8 +88,13 @@ const sendCampaign = async (req, res, next) => {
             }
             for (const user of users) {
                 if (user.phone) {
-                    const sent = await sendWhatsApp({ phoneNumber: user.phone, templateName: templateId, parameters: [user.name], userId: user.id });
-                    if (sent) sentCount++;
+                    try {
+                        const sent = await sendWhatsApp({ phoneNumber: user.phone, templateName: templateId, parameters: [user.name], userId: user.id });
+                        if (sent) sentCount++; else failedCount++;
+                    } catch (err) {
+                        failedCount++;
+                        logger.warn('Campaign WhatsApp failed for recipient', { userId: user.id, message: err.message });
+                    }
                 }
             }
         }
@@ -135,13 +109,22 @@ const sendCampaign = async (req, res, next) => {
         if (channel === 'SMS') {
             for (const user of users) {
                 if (user.phone) {
-                    const sent = await sendSMS(user.phone, body);
-                    if (sent) sentCount++;
+                    try {
+                        const sent = await sendSMS(user.phone, body);
+                        if (sent) sentCount++; else failedCount++;
+                    } catch (err) {
+                        failedCount++;
+                        logger.warn('Campaign SMS failed for recipient', { userId: user.id, message: err.message });
+                    }
                 }
             }
         }
 
-        sendResponse(res, 200, { sentCount, totalUsers: users.length }, 'Campaign sent');
+        if (failedCount > 0) {
+            logger.warn('Campaign completed with failures', { channel, sentCount, failedCount, totalUsers: users.length });
+        }
+
+        sendResponse(res, 200, { sentCount, failedCount, totalUsers: users.length }, 'Campaign sent');
     } catch (error) {
         next(error);
     }
@@ -219,7 +202,7 @@ const sendTestPush = async (req, res, next) => {
 };
 
 module.exports = {
-    getNotificationLogs, getTemplates, createTemplate, updateTemplate, deleteTemplate,
+    getNotificationLogs,
     sendCampaign, getMyNotifications, markNotificationRead, markAllNotificationsRead,
     sendTestPush,
 };

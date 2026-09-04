@@ -176,6 +176,76 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
     }
 }
 
+// ─── Booking Cancellation Notifications ──────────────────────────────────────
+// Single trigger for the "booking cancelled" customer + caregiver messages —
+// previously duplicated near-identically in both cancelBooking and
+// updateBookingStatus(status='CANCELLED'), which meant a booking cancelled
+// through one endpoint right after (or instead of) the other could send the
+// same WhatsApp/SMS twice. Both call sites now funnel through here.
+async function sendBookingCancellationNotifications(booking) {
+    // Customer notification
+    try {
+        const { sendOrderCancelled } = require('../services/whatsapp');
+        const user = await prisma.user.findUnique({
+            where: { id: booking.userId },
+            select: { name: true, phone: true, smsEnabled: true },
+        });
+        if (user?.phone) {
+            const waSuccess = await sendOrderCancelled({ phone: user.phone, name: user.name, orderId: booking.bookingCode || booking.id, userId: booking.userId })
+                .catch(err => {
+                    logger.warn('Order Cancelled WA failed (non-fatal):', err.message);
+                    return false;
+                });
+            if (!waSuccess && user.smsEnabled !== false) {
+                const { sendSMS } = require('../services/sms');
+                await sendSMS({ template: 'ORDER_CANCELLED_USER', mobile: user.phone, variables: [user.name, booking.bookingCode || booking.id], userId: booking.userId });
+            }
+        }
+    } catch (notifErr) {
+        logger.warn('sendBookingCancellationNotifications: customer notification failed (non-fatal):', notifErr.message);
+    }
+
+    // Caregiver notification (if one was assigned)
+    const caregiverId = booking.caregiverId || booking.caregiver?.id;
+    if (!caregiverId) return;
+    try {
+        const caregiver = booking.caregiver?.phone
+            ? booking.caregiver
+            : await prisma.caregiver.findUnique({ where: { id: caregiverId }, select: { name: true, phone: true } });
+        if (!caregiver?.phone) return;
+
+        const bookingUser = booking.user?.name
+            ? booking.user
+            : await prisma.user.findUnique({ where: { id: booking.userId }, select: { name: true } });
+
+        const scheduledDate = booking.scheduledDate
+            ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+            : 'TBD';
+        const { sendShiftCancelledWA } = require('../services/whatsapp');
+        const waSuccess = await sendShiftCancelledWA({
+            phone: caregiver.phone,
+            empName: caregiver.name,
+            clientName: bookingUser?.name || 'Client',
+            clientId: booking.bookingCode || booking.id,
+            date: scheduledDate,
+        }).catch(err => {
+            logger.warn('Caregiver cancel shift WA failed (non-fatal):', err.message);
+            return false;
+        });
+
+        if (!waSuccess) {
+            const { sendSMS } = require('../services/sms');
+            await sendSMS({
+                template: 'SHIFT_CANCELLED_PARTNER',
+                mobile: caregiver.phone,
+                variables: [caregiver.name, bookingUser?.name || 'Client', booking.bookingCode || booking.id, scheduledDate],
+            });
+        }
+    } catch (caregiverNotifErr) {
+        logger.warn('sendBookingCancellationNotifications: caregiver notification failed (non-fatal):', caregiverNotifErr.message);
+    }
+}
+
 // ─── Subscription Check ─────────────────────────────────────────
 // Returns true if user has an active subscription (covers all services)
 async function hasActiveSubscription(userId) {
@@ -290,6 +360,7 @@ const createBooking = async (req, res, next) => {
         // Find service by ID (UUID) or Slug
         let service = await prisma.service.findFirst({
             where: {
+                isEnabled: true,
                 OR: [
                     { id: serviceId },
                     { slug: serviceId }
@@ -522,6 +593,7 @@ const createBooking = async (req, res, next) => {
             } catch (err) {
                 const isUniqueViolation = err.code === 'P2002' && err.meta?.target?.includes('bookingCode');
                 if (!isUniqueViolation || attempt === 2) throw err;
+                logger.warn('Booking code collision — retrying', { attempt });
             }
         }
 
@@ -744,62 +816,20 @@ const updateBookingStatus = async (req, res, next) => {
             SLA_BREACH: 'We apologize for the delay. Our team is escalating your booking.',
         };
 
-        // WhatsApp + SMS for COMPLETED and CANCELLED (high-importance statuses)
-        if (status === 'COMPLETED' || status === 'CANCELLED') {
-            try {
-                const user = await prisma.user.findUnique({
-                    where: { id: booking.userId },
-                    select: { name: true, phone: true, smsEnabled: true },
-                });
-                if (user?.phone) {
-                    const { sendOrderCancelled } = require('../services/whatsapp');
-                    if (status === 'CANCELLED') {
-                        const waSuccess = await sendOrderCancelled({ phone: user.phone, name: user.name, orderId: booking.bookingCode || booking.id, userId: booking.userId })
-                            .catch(err => {
-                                logger.warn('Order Cancelled WA failed (non-fatal):', err.message);
-                                return false;
-                            });
-                        if (!waSuccess && user.smsEnabled !== false) {
-                            const { sendSMS } = require('../services/sms');
-                            await sendSMS({ template: 'ORDER_CANCELLED_USER', mobile: user.phone, variables: [user.name, booking.bookingCode || booking.id], userId: booking.userId });
-                        }
-                    }
-                    // COMPLETED: push is sufficient; booking confirmation already sent at creation
-                }
-            } catch (notifErr) {
-                logger.warn(`updateBookingStatus (${status}): notification failed (non-fatal):`, notifErr.message);
-            }
+        // CANCELLED uses the single shared trigger (also used by cancelBooking)
+        // so a booking cancelled via one endpoint never double-sends if the
+        // other endpoint also touches it. COMPLETED: push below is
+        // sufficient; booking confirmation already sent at creation.
+        if (status === 'CANCELLED') {
+            // Mirror cancelBooking's refund-marking side effect, since this
+            // endpoint can also be the one that transitions a booking to
+            // CANCELLED (e.g. an admin using the generic status endpoint).
+            await prisma.payment.updateMany({
+                where: { bookingId: booking.id, status: 'SUCCESS' },
+                data: { status: 'REFUND_INITIATED' },
+            }).catch(err => logger.warn('updateBookingStatus: refund-mark failed (non-fatal):', err.message));
 
-            // Notify assigned caregiver of shift cancellation — non-fatal
-            if (status === 'CANCELLED' && booking.caregiver?.phone) {
-                try {
-                    const { sendShiftCancelledWA } = require('../services/whatsapp');
-                    const scheduledDate = booking.scheduledDate
-                        ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                        : 'TBD';
-                    const waSuccess = await sendShiftCancelledWA({
-                        phone: booking.caregiver.phone,
-                        empName: booking.caregiver.name,
-                        clientName: booking.user?.name || 'Client',
-                        clientId: booking.bookingCode || booking.id,
-                        date: scheduledDate,
-                    }).catch(err => {
-                        logger.warn('Caregiver shift cancelled WA failed (non-fatal):', err.message);
-                        return false;
-                    });
-
-                    if (!waSuccess) {
-                        const { sendSMS } = require('../services/sms');
-                        await sendSMS({
-                            template: 'SHIFT_CANCELLED_PARTNER',
-                            mobile: booking.caregiver.phone,
-                            variables: [booking.caregiver.name, booking.user?.name || 'Client', booking.bookingCode || booking.id, scheduledDate],
-                        });
-                    }
-                } catch (caregiverNotifErr) {
-                    logger.warn(`updateBookingStatus: caregiver shift notification failed (non-fatal):`, caregiverNotifErr.message);
-                }
-            }
+            await sendBookingCancellationNotifications(booking);
         }
 
         if (statusMessages[status]) {
@@ -942,69 +972,10 @@ const cancelBooking = async (req, res, next) => {
             data: { status: 'REFUND_INITIATED' }
         });
 
-        // Notify user of cancellation — non-fatal
-        try {
-            const { sendOrderCancelled } = require('../services/whatsapp');
-            const { sendSMS } = require('../services/sms');
-            const user = await prisma.user.findUnique({
-                where: { id: req.user.id },
-                select: { name: true, phone: true, smsEnabled: true, whatsappEnabled: true },
-            });
-            if (user) {
-                const waSuccess = await sendOrderCancelled({ phone: user.phone, name: user.name, orderId: booking.bookingCode || req.params.id, userId: req.user.id })
-                    .catch(err => {
-                        logger.warn('Cancel Booking WA failed (non-fatal):', err.message);
-                        return false;
-                    });
-                if (!waSuccess && user.smsEnabled !== false) {
-                    await sendSMS({ template: 'ORDER_CANCELLED_USER', mobile: user.phone, variables: [user.name, booking.bookingCode || req.params.id], userId: req.user.id });
-                }
-            }
-        } catch (notifErr) {
-            logger.warn('cancelBooking: notification failed (non-fatal):', notifErr.message);
-        }
-
-        // Notify assigned caregiver of shift cancellation — non-fatal
-        if (booking.caregiverId) {
-            try {
-                const { sendSMS } = require('../services/sms');
-                const caregiver = await prisma.caregiver.findUnique({
-                    where: { id: booking.caregiverId },
-                    select: { name: true, phone: true },
-                });
-                const bookingUser = await prisma.user.findUnique({
-                    where: { id: booking.userId },
-                    select: { name: true },
-                });
-                if (caregiver?.phone) {
-                    const scheduledDate = booking.scheduledDate
-                        ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                        : 'TBD';
-                    const { sendShiftCancelledWA } = require('../services/whatsapp');
-                    const waSuccess = await sendShiftCancelledWA({
-                        phone: caregiver.phone,
-                        empName: caregiver.name,
-                        clientName: bookingUser?.name || 'Client',
-                        clientId: booking.bookingCode || req.params.id,
-                        date: scheduledDate,
-                    }).catch(err => {
-                        logger.warn('Caregiver cancel shift WA failed (non-fatal):', err.message);
-                        return false;
-                    });
-
-                    if (!waSuccess) {
-                        const { sendSMS } = require('../services/sms');
-                        await sendSMS({
-                            template: 'SHIFT_CANCELLED_PARTNER',
-                            mobile: caregiver.phone,
-                            variables: [caregiver.name, bookingUser?.name || 'Client', booking.bookingCode || req.params.id, scheduledDate],
-                        });
-                    }
-                }
-            } catch (caregiverNotifErr) {
-                logger.warn('cancelBooking: caregiver shift notification failed (non-fatal):', caregiverNotifErr.message);
-            }
-        }
+        // Single shared trigger — see sendBookingCancellationNotifications
+        // (also used by updateBookingStatus) so this never double-sends if
+        // a booking is cancelled through both endpoints.
+        await sendBookingCancellationNotifications(booking);
 
         sendResponse(res, 200, updated, 'Booking cancelled');
     } catch (error) {
