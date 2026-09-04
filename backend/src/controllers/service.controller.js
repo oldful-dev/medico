@@ -4,9 +4,10 @@
 
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
-const { uploadFile } = require('../utils/storage.service');
+const { uploadFile, deleteFile } = require('../utils/storage.service');
 const { syncDbServicesToUIConfig } = require('../utils/sduiSync');
 const { createAuditLog } = require('../middleware/audit');
+const { logger } = require('../config/logger');
 
 // GET /api/services
 const getServices = async (req, res, next) => {
@@ -268,12 +269,30 @@ const deleteService = async (req, res, next) => {
             });
         }
 
+        // Only the real-delete path below purges the image — the
+        // soft-disable path above keeps the service (and its icon) alive.
+        const service = await prisma.service.findUnique({ where: { id }, select: { icon: true, heroImageUrl: true } });
+
         if (bookingsCount > 0 && force) {
             await prisma.booking.deleteMany({ where: { serviceId: id } });
         }
 
         await prisma.service.delete({ where: { id } });
+        // Sync first — this removes the deleted service's icon reference
+        // from UIConfig (confirmed: syncDbServicesToUIConfig drops items
+        // whose backing Service row is gone) — then it's safe to purge the
+        // actual file, since nothing else should still be pointing at it.
         await syncDbServicesToUIConfig();
+
+        const urlsToPurge = [service?.icon, service?.heroImageUrl].filter(Boolean);
+        await Promise.all(
+            urlsToPurge.map(url =>
+                deleteFile(url).catch(err =>
+                    logger.warn(`[Service] Failed to purge image for deleted service ${id}:`, err.message)
+                )
+            )
+        );
+
         res.status(200).json({
             success: true,
             message: 'Service deleted successfully'

@@ -4,6 +4,8 @@
 
 const prisma = require('../config/database');
 const { sendResponse } = require('../utils/helpers');
+const { deleteFile } = require('../utils/storage.service');
+const { logger } = require('../config/logger');
 
 // GET /api/banners/home - Public endpoint for home screen banners
 const getHomeBanners = async (req, res, next) => {
@@ -138,6 +140,15 @@ const deleteBanner = async (req, res, next) => {
 
     if (!banner) {
       return res.status(404).json({ success: false, message: 'Banner not found' });
+    }
+
+    // Purge the GCS file + CDN cache before removing the DB row — mirrors
+    // media.controller.js's deleteMedia. Non-fatal: a storage cleanup
+    // failure must never block the actual banner deletion.
+    if (banner.imageUrl) {
+      await deleteFile(banner.imageUrl).catch(err =>
+        logger.warn(`[Banner] Failed to purge image for deleted banner ${banner.id}:`, err.message)
+      );
     }
 
     await prisma.banner.delete({

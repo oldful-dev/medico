@@ -7,6 +7,7 @@ const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/help
 const { logger } = require('../config/logger');
 const { PRODUCT_ORDER_STATUSES, PRODUCT_ORDER_TRANSITIONS, isValidTransition, recordStatusTransition } = require('../utils/statusTransitions');
 const { createAuditLog } = require('../middleware/audit');
+const { deleteFile } = require('../utils/storage.service');
 
 // ═══════════════════════════════════════════
 //  PRODUCTS
@@ -94,6 +95,21 @@ const updateProduct = async (req, res, next) => {
 
 const deleteProduct = async (req, res, next) => {
     try {
+        const product = await prisma.product.findUnique({ where: { id: req.params.id } });
+        if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+
+        // Purge every GCS-backed image (primary + gallery) before removing
+        // the DB row — mirrors media.controller.js's deleteMedia. Non-fatal:
+        // a storage cleanup failure must never block the actual deletion.
+        const urlsToPurge = [product.imageUrl, ...(product.images || [])].filter(Boolean);
+        await Promise.all(
+            urlsToPurge.map(url =>
+                deleteFile(url).catch(err =>
+                    logger.warn(`[Product] Failed to purge image for deleted product ${product.id}:`, err.message)
+                )
+            )
+        );
+
         await prisma.product.delete({ where: { id: req.params.id } });
         sendResponse(res, 200, null, 'Product deleted');
     } catch (error) {
