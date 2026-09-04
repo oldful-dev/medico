@@ -811,33 +811,38 @@ model WellnessWaitlist {
 }
 
 model ProductOrder {
-  id                String    @id @default(uuid())
-  orderCode         String    @unique
-  userId            String
-  productId         String?
-  quantity          Int       @default(1)
-  amount            Float
-  shippingCharge    Float     @default(0)
-  status            String    @default("PENDING")
-  address           String?
-  courierName       String?
-  awbCode           String?
-  trackingUrl       String?
-  shippingStatus    String    @default("PENDING")
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                  String    @id @default(uuid())
+  orderCode           String    @unique
+  userId              String
+  productId           String?
+  quantity            Int       @default(1)
+  amount              Float
+  shippingCharge      Float     @default(0)
+  status              String    @default("PENDING")
+  address             String?
+  courierName         String?
+  awbCode             String?
+  trackingUrl         String?
+  shippingStatus      String    @default("PENDING")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
   // --- Shiprocket integration ---
-  subtotal          Float     @default(0)
-  tax               Float     @default(0)
-  discount          Float     @default(0)
-  shiprocketOrderId String?
-  shipmentId        String?
-  trackingStatus    String?
-  trackingData      Json?
-  items             Json?
-  payments          Payment[]
-  product           Product?  @relation(fields: [productId], references: [id])
-  user              User      @relation(fields: [userId], references: [id])
+  subtotal            Float     @default(0)
+  tax                 Float     @default(0)
+  discount            Float     @default(0)
+  shiprocketOrderId   String?
+  shipmentId          String?
+  trackingStatus      String?
+  trackingData        Json?
+  items               Json?
+  // Set when auto-fulfillment (payment success) or a manual retry fails to
+  // create a Delhivery shipment — makes a failed fulfillment a queryable,
+  // admin-visible fact instead of only a log line. Cleared on success.
+  fulfillmentError    String?
+  fulfillmentFailedAt DateTime?
+  payments            Payment[]
+  product             Product?  @relation(fields: [productId], references: [id])
+  user                User      @relation(fields: [userId], references: [id])
 
   @@map("product_orders")
 }

@@ -293,6 +293,10 @@ export const productAPI = {
     // Order management — updateOrderStatus to DISPATCHED fires MEDICINE_OUT_FOR_DELIVERY SMS (215398)
     getOrders: (params) => api.get('/products/admin/orders', { params }),
     updateOrderStatus: (id, data) => api.put(`/products/admin/orders/${id}/status`, data),
+    // Retry a failed Delhivery auto-fulfillment (see order.routes.js — a
+    // different base path than the rest of this object, both route to the
+    // same product_orders table)
+    retryFulfillment: (id) => api.post(`/orders/admin/${id}/retry-fulfillment`),
 };
 
 // ── Categories (Wellness Store) ──────────────────────

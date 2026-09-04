@@ -501,92 +501,18 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                 }
 
                 if (payment.productOrderId || payment.productOrder) {
-                    // Delhivery/Shiprocket auto-fulfillment
+                    // Delhivery/Shiprocket auto-fulfillment — see
+                    // fulfillment.service.js for the shared logic (also used
+                    // by the admin manual-retry endpoint). A failure here is
+                    // persisted onto the order (fulfillmentError) rather than
+                    // only logged, so it's visible/retryable from admin
+                    // instead of silently leaving the order unshipped.
                     try {
-                        const delhivery = require('./delhivery.service');
-                        if (!(await delhivery.isAvailable())) {
-                            logger.warn('[PaymentService] Delhivery not available — skipping auto-fulfillment');
-                        } else {
-                            const orderRecord = await prisma.productOrder.findUnique({
-                                where: { id: payment.productOrderId || payment.productOrder?.id },
-                                include: {
-                                    user: { select: { name: true, phone: true, email: true } },
-                                    product: { select: { name: true, sku: true } },
-                                },
-                            });
-                            if (orderRecord && !orderRecord.shiprocketOrderId) {
-                                let addr = {};
-                                try { addr = JSON.parse(orderRecord.address || '{}'); } catch {}
-
-                                const lineItemsRaw = orderRecord.items
-                                    ? (Array.isArray(orderRecord.items) ? orderRecord.items : [])
-                                    : [{
-                                        name: orderRecord.product?.name || 'Product',
-                                        sku: orderRecord.product?.sku || orderRecord.orderCode,
-                                        units: orderRecord.quantity,
-                                        selling_price: String(orderRecord.amount),
-                                    }];
-
-                                const WAREHOUSE_PINCODE = process.env.WAREHOUSE_PINCODE || '560001';
-                                const srPayload = {
-                                    order_id: orderRecord.orderCode,
-                                    order_date: orderRecord.createdAt.toISOString().slice(0, 10),
-                                    pickup_location: 'Primary',
-                                    billing_customer_name: addr.fullName || orderRecord.user.name || 'Customer',
-                                    billing_last_name: '',
-                                    billing_address: addr.line1 || 'Address not provided',
-                                    billing_address_2: addr.line2 || '',
-                                    billing_city: addr.city || 'Bangalore',
-                                    billing_pincode: addr.pincode || WAREHOUSE_PINCODE,
-                                    billing_state: addr.state || 'Karnataka',
-                                    billing_country: addr.country || 'India',
-                                    billing_email: orderRecord.user.email || '',
-                                    billing_phone: addr.phone || orderRecord.user.phone || '',
-                                    shipping_is_billing: 1,
-                                    order_items: lineItemsRaw.map(i => {
-                                        const qty = i.quantity || i.units || 1;
-                                        const unitPrice = parseFloat(i.price) || parseFloat(i.selling_price) || (parseFloat(i.lineTotal) / qty) || (parseFloat(orderRecord.subtotal) / (orderRecord.quantity || 1));
-                                        const gstRate = parseFloat(process.env.GST_RATE) || 18;
-                                        const unitTax = Math.round((unitPrice * gstRate) / 100);
-                                        const sellingPriceInclusive = unitPrice + unitTax;
-                                        return {
-                                            name: i.name,
-                                            sku: i.sku || i.productId,
-                                            units: qty,
-                                            selling_price: String(sellingPriceInclusive),
-                                            discount: '0',
-                                            tax: String(gstRate),
-                                            hsn: '',
-                                        };
-                                    }),
-                                    payment_method: 'Prepaid',
-                                    shipping_charges: orderRecord.shippingCharge || 0,
-                                    sub_total: (orderRecord.subtotal || orderRecord.amount) + (orderRecord.tax || 0),
-                                    total_discount: orderRecord.discount || 0,
-                                    length: 10, breadth: 10, height: 10, weight: 0.5,
-                                };
-
-                                const { shiprocketOrderId, shipmentId } = await delhivery.createOrder(srPayload);
-                                let awbCode = '', courierName = '', trackingUrl = '';
-                                if (shipmentId) {
-                                    const awbResult = await delhivery.generateAWB(shipmentId).catch(() => ({}));
-                                    awbCode = awbResult.awbCode || '';
-                                    courierName = awbResult.courierName || '';
-                                    trackingUrl = awbResult.trackingUrl || '';
-                                }
-
-                                await prisma.productOrder.update({
-                                    where: { id: orderRecord.id },
-                                    data: {
-                                        shiprocketOrderId,
-                                        shipmentId,
-                                        ...(awbCode && { awbCode, courierName, trackingUrl }),
-                                        status: 'CONFIRMED',
-                                        shippingStatus: 'CONFIRMED',
-                                    },
-                                });
-                                logger.info(`[PaymentService] Delhivery order created for ${orderRecord.orderCode} → AWB:${awbCode}`);
-                            }
+                        const { attemptFulfillment } = require('./fulfillment.service');
+                        const orderId = payment.productOrderId || payment.productOrder?.id;
+                        const result = await attemptFulfillment(orderId, 'system');
+                        if (!result.success) {
+                            logger.error(`[PaymentService] Auto-fulfillment failed for order ${orderId}: ${result.error}`);
                         }
                     } catch (srErr) {
                         logger.error('[PaymentService] Delhivery auto-fulfillment failed:', srErr.message);

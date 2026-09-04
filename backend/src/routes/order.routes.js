@@ -43,4 +43,8 @@ router.put('/admin/:id/fulfill', authenticateAdmin, ctrl.fulfillOrder);
 // Update order status manually
 router.put('/admin/:id/status', authenticateAdmin, ctrl.updateOrderStatus);
 
+// POST /api/orders/admin/:id/retry-fulfillment
+// Re-attempt Delhivery shipment creation after a failed auto-fulfillment
+router.post('/admin/:id/retry-fulfillment', authenticateAdmin, ctrl.retryFulfillment);
+
 module.exports = router;

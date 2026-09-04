@@ -49,6 +49,7 @@ export default function StorePage() {
     const [historyLoading, setHistoryLoading] = useState(false);
     const [newOrderCount, setNewOrderCount] = useState(0);
     const [updatingOrderId, setUpdatingOrderId] = useState(null);
+    const [retryingOrderId, setRetryingOrderId] = useState(null);
 
     useEffect(() => { loadData(); }, []);
 
@@ -112,6 +113,17 @@ export default function StorePage() {
             }
             showToast(msg, 'error');
         } finally { setUpdatingOrderId(null); }
+    }
+
+    async function retryFulfillment(orderId) {
+        try {
+            setRetryingOrderId(orderId);
+            const res = await productAPI.retryFulfillment(orderId);
+            showToast(`Shipment created${res.data?.data?.awbCode ? ` — AWB ${res.data.data.awbCode}` : ''}`, 'success');
+            await loadOrders();
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Retry failed — shipment still not created', 'error');
+        } finally { setRetryingOrderId(null); }
     }
 
     async function openHistory(orderId) {
@@ -394,6 +406,24 @@ export default function StorePage() {
                                                             padding: '3px 10px',
                                                             borderRadius: 20,
                                                         }}>{statusMeta.label}</span>
+                                                        {order.fulfillmentError && (
+                                                            <div
+                                                                title={order.fulfillmentError}
+                                                                style={{
+                                                                    display: 'inline-block',
+                                                                    marginLeft: 6,
+                                                                    background: '#FEF2F2',
+                                                                    color: '#EF4444',
+                                                                    fontWeight: 700,
+                                                                    fontSize: 10,
+                                                                    padding: '2px 8px',
+                                                                    borderRadius: 20,
+                                                                    cursor: 'help',
+                                                                }}
+                                                            >
+                                                                ⚠ Shipment Failed
+                                                            </div>
+                                                        )}
                                                     </td>
                                                     <td className="text-sm" style={{ color: '#888' }}>
                                                         {new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -416,7 +446,17 @@ export default function StorePage() {
                                                             <span className="text-sm" style={{ color: '#aaa' }}>Final</span>
                                                         )}
                                                     </td>
-                                                    <td>
+                                                    <td style={{ display: 'flex', gap: 6 }}>
+                                                        {order.fulfillmentError && (
+                                                            <button
+                                                                className="btn btn-sm btn-danger"
+                                                                style={{ padding: '4px 8px', fontSize: 11 }}
+                                                                disabled={retryingOrderId === order.id}
+                                                                onClick={() => retryFulfillment(order.id)}
+                                                            >
+                                                                {retryingOrderId === order.id ? 'Retrying...' : 'Retry Shipment'}
+                                                            </button>
+                                                        )}
                                                         <button
                                                             className="btn btn-sm btn-secondary"
                                                             style={{ padding: '4px 8px' }}

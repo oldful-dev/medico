@@ -10,6 +10,7 @@ const { logger } = require('../config/logger');
 const delhivery = require('../services/delhivery.service');
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
 const { PRODUCT_ORDER_STATUSES, PRODUCT_ORDER_TRANSITIONS, isValidTransition, recordStatusTransition } = require('../utils/statusTransitions');
+const { attemptFulfillment } = require('../services/fulfillment.service');
 
 // Warehouse origin pincode (change to your actual warehouse pincode)
 const WAREHOUSE_PINCODE = process.env.WAREHOUSE_PINCODE || '560001';
@@ -646,6 +647,35 @@ const downloadOrderInvoice = async (req, res, next) => {
     }
 };
 
+// ──────────────────────────────────────────────
+//  ADMIN: RETRY FULFILLMENT
+// ──────────────────────────────────────────────
+
+/**
+ * POST /api/orders/admin/:id/retry-fulfillment
+ * Re-attempts Delhivery shipment creation for an order whose automatic
+ * fulfillment (on payment success) failed — surfaced via fulfillmentError
+ * on the order. Safe to call repeatedly: attemptFulfillment's own
+ * shiprocketOrderId check makes an already-fulfilled order a no-op rather
+ * than a duplicate shipment.
+ */
+const retryFulfillment = async (req, res, next) => {
+    try {
+        const result = await attemptFulfillment(req.params.id, req.admin?.id || null);
+
+        if (!result.success && !result.alreadyFulfilled) {
+            return res.status(502).json({ success: false, message: result.error || 'Fulfillment retry failed' });
+        }
+        if (result.alreadyFulfilled) {
+            return res.status(409).json({ success: false, message: 'Order already fulfilled on Delhivery' });
+        }
+
+        sendResponse(res, 200, { awbCode: result.awbCode }, 'Fulfillment retried successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getShippingRate,
     checkoutCart,
@@ -655,4 +685,5 @@ module.exports = {
     fulfillOrder,
     updateOrderStatus,
     downloadOrderInvoice,
+    retryFulfillment,
 };
