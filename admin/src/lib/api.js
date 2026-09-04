@@ -264,10 +264,6 @@ export const sosAPI = {
 // ── Notifications ────────────────────────────────────
 export const notificationAPI = {
     getLogs: (params) => api.get('/notifications/logs', { params }),
-    getTemplates: () => api.get('/notifications/templates'),
-    createTemplate: (data) => api.post('/notifications/templates', data),
-    updateTemplate: (id, data) => api.put(`/notifications/templates/${id}`, data),
-    deleteTemplate: (id) => api.delete(`/notifications/templates/${id}`),
     sendCampaign: (data) => api.post('/notifications/send-campaign', data),
 };
 
@@ -360,6 +356,8 @@ export const appConfigAPI = {
     resetHomeConfig: () => api.post('/app-config/home/reset'),
     getHistory: (configKey) => api.get(`/app-config/${configKey}/history`),
     rollback: (configKey, versionId) => api.post(`/app-config/${configKey}/rollback/${versionId}`),
+    getHomeConfigDraft: () => api.get('/app-config/home/draft'),
+    updateHomeConfigDraft: (config) => api.put('/app-config/home/draft', { config }),
 };
 
 // ── Reports ──────────────────────────────────────────

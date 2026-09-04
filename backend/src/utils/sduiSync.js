@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { logger } = require('../config/logger');
 
 // Match config service items with database service slugs
 const matchConfigToDb = (configId, configRoute, dbSlug, dbRoute) => {
@@ -123,7 +124,7 @@ const syncUIConfigToDbServices = async (config, sourceKey = 'home_config') => {
         // Keep both config tables in sync
         await syncConfigsCrossRelation(sourceKey, config);
     } catch (err) {
-        console.error('[sduiSync] Error syncing UIConfig to DB:', err);
+        logger.error('[sduiSync] Error syncing UIConfig to DB', { message: err.message, stack: err.stack });
     }
 };
 
@@ -210,7 +211,7 @@ const syncConfigsCrossRelation = async (sourceKey, configJson) => {
             }
         }
     } catch (e) {
-        console.error('[sduiSync] Cross-sync error:', e.message);
+        logger.error('[sduiSync] Cross-sync error', { message: e.message });
     }
 };
 
@@ -340,7 +341,7 @@ const syncDbServicesToUIConfig = async () => {
             await syncConfigsCrossRelation('home_config', config);
         }
     } catch (err) {
-        console.error('[sduiSync] Error syncing DB to UIConfig:', err);
+        logger.error('[sduiSync] Error syncing DB to UIConfig', { message: err.message, stack: err.stack });
     }
 };
 

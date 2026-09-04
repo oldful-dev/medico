@@ -60,7 +60,7 @@ const validateHomeConfig = (config) => {
             }
             if (typeof section.id !== 'string') errors.push(`sections[${i}].id must be a string`);
             if (typeof section.type !== 'string') errors.push(`sections[${i}].type must be a string`);
-            if (typeof section.visible !== 'boolean') errors.push(`sections[${i}].visible must be a boolean`);
+            if (typeof section.enabled !== 'boolean') errors.push(`sections[${i}].enabled must be a boolean`);
         });
     }
 

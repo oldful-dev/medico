@@ -498,6 +498,7 @@ const updateAppConfig = async (req, res, next) => {
         }
         const { valid, errors } = validateAppConfig(config);
         if (!valid) {
+            logger.warn('SDUI app config publish rejected — invalid shape', { adminId: req.admin?.id, errors });
             return res.status(400).json({ success: false, message: 'Invalid config shape', errors });
         }
 
@@ -770,6 +771,17 @@ const getHomeConfig = async (req, res) => {
             where: { key: 'home_config' },
         });
 
+        // Fire-and-forget — a lightweight "N devices fetched this version
+        // since publish" signal (this app has no real analytics/APM
+        // integration). Never awaited: must not add latency to the hottest
+        // public, unauthenticated route in the app.
+        if (stored) {
+            prisma.uIConfig.update({
+                where: { key: 'home_config' },
+                data: { fetchCount: { increment: 1 } },
+            }).catch(err => logger.warn('Home config fetchCount increment failed (non-fatal):', err.message));
+        }
+
         if (stored?.configJson) {
             return res.json({ success: true, data: stored.configJson });
         }
@@ -778,6 +790,67 @@ const getHomeConfig = async (req, res) => {
     } catch (error) {
         logger.error('Home config fetch error:', error.message);
         return res.json({ success: true, data: DEFAULT_HOME_CONFIG });
+    }
+};
+
+/**
+ * GET /api/app-config/home/draft
+ * SUPER_ADMIN only. Returns the saved WIP draft, or the live published
+ * config as a starting point if no draft has been saved yet. Never read by
+ * the public /home route — mobile only ever sees configJson via publish.
+ */
+const getHomeConfigDraft = async (req, res, next) => {
+    try {
+        const stored = await prisma.uIConfig.findUnique({ where: { key: 'home_config' } });
+        const data = stored?.draftJson ?? stored?.configJson ?? DEFAULT_HOME_CONFIG;
+        return res.json({
+            success: true,
+            data,
+            hasDraft: !!stored?.draftJson,
+            liveVersion: stored?.version ?? null,
+            liveFetchCount: stored?.fetchCount ?? 0,
+            livePublishedAt: stored?.publishedAt ?? null,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * PUT /api/app-config/home/draft
+ * SUPER_ADMIN only. Saves WIP without publishing — configJson (what mobile
+ * reads) is untouched, no version bump, no history snapshot (drafts aren't
+ * published history).
+ */
+const updateHomeConfigDraft = async (req, res, next) => {
+    try {
+        const { config } = req.body;
+        if (!config || typeof config !== 'object') {
+            return res.status(400).json({ success: false, message: 'config object required' });
+        }
+        const { valid, errors } = validateHomeConfig(config);
+        if (!valid) {
+            logger.warn('SDUI home config draft rejected — invalid shape', { adminId: req.admin?.id, errors });
+            return res.status(400).json({ success: false, message: 'Invalid config shape', errors });
+        }
+
+        await prisma.uIConfig.upsert({
+            where: { key: 'home_config' },
+            create: {
+                type: 'CUSTOM',
+                key: 'home_config',
+                label: 'SDUI Home Configuration',
+                draftJson: config,
+                sortOrder: 0,
+                isVisible: true,
+                version: 1,
+            },
+            update: { draftJson: config },
+        });
+
+        return res.json({ success: true, message: 'Draft saved' });
+    } catch (error) {
+        next(error);
     }
 };
 
@@ -793,6 +866,7 @@ const updateHomeConfig = async (req, res, next) => {
         }
         const { valid, errors } = validateHomeConfig(config);
         if (!valid) {
+            logger.warn('SDUI home config publish rejected — invalid shape', { adminId: req.admin?.id, errors });
             return res.status(400).json({ success: false, message: 'Invalid config shape', errors });
         }
 
@@ -813,11 +887,17 @@ const updateHomeConfig = async (req, res, next) => {
                 configJson:  config,
                 version:     { increment: 1 },
                 publishedAt: new Date(),
+                // A publish supersedes whatever WIP led to it — a stale
+                // draft left behind after publish would just confuse the
+                // next editor session. Fetch count resets: it counts
+                // fetches of the CURRENT live version only.
+                draftJson:   null,
+                fetchCount:  0,
             },
         });
 
         logger.info('SDUI home config updated by admin:', req.admin?.id);
-        
+
         await syncUIConfigToDbServices(config);
 
         return res.json({ success: true, message: 'Home config published' });
@@ -888,6 +968,7 @@ const rollbackConfig = async (req, res, next) => {
         const validator = configKey === 'home_config' ? validateHomeConfig : validateAppConfig;
         const { valid, errors } = validator(snapshot.configJson);
         if (!valid) {
+            logger.error('SDUI rollback blocked — snapshot failed validation', { configKey, versionId, adminId: req.admin?.id, errors });
             return res.status(400).json({ success: false, message: 'Snapshot failed validation, refusing to restore', errors });
         }
 
@@ -927,4 +1008,6 @@ module.exports = {
     DEFAULT_HOME_CONFIG,
     getConfigHistory,
     rollbackConfig,
+    getHomeConfigDraft,
+    updateHomeConfigDraft,
 };

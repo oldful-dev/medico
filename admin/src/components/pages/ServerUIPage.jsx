@@ -42,6 +42,11 @@ export default function ServerUIPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [rollingBackId, setRollingBackId] = useState(null);
 
+  const [hasDraft, setHasDraft] = useState(false);
+  const [liveVersion, setLiveVersion] = useState(null);
+  const [liveFetchCount, setLiveFetchCount] = useState(0);
+  const [savingDraft, setSavingDraft] = useState(false);
+
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [uploadingTarget, setUploadingTarget] = useState(null); // { type: "service", sIdx, svIdx } or { type: "banner", bIdx } or { type: "sos_icon" } or { type: "sos_illustration" }
   const iconFileInputRef = useRef(null);
@@ -143,8 +148,12 @@ export default function ServerUIPage() {
     try {
       setLoading(true);
       setError(null);
+      // Loads the DRAFT (falls back to the live config if none saved yet) —
+      // an admin resuming this page sees their WIP, not a blank/live-only
+      // editor. Publishing (handleSave) is unaffected: it always publishes
+      // whatever is in the editor right now, same as before.
       const [res, bRes] = await Promise.all([
-        appConfigAPI.getHomeConfig(),
+        appConfigAPI.getHomeConfigDraft(),
         bannerAPI.getHome().catch(() => ({ data: { data: [] } }))
       ]);
       const configData = res.data?.data || {};
@@ -153,6 +162,9 @@ export default function ServerUIPage() {
       const formatted = JSON.stringify(configData, null, 2);
       setRawJson(formatted);
       setParsedConfig(configData);
+      setHasDraft(!!res.data?.hasDraft);
+      setLiveVersion(res.data?.liveVersion ?? null);
+      setLiveFetchCount(res.data?.liveFetchCount ?? 0);
     } catch (e) {
       console.error(e);
       setError("Failed to load server UI configuration.");
@@ -224,6 +236,11 @@ export default function ServerUIPage() {
       await appConfigAPI.updateHomeConfig(configToSave);
       setOriginalConfig(configToSave);
       setRawJson(JSON.stringify(configToSave, null, 2));
+      // Publish clears the draft server-side and resets the fetch counter —
+      // mirror that here instead of a full reload.
+      setHasDraft(false);
+      setLiveFetchCount(0);
+      setLiveVersion(v => (v == null ? v : v + 1));
       showToast("Home layout configuration published successfully", "success");
     } catch (e) {
       console.error(e);
@@ -234,6 +251,29 @@ export default function ServerUIPage() {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (error) {
+      showToast("Please resolve JSON errors before saving", "error");
+      return;
+    }
+    try {
+      setSavingDraft(true);
+      const configToSave = editorMode === "json" ? JSON.parse(rawJson) : parsedConfig;
+      await appConfigAPI.updateHomeConfigDraft(configToSave);
+      setHasDraft(true);
+      showToast("Draft saved — not published, mobile still sees the live version", "success");
+    } catch (e) {
+      console.error(e);
+      const apiErrors = e.response?.data?.errors;
+      showToast(
+        apiErrors?.length ? `Rejected: ${apiErrors.join("; ")}` : "Failed to save draft",
+        "error"
+      );
+    } finally {
+      setSavingDraft(false);
     }
   };
 
@@ -420,6 +460,12 @@ export default function ServerUIPage() {
         <div>
           <h2>Server-Driven Home Layout Config</h2>
           <p>Configure layout sections, custom card banners, trust badges and quick services displayed on the mobile app home screen.</p>
+          {!loading && (
+            <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>
+              Live version {liveVersion ?? "—"} · fetched {liveFetchCount} time{liveFetchCount === 1 ? "" : "s"} since last publish
+              {hasDraft && <span style={{ marginLeft: 8, color: "#F59E0B", fontWeight: 600 }}>● Unpublished draft loaded</span>}
+            </p>
+          )}
         </div>
         <a href="/banners" className="btn btn-outline-primary" style={{ display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
           <Sparkles size={16} /> Manage Top Carousel Banners
@@ -468,6 +514,14 @@ export default function ServerUIPage() {
                 <button className="btn btn-sm btn-danger" onClick={handleReset} disabled={saving}>
                   <RotateCcw size={14} /> Reset Default
                 </button>
+                <button
+                  className="btn btn-sm btn-secondary"
+                  onClick={handleSaveDraft}
+                  disabled={savingDraft || saving || (editorMode === "json" && !!error)}
+                  title="Save without publishing — mobile keeps seeing the current live version"
+                >
+                  <Save size={14} /> {savingDraft ? "Saving Draft..." : "Save Draft"}
+                </button>
                 <button className="btn btn-sm btn-primary" onClick={handleSave} disabled={saving || (editorMode === "json" && !!error)}>
                   <Save size={14} /> {saving ? "Saving..." : "Publish Config"}
                 </button>
@@ -501,6 +555,7 @@ export default function ServerUIPage() {
                             <div style={{ fontWeight: 600 }}>Version {v.version}</div>
                             <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
                               {v.publishedAt ? new Date(v.publishedAt).toLocaleString() : "—"}
+                              {v.publishedBy && <> · by admin {v.publishedBy.slice(0, 8)}</>}
                             </div>
                           </div>
                           <button
@@ -631,16 +686,17 @@ export default function ServerUIPage() {
                   <div className="card">
                     <div className="card-body" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                       <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 600 }}>Configuration Version</label>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          value={parsedConfig.version || ""} 
-                          onChange={(e) => updateRootField("version", e.target.value)} 
+                        <label className="form-label" style={{ fontWeight: 600 }}>Content Version Label (optional)</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={parsedConfig.version || ""}
+                          onChange={(e) => updateRootField("version", e.target.value)}
                           style={{ maxWidth: 200 }}
                         />
                         <small style={{ color: "var(--text-muted)", display: "block", marginTop: 4 }}>
-                          Increments whenever you hit &quot;Publish Config&quot; below.
+                          Freeform label stored inside the config content itself — NOT the real publish
+                          counter (see &quot;Live version&quot; above the editor, or Version History).
                         </small>
                       </div>
 
@@ -1190,6 +1246,11 @@ export default function ServerUIPage() {
               <Smartphone size={20} className="text-muted" />
               <h3 style={{ margin: 0 }}>Live UI Preview Mock</h3>
             </div>
+            <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "-8px 4px 0", lineHeight: 1.4 }}>
+              Approximate preview of the home screen only — a separate reimplementation, not the real
+              mobile renderer. It does not reflect feature flags, plans, or help/support content also in
+              this config. Always verify on a real test device before publishing anything risky.
+            </p>
 
             {/* Simulated Phone Shell Container */}
             <div style={{

@@ -658,6 +658,13 @@ model UIConfig {
   ctaText      String?
   ctaRoute     String?
   configJson   Json?
+  // Unpublished WIP — never read by the public mobile-facing endpoints,
+  // only by the admin draft GET/PUT and the admin-only preview=true fetch.
+  draftJson    Json?
+  // Fetches of the LIVE (configJson) response since the last publish —
+  // reset to 0 on every publish. Lightweight adoption signal, not a real
+  // analytics/APM integration (none exists in this codebase).
+  fetchCount   Int          @default(0)
   sortOrder    Int          @default(0)
   isVisible    Boolean      @default(true)
   version      Int          @default(1)
