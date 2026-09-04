@@ -203,28 +203,37 @@ const registerForMeetup = async (req, res, next) => {
             return sendResponse(res, 409, null, 'You have already registered for this meetup');
         }
 
-        const registration = await prisma.meetupRegistration.create({
-            data: {
-                meetupId,
-                userId,
-                bookingCode: generateBookingCode(),
-                fullName,
-                mobile,
-                age: parseInt(age),
-                gender,
-                assistanceJson: assistanceJson || null,
-                specialNotes: specialNotes || null,
-                pickupEnabled: pickupEnabled === true || pickupEnabled === 'true',
-                pickupAddress: pickupAddress || null,
-                pickupLandmark: pickupLandmark || null,
-                pickupContact: pickupContact || null,
-                preferredPickupTime: preferredPickupTime || null,
-                amountPaid: meetup.serviceCharge,
-                status: 'CONFIRMED',
-                paymentStatus: 'PAID',
-            },
-            include: { meetup: true },
-        });
+        let registration;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                registration = await prisma.meetupRegistration.create({
+                    data: {
+                        meetupId,
+                        userId,
+                        bookingCode: generateBookingCode(),
+                        fullName,
+                        mobile,
+                        age: parseInt(age),
+                        gender,
+                        assistanceJson: assistanceJson || null,
+                        specialNotes: specialNotes || null,
+                        pickupEnabled: pickupEnabled === true || pickupEnabled === 'true',
+                        pickupAddress: pickupAddress || null,
+                        pickupLandmark: pickupLandmark || null,
+                        pickupContact: pickupContact || null,
+                        preferredPickupTime: preferredPickupTime || null,
+                        amountPaid: meetup.serviceCharge,
+                        status: 'CONFIRMED',
+                        paymentStatus: 'PAID',
+                    },
+                    include: { meetup: true },
+                });
+                break;
+            } catch (err) {
+                const isUniqueViolation = err.code === 'P2002' && err.meta?.target?.includes('bookingCode');
+                if (!isUniqueViolation || attempt === 2) throw err;
+            }
+        }
 
         sendResponse(res, 201, registration, 'Registration confirmed');
     } catch (error) {

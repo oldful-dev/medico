@@ -3,7 +3,7 @@
 // ──────────────────────────────────────────────
 
 const prisma = require('../config/database');
-const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
+const { sendResponse, sendPaginatedResponse, paginate, generateOrderCode } = require('../utils/helpers');
 const { logger } = require('../config/logger');
 const { PRODUCT_ORDER_STATUSES, PRODUCT_ORDER_TRANSITIONS, isValidTransition, recordStatusTransition } = require('../utils/statusTransitions');
 const { createAuditLog } = require('../middleware/audit');
@@ -128,20 +128,28 @@ const createProductOrder = async (req, res, next) => {
 
         const { quantity = 1, address } = req.body;
         const amount = product.price * quantity;
-        const orderCode = `ORD-${Date.now()}`;
 
-        const order = await prisma.productOrder.create({
-            data: {
-                orderCode,
-                userId: req.user.id,
-                productId: product.id,
-                quantity,
-                amount,
-                address,
-                status: 'PENDING',
-            },
-            include: { product: { select: { name: true, imageUrl: true } } },
-        });
+        let order;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                order = await prisma.productOrder.create({
+                    data: {
+                        orderCode: await generateOrderCode(),
+                        userId: req.user.id,
+                        productId: product.id,
+                        quantity,
+                        amount,
+                        address,
+                        status: 'PENDING',
+                    },
+                    include: { product: { select: { name: true, imageUrl: true } } },
+                });
+                break;
+            } catch (err) {
+                const isUniqueViolation = err.code === 'P2002' && err.meta?.target?.includes('orderCode');
+                if (!isUniqueViolation || attempt === 2) throw err;
+            }
+        }
 
         sendResponse(res, 201, order, 'Order created');
     } catch (error) {

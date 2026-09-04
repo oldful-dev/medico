@@ -60,6 +60,18 @@ const generateBookingCode = async () => {
     return `BK-${yy}${mm}${dd}-${rand}`;
 };
 
+// ─── Order Code Generation ─────────────────
+// Format: ORD-YYMMDD-XXXX
+
+const generateOrderCode = async () => {
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `ORD-${yy}${mm}${dd}-${rand}`;
+};
+
 // ─── Invoice Number Generation ─────────────
 // Format: INV-YYYY-MMDD-XXXX
 
@@ -153,6 +165,7 @@ module.exports = {
     comparePassword,
     generateUserId,
     generateBookingCode,
+    generateOrderCode,
     generateInvoiceNumber,
     generateTicketCode,
     generateOTP,

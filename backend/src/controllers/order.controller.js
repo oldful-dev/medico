@@ -5,7 +5,7 @@
 // ──────────────────────────────────────────────
 
 const prisma = require('../config/database');
-const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
+const { sendResponse, sendPaginatedResponse, paginate, generateOrderCode } = require('../utils/helpers');
 const { logger } = require('../config/logger');
 const delhivery = require('../services/delhivery.service');
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
@@ -223,23 +223,31 @@ const checkoutCart = async (req, res, next) => {
         const totalAmount = subtotal + tax + shippingCharge;
 
         // ─── 5. Create ProductOrder in DB ──────────────────────────────
-        const orderCode = `ORD-${Date.now()}`;
-        const order = await prisma.productOrder.create({
-            data: {
-                orderCode,
-                userId: req.user.id,
-                // productId left null for multi-item orders; items JSON holds line items
-                quantity: items.reduce((sum, i) => sum + (i.quantity || 1), 0),
-                subtotal,
-                tax,
-                shippingCharge,
-                discount: 0,
-                amount: totalAmount,
-                address: resolvedAddress,
-                status: 'PENDING',
-                items: lineItems,
-            },
-        });
+        let order;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                order = await prisma.productOrder.create({
+                    data: {
+                        orderCode: await generateOrderCode(),
+                        userId: req.user.id,
+                        // productId left null for multi-item orders; items JSON holds line items
+                        quantity: items.reduce((sum, i) => sum + (i.quantity || 1), 0),
+                        subtotal,
+                        tax,
+                        shippingCharge,
+                        discount: 0,
+                        amount: totalAmount,
+                        address: resolvedAddress,
+                        status: 'PENDING',
+                        items: lineItems,
+                    },
+                });
+                break;
+            } catch (err) {
+                const isUniqueViolation = err.code === 'P2002' && err.meta?.target?.includes('orderCode');
+                if (!isUniqueViolation || attempt === 2) throw err;
+            }
+        }
 
         sendResponse(res, 201, {
             order,
