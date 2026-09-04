@@ -392,6 +392,7 @@ export default function PlansPage() {
                 platformFeeWaived: meta.platformFeeWaived !== undefined ? !!meta.platformFeeWaived : true,
                 gstOnFeeWaived: meta.gstOnFeeWaived !== undefined ? !!meta.gstOnFeeWaived : true,
             },
+            changeReason: '',
         });
         setShowModal(true);
     }
@@ -595,6 +596,13 @@ export default function PlansPage() {
                                         <input className="form-input" type="number" min={0} value={form.yearlyPrice} onChange={e => setForm({ ...form, yearlyPrice: parseFloat(e.target.value) || 0 })} />
                                     </div>
                                 </div>
+                                {editing && (
+                                    <div className="form-group" style={{ marginTop: 8 }}>
+                                        <label className="form-label">Reason for change (optional)</label>
+                                        <input className="form-input" type="text" placeholder="e.g. Seasonal discount, vendor rate change..."
+                                            value={form.changeReason || ''} onChange={e => setForm({ ...form, changeReason: e.target.value })} />
+                                    </div>
+                                )}
                                 <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', marginTop: 16, marginBottom: 4 }}>
                                     Ayuxa Fee Waiver
                                 </p>

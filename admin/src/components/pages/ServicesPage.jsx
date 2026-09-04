@@ -70,7 +70,8 @@ export default function ServicesPage() {
         category: "DIAGNOSTICS_FITNESS",
         isDynamic: true,
         serviceType: "OTHER",
-        paymentMode: "INQUIRY"
+        paymentMode: "INQUIRY",
+        changeReason: ""
     });
     const [formFields, setFormFields] = useState([]);
 
@@ -843,6 +844,19 @@ export default function ServicesPage() {
                                                     onChange={e => setForm({ ...form, pricingText: e.target.value })}
                                                 />
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {editingService && (
+                                        <div className="form-group" style={{ marginBottom: "16px" }}>
+                                            <label className="form-label">Reason for change (optional)</label>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                placeholder="e.g. Seasonal discount, vendor rate change..."
+                                                value={form.changeReason}
+                                                onChange={e => setForm({ ...form, changeReason: e.target.value })}
+                                            />
                                         </div>
                                     )}
 

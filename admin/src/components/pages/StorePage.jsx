@@ -170,7 +170,8 @@ export default function StorePage() {
             weight: p.weight !== undefined && p.weight !== null ? p.weight : 0.1,
             length: p.length !== undefined && p.length !== null ? p.length : 10,
             width: p.width !== undefined && p.width !== null ? p.width : 10,
-            height: p.height !== undefined && p.height !== null ? p.height : 10
+            height: p.height !== undefined && p.height !== null ? p.height : 10,
+            changeReason: ''
         });
         setShowModal(true);
     }
@@ -682,6 +683,13 @@ export default function StorePage() {
                                     <p style={{ fontSize: 12, color: '#10b981', fontWeight: 600, marginTop: -8, marginBottom: 8 }}>
                                         💚 {Math.round(((form.mrp - form.price) / form.mrp) * 100)}% discount · Saving ₹{(form.mrp - form.price).toLocaleString('en-IN')}
                                     </p>
+                                )}
+                                {editing && (
+                                    <div className="form-group" style={{ marginBottom: 12 }}>
+                                        <label className="form-label">Reason for change (optional)</label>
+                                        <input className="form-input" type="text" placeholder="e.g. Seasonal discount, vendor rate change..."
+                                            value={form.changeReason || ''} onChange={e => setForm({ ...form, changeReason: e.target.value })} />
+                                    </div>
                                 )}
                                 <div className="form-row">
                                     <div className="form-group">

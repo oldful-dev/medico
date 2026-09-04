@@ -6,6 +6,7 @@ const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
 const { uploadFile } = require('../utils/storage.service');
 const { syncDbServicesToUIConfig } = require('../utils/sduiSync');
+const { createAuditLog } = require('../middleware/audit');
 
 // GET /api/services
 const getServices = async (req, res, next) => {
@@ -112,7 +113,11 @@ const createService = async (req, res, next) => {
 // PUT /api/services/:id
 const updateService = async (req, res, next) => {
     try {
+        const { changeReason } = req.body;
+        const oldService = await prisma.service.findUnique({ where: { id: req.params.id } });
+
         const data = { ...req.body };
+        delete data.changeReason;
         if (data.pricingText !== undefined && data.basePrice === undefined) {
             const match = data.pricingText.match(/[\d,]+/);
             if (match) {
@@ -140,10 +145,26 @@ const updateService = async (req, res, next) => {
             data,
         });
 
+        // Audit the price change itself — separate from the generic
+        // auditMiddleware attached at the route, which never populates
+        // oldValue/newValue (see middleware/audit.js).
+        if (oldService && oldService.basePrice !== service.basePrice) {
+            await createAuditLog({
+                adminId: req.user?.id,
+                action: 'SERVICE_PRICE_UPDATED',
+                entity: 'Service',
+                entityId: service.id,
+                oldValue: { basePrice: oldService.basePrice },
+                newValue: { basePrice: service.basePrice, ...(changeReason && { reason: changeReason }) },
+                ipAddress: req.ip,
+            });
+        }
+
         // Sync with corresponding ServiceCharge serviceFee if basePrice was updated
         if (service.basePrice !== undefined && service.basePrice !== null) {
             try {
                 const serviceCategory = service.slug.toUpperCase().replace(/-/g, '_');
+                const oldCharge = await prisma.serviceCharge.findUnique({ where: { serviceCategory } });
                 await prisma.serviceCharge.upsert({
                     where: { serviceCategory },
                     update: { serviceFee: service.basePrice },
@@ -156,6 +177,20 @@ const updateService = async (req, res, next) => {
                         isActive: true
                     }
                 });
+                if (!oldCharge || oldCharge.serviceFee !== service.basePrice) {
+                    // This is a system cascade, not a direct admin edit of ServiceCharge —
+                    // tagged distinctly so it reads as "caused by the Service edit above"
+                    // rather than an independent fee change.
+                    await createAuditLog({
+                        adminId: req.user?.id,
+                        action: 'PRICE_SYNC',
+                        entity: 'ServiceCharge',
+                        entityId: oldCharge?.id || null,
+                        oldValue: { serviceFee: oldCharge?.serviceFee ?? null },
+                        newValue: { serviceFee: service.basePrice, syncedFrom: `Service:${service.id}` },
+                        ipAddress: req.ip,
+                    });
+                }
             } catch (syncErr) {
                 console.error('Failed to sync ServiceCharge serviceFee during service update:', syncErr);
             }

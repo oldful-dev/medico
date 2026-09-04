@@ -44,7 +44,8 @@ export default function PricingPage() {
         surgeCharge: 0,
         taxPercentage: 0,
         isSubscriptionEligible: true,
-        isActive: true
+        isActive: true,
+        changeReason: ""
     });
 
     useEffect(() => {
@@ -111,7 +112,8 @@ export default function PricingPage() {
             surgeCharge: charge.surgeCharge,
             taxPercentage: charge.taxPercentage,
             isSubscriptionEligible: charge.isSubscriptionEligible,
-            isActive: charge.isActive
+            isActive: charge.isActive,
+            changeReason: ""
         });
         setShowModal(true);
     }
@@ -599,6 +601,19 @@ export default function PricingPage() {
                                         <label>Active</label>
                                     </div>
                                 </div>
+
+                                {editingCharge && (
+                                    <div className="form-group" style={{ marginTop: 12 }}>
+                                        <label className="form-label">Reason for change (optional)</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="e.g. Seasonal discount, vendor rate change..."
+                                            value={form.changeReason}
+                                            onChange={e => setForm({ ...form, changeReason: e.target.value })}
+                                        />
+                                    </div>
+                                )}
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>

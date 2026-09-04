@@ -88,10 +88,11 @@ const createPlan = async (req, res, next) => {
 
 const updatePlan = async (req, res, next) => {
     try {
+        const { changeReason, ...body } = req.body;
         const oldPlan = await prisma.plan.findUnique({ where: { id: req.params.id } });
         const plan = await prisma.plan.update({
             where: { id: req.params.id },
-            data: req.body,
+            data: body,
         });
 
         // Audit pricing changes
@@ -108,7 +109,7 @@ const updatePlan = async (req, res, next) => {
                     entity: 'Plan',
                     entityId: plan.id,
                     oldValue: { quarterly: oldPlan.quarterlyPrice, biannual: oldPlan.biannualPrice, yearly: oldPlan.yearlyPrice },
-                    newValue: { quarterly: plan.quarterlyPrice, biannual: plan.biannualPrice, yearly: plan.yearlyPrice },
+                    newValue: { quarterly: plan.quarterlyPrice, biannual: plan.biannualPrice, yearly: plan.yearlyPrice, ...(changeReason && { reason: changeReason }) },
                     ipAddress: req.ip,
                 });
             }

@@ -4,6 +4,9 @@
 
 const prisma = require('../config/database');
 const { sendResponse } = require('../utils/helpers');
+const { createAuditLog } = require('../middleware/audit');
+
+const FEE_FIELDS = ['serviceFee', 'bookingFee', 'platformFee', 'convenienceFee', 'emergencyFee', 'visitFee', 'nightCharge', 'surgeCharge', 'taxPercentage'];
 
 // GET /api/admin/service-charges
 const getServiceCharges = async (req, res, next) => {
@@ -165,7 +168,8 @@ const updateServiceCharge = async (req, res, next) => {
             surgeCharge,
             taxPercentage,
             isSubscriptionEligible,
-            isActive
+            isActive,
+            changeReason
         } = req.body;
 
         const existing = await prisma.serviceCharge.findUnique({
@@ -193,6 +197,22 @@ const updateServiceCharge = async (req, res, next) => {
             data,
         });
 
+        const changedFields = FEE_FIELDS.filter(f => existing[f] !== charge[f]);
+        if (changedFields.length > 0) {
+            const oldValue = {}, newValue = {};
+            for (const f of changedFields) { oldValue[f] = existing[f]; newValue[f] = charge[f]; }
+            if (changeReason) newValue.reason = changeReason;
+            await createAuditLog({
+                adminId: req.user?.id,
+                action: 'SERVICE_CHARGE_UPDATED',
+                entity: 'ServiceCharge',
+                entityId: charge.id,
+                oldValue,
+                newValue,
+                ipAddress: req.ip,
+            });
+        }
+
         // Sync with corresponding Service basePrice if serviceFee was updated
         if (serviceFee !== undefined) {
             try {
@@ -205,10 +225,20 @@ const updateServiceCharge = async (req, res, next) => {
                         ]
                     }
                 });
-                if (service) {
+                if (service && service.basePrice !== parseFloat(serviceFee || 0)) {
+                    const newBasePrice = parseFloat(serviceFee || 0);
                     await prisma.service.update({
                         where: { id: service.id },
-                        data: { basePrice: parseFloat(serviceFee || 0) }
+                        data: { basePrice: newBasePrice }
+                    });
+                    await createAuditLog({
+                        adminId: req.user?.id,
+                        action: 'PRICE_SYNC',
+                        entity: 'Service',
+                        entityId: service.id,
+                        oldValue: { basePrice: service.basePrice },
+                        newValue: { basePrice: newBasePrice, syncedFrom: `ServiceCharge:${charge.id}` },
+                        ipAddress: req.ip,
                     });
                 }
             } catch (syncErr) {

@@ -6,6 +6,7 @@ const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
 const { logger } = require('../config/logger');
 const { PRODUCT_ORDER_STATUSES, PRODUCT_ORDER_TRANSITIONS, isValidTransition, recordStatusTransition } = require('../utils/statusTransitions');
+const { createAuditLog } = require('../middleware/audit');
 
 // ═══════════════════════════════════════════
 //  PRODUCTS
@@ -66,7 +67,25 @@ const createProduct = async (req, res, next) => {
 
 const updateProduct = async (req, res, next) => {
     try {
-        const product = await prisma.product.update({ where: { id: req.params.id }, data: req.body });
+        const { changeReason, ...body } = req.body;
+        const oldProduct = await prisma.product.findUnique({ where: { id: req.params.id } });
+
+        const product = await prisma.product.update({ where: { id: req.params.id }, data: body });
+
+        // This route previously had no audit trail at all — not even the
+        // generic action-only auditMiddleware other admin routes get.
+        if (oldProduct && (oldProduct.price !== product.price || oldProduct.mrp !== product.mrp)) {
+            await createAuditLog({
+                adminId: req.user?.id,
+                action: 'PRODUCT_PRICE_UPDATED',
+                entity: 'Product',
+                entityId: product.id,
+                oldValue: { price: oldProduct.price, mrp: oldProduct.mrp },
+                newValue: { price: product.price, mrp: product.mrp, ...(changeReason && { reason: changeReason }) },
+                ipAddress: req.ip,
+            });
+        }
+
         sendResponse(res, 200, product, 'Product updated');
     } catch (error) {
         next(error);
