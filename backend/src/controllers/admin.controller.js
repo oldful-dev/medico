@@ -5,6 +5,7 @@
 const prisma = require('../config/database');
 const { hashPassword, paginate, sendPaginatedResponse, sendResponse } = require('../utils/helpers');
 const profileService = require('../services/profile.service');
+const { createAuditLog } = require('../middleware/audit');
 
 // GET /api/admin
 const getAdmins = async (req, res, next) => {
@@ -63,6 +64,9 @@ const getAdminById = async (req, res, next) => {
 const updateAdmin = async (req, res, next) => {
     try {
         const { name, email, phone, role, cityId, isActive, documentsJson } = req.body;
+        const oldAdmin = await prisma.admin.findUnique({ where: { id: req.params.id } });
+        if (!oldAdmin) return res.status(404).json({ success: false, message: 'Admin not found' });
+
         const data = {};
         if (name !== undefined) data.name = name;
         if (email !== undefined) data.email = email;
@@ -76,6 +80,23 @@ const updateAdmin = async (req, res, next) => {
             where: { id: req.params.id },
             data,
         });
+
+        // Role/active-status changes are the most security-sensitive admin
+        // action possible (privilege escalation, account deactivation) — the
+        // generic auditMiddleware('Admin') at the route only logs
+        // action/entityId, not what actually changed. Record it explicitly,
+        // same pattern as the price/fee audit fix.
+        if (oldAdmin.role !== admin.role || oldAdmin.isActive !== admin.isActive) {
+            await createAuditLog({
+                adminId: req.user?.id,
+                action: 'ADMIN_ACCESS_CHANGED',
+                entity: 'Admin',
+                entityId: admin.id,
+                oldValue: { role: oldAdmin.role, isActive: oldAdmin.isActive },
+                newValue: { role: admin.role, isActive: admin.isActive },
+                ipAddress: req.ip,
+            });
+        }
 
         const { passwordHash, refreshToken, ...safeAdmin } = admin;
         sendResponse(res, 200, safeAdmin, 'Admin updated successfully');
