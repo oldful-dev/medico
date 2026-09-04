@@ -297,6 +297,9 @@ export const productAPI = {
     // different base path than the rest of this object, both route to the
     // same product_orders table)
     retryFulfillment: (id) => api.post(`/orders/admin/${id}/retry-fulfillment`),
+    // Delivery fee thresholds/amounts (prepaid vs COD) — see wellness.routes.js
+    getDeliveryFeeConfig: () => api.get('/wellness/delivery-fee'),
+    updateDeliveryFeeConfig: (data) => api.put('/wellness/delivery-fee', data),
 };
 
 // ── Categories (Wellness Store) ──────────────────────

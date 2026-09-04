@@ -552,7 +552,11 @@ export default function CheckoutScreen() {
         );
     }, [selectedAddress?.latitude, selectedAddress?.longitude]);
 
-    // ─── Wellness: Fetch shipping rate when address changes
+    // ─── Wellness: Fetch shipping rate when address OR payment method changes ──
+    // The delivery fee depends on prepaid vs COD (see backend deliveryFee.js),
+    // so switching payment method must re-fetch — otherwise a stale fee from
+    // before the switch stays displayed, which would show the wrong amount
+    // right before the user pays.
     useEffect(() => {
         if (!isWellness || !selectedAddress || !selectedAddress.pincode) {
             return;
@@ -566,6 +570,7 @@ export default function CheckoutScreen() {
                         productId: i.id,
                         quantity: i.quantity || 1,
                     })),
+                    paymentMethod: selectedMethod,
                 });
                 if (res.success && res.data) {
                     setShippingDetails(res.data);
@@ -577,7 +582,7 @@ export default function CheckoutScreen() {
             }
         };
         fetchShippingRate();
-    }, [selectedAddress?.id, selectedAddress?.pincode, params.category]);
+    }, [selectedAddress?.id, selectedAddress?.pincode, params.category, selectedMethod]);
 
     // ─── EDGE CASE: Recover pending payment after app crash/close ──────
     // On mount, check if there's a pending Razorpay order in AsyncStorage.
@@ -806,6 +811,9 @@ export default function CheckoutScreen() {
                         country: selectedAddress.country || 'India',
                     }) : undefined,
                     pincode: selectedAddress?.pincode,
+                    // Same basis the shipping-rate preview above used — keeps
+                    // the persisted shippingCharge in sync with what was shown.
+                    paymentMethod: selectedMethod,
                 };
                 const checkoutRes = await storeService.checkoutCart(checkoutPayload);
                 if (!checkoutRes.success || !checkoutRes.data?.order) {

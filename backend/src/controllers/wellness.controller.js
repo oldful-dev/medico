@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const { sendResponse } = require('../utils/helpers');
+const { getDeliveryFeeConfig, DELIVERY_FEE_CONFIG_KEY } = require('../utils/deliveryFee');
 
 // --- Banner CMS ---
 
@@ -64,6 +65,45 @@ const toggleWellnessStatus = async (req, res, next) => {
         sendResponse(res, 200, {
             isEnabled: config.isVisible
         }, 'Wellness store status updated');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// --- Delivery Fee Config ---
+
+// GET /api/wellness/delivery-fee (Admin)
+const getDeliveryFeeConfigHandler = async (req, res, next) => {
+    try {
+        const config = await getDeliveryFeeConfig();
+        sendResponse(res, 200, config);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// PUT /api/wellness/delivery-fee (Admin only)
+const updateDeliveryFeeConfig = async (req, res, next) => {
+    try {
+        const { prepaidThreshold, prepaidFee, codThreshold, codFee } = req.body;
+        const nums = { prepaidThreshold, prepaidFee, codThreshold, codFee };
+        for (const [key, val] of Object.entries(nums)) {
+            if (val === undefined) continue;
+            if (typeof val !== 'number' || val < 0 || Number.isNaN(val)) {
+                return res.status(400).json({ success: false, message: `${key} must be a non-negative number` });
+            }
+        }
+
+        const current = await getDeliveryFeeConfig();
+        const updated = { ...current, ...Object.fromEntries(Object.entries(nums).filter(([, v]) => v !== undefined)) };
+
+        await prisma.uIConfig.upsert({
+            where: { key: DELIVERY_FEE_CONFIG_KEY },
+            update: { configJson: updated },
+            create: { key: DELIVERY_FEE_CONFIG_KEY, label: 'Wellness Delivery Fee', configJson: updated },
+        });
+
+        sendResponse(res, 200, updated, 'Delivery fee config updated');
     } catch (error) {
         next(error);
     }
@@ -137,5 +177,7 @@ module.exports = {
     getWellnessStatus,
     toggleWellnessStatus,
     getShippingRates,
-    createShipment
+    createShipment,
+    getDeliveryFeeConfigHandler,
+    updateDeliveryFeeConfig,
 };

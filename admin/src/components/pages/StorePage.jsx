@@ -51,6 +51,11 @@ export default function StorePage() {
     const [updatingOrderId, setUpdatingOrderId] = useState(null);
     const [retryingOrderId, setRetryingOrderId] = useState(null);
 
+    // Delivery fee config (prepaid vs COD threshold/fee)
+    const [feeConfig, setFeeConfig] = useState(null);
+    const [feeConfigLoading, setFeeConfigLoading] = useState(false);
+    const [feeConfigSaving, setFeeConfigSaving] = useState(false);
+
     useEffect(() => { loadData(); }, []);
 
     // ── Real-time new_product_order socket listener ────────────────
@@ -94,7 +99,30 @@ export default function StorePage() {
         if (t === 'orders') {
             setNewOrderCount(0);
             loadOrders();
+            loadFeeConfig();
         }
+    }
+
+    async function loadFeeConfig() {
+        try {
+            setFeeConfigLoading(true);
+            const res = await productAPI.getDeliveryFeeConfig();
+            setFeeConfig(res.data?.data || null);
+        } catch (e) {
+            console.error(e);
+            showToast('Failed to load delivery fee config', 'error');
+        } finally { setFeeConfigLoading(false); }
+    }
+
+    async function saveFeeConfig() {
+        try {
+            setFeeConfigSaving(true);
+            const res = await productAPI.updateDeliveryFeeConfig(feeConfig);
+            setFeeConfig(res.data?.data || feeConfig);
+            showToast('Delivery fee config updated');
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Failed to update delivery fee config', 'error');
+        } finally { setFeeConfigSaving(false); }
     }
 
     async function updateOrderStatus(orderId, status, forceStatus = false) {
@@ -340,6 +368,46 @@ export default function StorePage() {
             {/* ── ORDERS TAB ── */}
             {tab === 'orders' && (
                 <>
+                    <div className="card" style={{ marginBottom: 16 }}>
+                        <div className="card-body">
+                            <h4 style={{ margin: '0 0 4px 0' }}>Delivery Fee</h4>
+                            <p className="text-sm text-muted" style={{ marginTop: 0, marginBottom: 12 }}>
+                                Flat delivery fee applied below each threshold; free delivery at or above it. Prepaid and COD are configured separately.
+                            </p>
+                            {feeConfigLoading || !feeConfig ? (
+                                <div style={{ padding: 12, color: 'var(--text-secondary)' }}>Loading...</div>
+                            ) : (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                                    <div className="form-group">
+                                        <label className="form-label">Prepaid threshold (₹)</label>
+                                        <input className="form-input" type="number" min={0} value={feeConfig.prepaidThreshold}
+                                            onChange={e => setFeeConfig({ ...feeConfig, prepaidThreshold: parseFloat(e.target.value) || 0 })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Prepaid fee (₹)</label>
+                                        <input className="form-input" type="number" min={0} value={feeConfig.prepaidFee}
+                                            onChange={e => setFeeConfig({ ...feeConfig, prepaidFee: parseFloat(e.target.value) || 0 })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">COD threshold (₹)</label>
+                                        <input className="form-input" type="number" min={0} value={feeConfig.codThreshold}
+                                            onChange={e => setFeeConfig({ ...feeConfig, codThreshold: parseFloat(e.target.value) || 0 })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">COD fee (₹)</label>
+                                        <input className="form-input" type="number" min={0} value={feeConfig.codFee}
+                                            onChange={e => setFeeConfig({ ...feeConfig, codFee: parseFloat(e.target.value) || 0 })} />
+                                    </div>
+                                </div>
+                            )}
+                            {feeConfig && (
+                                <button className="btn btn-primary btn-sm" style={{ marginTop: 12 }} onClick={saveFeeConfig} disabled={feeConfigSaving}>
+                                    {feeConfigSaving ? 'Saving...' : 'Save Delivery Fee Settings'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>
                             {orders.length} order{orders.length !== 1 ? 's' : ''} found

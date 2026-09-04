@@ -11,6 +11,9 @@ const delhivery = require('../services/delhivery.service');
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
 const { PRODUCT_ORDER_STATUSES, PRODUCT_ORDER_TRANSITIONS, isValidTransition, recordStatusTransition } = require('../utils/statusTransitions');
 const { attemptFulfillment } = require('../services/fulfillment.service');
+const { getDeliveryFeeConfig, calculateDeliveryFee } = require('../utils/deliveryFee');
+
+const isCODMethod = (paymentMethod) => String(paymentMethod || '').toUpperCase() === 'CASH';
 
 // Warehouse origin pincode (change to your actual warehouse pincode)
 const WAREHOUSE_PINCODE = process.env.WAREHOUSE_PINCODE || '560001';
@@ -26,26 +29,29 @@ const WAREHOUSE_PINCODE = process.env.WAREHOUSE_PINCODE || '560001';
  */
 const getShippingRate = async (req, res, next) => {
     try {
-        const { pincode, items = [] } = req.body;
+        const { pincode, items = [], paymentMethod } = req.body;
 
         if (!pincode || !items.length) {
             return res.status(400).json({ success: false, message: 'pincode and items are required' });
         }
 
-        // Fetch product dimensions from DB
+        // Fetch product price (fee's subtotal basis) + dimensions (Delhivery
+        // serviceability/ETA lookup only — the carrier's own rate no longer
+        // determines the charge, see calculateDeliveryFee below).
         const productIds = items.map(i => i.productId).filter(Boolean);
         const products = await prisma.product.findMany({
             where: { id: { in: productIds } },
-            select: { id: true, weight: true, length: true, width: true, height: true },
+            select: { id: true, price: true, weight: true, length: true, width: true, height: true },
         });
 
-        // Aggregate weight (sum of all items * quantity)
+        let subtotal = 0;
         let totalWeight = 0;
         let maxLength = 10, maxWidth = 10, maxHeight = 10;
         for (const item of items) {
             const product = products.find(p => p.id === item.productId);
             if (product) {
                 const qty = item.quantity || 1;
+                subtotal += (product.price || 0) * qty;
                 totalWeight += (product.weight || 0.1) * qty;
                 maxLength = Math.max(maxLength, product.length || 10);
                 maxWidth = Math.max(maxWidth, product.width || 10);
@@ -54,6 +60,8 @@ const getShippingRate = async (req, res, next) => {
         }
         totalWeight = Math.max(totalWeight, 0.1);
 
+        // Serviceability/ETA display only — failure here must not block the
+        // flat-fee charge calculation below, so it's caught locally.
         const rates = await delhivery.getShippingRates({
             pickupPostcode: WAREHOUSE_PINCODE,
             deliveryPostcode: pincode,
@@ -61,9 +69,11 @@ const getShippingRate = async (req, res, next) => {
             length: maxLength,
             breadth: maxWidth,
             height: maxHeight,
-            cod: 0,
+            cod: isCODMethod(paymentMethod) ? 1 : 0,
+        }).catch(err => {
+            logger.warn('[OrderCtrl] Delhivery serviceability lookup failed (non-fatal):', err.message);
+            return [];
         });
-
         const cheapest = rates.sort((a, b) => a.rate - b.rate)[0] || null;
 
         // Check if user has active HomeMaker plan for shipping waiver
@@ -76,13 +86,11 @@ const getShippingRate = async (req, res, next) => {
             },
         });
 
-        let rate = cheapest?.rate || 0;
-        if (activeSub) {
-            rate = 0;
-        }
+        const feeConfig = await getDeliveryFeeConfig();
+        const rate = activeSub ? 0 : calculateDeliveryFee(subtotal, isCODMethod(paymentMethod), feeConfig);
 
         sendResponse(res, 200, {
-            available: rates.length > 0,
+            available: true,
             rate,
             courierName: cheapest?.courierName || 'Standard Shipping',
             estimatedDays: cheapest?.estimatedDays || '5-7',
@@ -91,14 +99,9 @@ const getShippingRate = async (req, res, next) => {
         });
     } catch (error) {
         logger.error('[OrderCtrl] getShippingRate error:', error.message);
-        // Graceful degradation: return 0 shipping if Shiprocket unavailable
-        sendResponse(res, 200, {
-            available: false,
-            rate: 0,
-            courierName: 'Standard Shipping',
-            estimatedDays: '5-7',
-            allRates: [],
-        });
+        // Graceful degradation: still return a usable response rather than
+        // a 500, matching this endpoint's original behavior.
+        sendResponse(res, 200, { available: false, rate: 0, courierName: 'Standard Shipping', estimatedDays: '5-7', allRates: [] });
     }
 };
 
@@ -120,7 +123,7 @@ const getShippingRate = async (req, res, next) => {
  */
 const checkoutCart = async (req, res, next) => {
     try {
-        const { items, addressId, address, pincode } = req.body;
+        const { items, addressId, address, pincode, paymentMethod } = req.body;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'Cart items are required' });
@@ -194,22 +197,11 @@ const checkoutCart = async (req, res, next) => {
             };
         });
 
-        // ─── 4. Get real-time shipping rate ────────────────────────────
+        // ─── 4. Delivery fee — flat, threshold-based on subtotal + payment method ──
         let shippingCharge = 0;
         if (deliveryPincode) {
-            const totalWeight = lineItems.reduce((sum, i) => sum + i.weight * i.quantity, 0);
-            const rates = await delhivery.getShippingRates({
-                pickupPostcode: WAREHOUSE_PINCODE,
-                deliveryPostcode: deliveryPincode,
-                weight: Math.max(totalWeight, 0.1),
-                length: Math.max(...lineItems.map(i => i.length)),
-                breadth: Math.max(...lineItems.map(i => i.width)),
-                height: Math.max(...lineItems.map(i => i.height)),
-            }).catch(() => []);
-
-            if (rates.length > 0) {
-                shippingCharge = Math.round(rates.sort((a, b) => a.rate - b.rate)[0].rate);
-            }
+            const feeConfig = await getDeliveryFeeConfig();
+            shippingCharge = calculateDeliveryFee(subtotal, isCODMethod(paymentMethod), feeConfig);
 
             // Check if user has active HomeMaker plan for shipping waiver
             const activeSub = await prisma.subscription.findFirst({

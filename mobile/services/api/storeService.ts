@@ -183,6 +183,7 @@ export const storeService = {
     getShippingRate: async (payload: {
         pincode: string;
         items: CartItem[];
+        paymentMethod?: string;
     }): Promise<ApiResponse<ShippingRate>> => {
         return apiClient.post<ShippingRate>('/orders/shipping-rate', payload);
     },
@@ -197,6 +198,7 @@ export const storeService = {
         addressId?: string;
         address?: string;
         pincode?: string;
+        paymentMethod?: string;
     }): Promise<ApiResponse<{ order: ProductOrder; breakdown: CheckoutBreakdown }>> => {
         return apiClient.post<{ order: ProductOrder; breakdown: CheckoutBreakdown }>(
             '/orders/checkout',

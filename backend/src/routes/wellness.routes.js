@@ -20,5 +20,7 @@ router.post('/shipping/rates', ctrl.getShippingRates);
 // legitimate reason to create a shipment record themselves.
 router.post('/shipping/create', authenticateAdmin, authorize(...WELLNESS_ADMIN_ROLES), ctrl.createShipment);
 router.put('/status', authenticateAdmin, authorize(...WELLNESS_ADMIN_ROLES), ctrl.toggleWellnessStatus);
+router.get('/delivery-fee', authenticateAdmin, authorize(...WELLNESS_ADMIN_ROLES), ctrl.getDeliveryFeeConfigHandler);
+router.put('/delivery-fee', authenticateAdmin, authorize(...WELLNESS_ADMIN_ROLES), ctrl.updateDeliveryFeeConfig);
 
 module.exports = router;
