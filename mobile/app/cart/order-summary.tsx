@@ -76,14 +76,17 @@ export default function CartOrderSummaryScreen() {
     const deliveryFee = 0;
     const baseAmount = serviceFee;
     const gst = Math.round(serviceFee * 0.18 * 100) / 100;
-    const totalAmount = Math.round((serviceFee + ayuxaBookingFee + deliveryFee + gst - discount) * 100) / 100;
+    // Pre-discount total — /apply-coupon and /initiate must receive this; the
+    // backend re-applies the coupon, so passing the discounted figure double-counts.
+    const grossAmount = Math.round((serviceFee + ayuxaBookingFee + deliveryFee + gst) * 100) / 100;
+    const totalAmount = Math.round((grossAmount - discount) * 100) / 100;
 
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) return;
         try {
             const res = await paymentService.applyCoupon({
                 couponCode: couponCode.trim(),
-                amount: totalAmount,
+                amount: grossAmount,
             });
             if (res.success && res.data?.valid) {
                 setDiscount(res.data.discount);
@@ -149,7 +152,7 @@ export default function CartOrderSummaryScreen() {
 
             const payRes = await paymentService.initiatePayment({
                 labOrderId: bookingId,
-                amount: totalAmount,
+                amount: grossAmount,
                 paymentMethod: selectedMethod,
                 couponCode: couponApplied ? couponCode : undefined,
             });

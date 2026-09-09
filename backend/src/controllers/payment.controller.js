@@ -154,6 +154,11 @@ const initiatePayment = async (req, res, next) => {
         // an expired / exhausted / per-user-capped coupon is rejected here too.
         // usedCount / redemption rows are written only on payment success
         // (payment.service.processPaymentSuccess) — never here.
+        // The floor checks above deliberately run on the pre-discount `amount` —
+        // they verify the client sent an honest total. The coupon is applied here,
+        // after, because the discount is server-controlled (an admin-configured
+        // coupon, already capped at `amount` and at maxDiscount by the validator),
+        // so it can't be used to smuggle an under-payment past those checks.
         let appliedCouponCode = null;
         if (couponCode) {
             const result = await validateCoupon({ code: couponCode, amount, userId: userId || req.user.id });
@@ -161,7 +166,7 @@ const initiatePayment = async (req, res, next) => {
                 return res.status(400).json({ success: false, message: result.reason || 'Invalid coupon' });
             }
             discountAmount = result.discount;
-            finalAmount = amount - discountAmount;
+            finalAmount = Math.max(0, amount - discountAmount);
             appliedCouponCode = result.coupon.code;
         }
 

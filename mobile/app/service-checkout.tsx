@@ -845,6 +845,13 @@ export default function ServiceCheckoutScreen() {
       const isForcedPaid = isPaidBookingForce || isPaidBookingOverride;
       const chargeAmount = isForcedPaid ? standardRateAmount : finalAmount;
 
+      // The backend re-applies the coupon from `couponCode`, so /initiate must
+      // get the PRE-discount amount — finalAmount is already discounted, sending
+      // it + couponCode would discount twice.
+      const initiateAmount = (couponApplied && !isForcedPaid)
+        ? Math.round(amountWithTaxAndFee)
+        : chargeAmount;
+
       setPayLoading(true);
       try {
         setFlowState("creating_booking");
@@ -978,7 +985,7 @@ export default function ServiceCheckoutScreen() {
           ...(sessionBookingId.current &&
             !params.meetupId && { bookingId: sessionBookingId.current }),
           subscriptionId: params.subscriptionId,
-          amount: chargeAmount,
+          amount: initiateAmount,
           paymentMethod: selectedMethod,
           couponCode: couponApplied ? couponCode : undefined,
           ...(isUpgraded &&

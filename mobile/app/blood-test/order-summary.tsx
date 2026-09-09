@@ -74,14 +74,18 @@ export default function BloodTestOrderSummaryScreen() {
     const deliveryFee = 0;
     const baseAmount = serviceFee;
     const gst = Math.round(serviceFee * 0.18 * 100) / 100;
-    const totalAmount = Math.round((serviceFee + ayuxaBookingFee + deliveryFee + gst - discount) * 100) / 100;
+    // Pre-discount total — this is what /apply-coupon and /initiate must receive;
+    // the backend re-applies the coupon, so sending the discounted figure would
+    // discount twice. `totalAmount` (below) is display-only.
+    const grossAmount = Math.round((serviceFee + ayuxaBookingFee + deliveryFee + gst) * 100) / 100;
+    const totalAmount = Math.round((grossAmount - discount) * 100) / 100;
 
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) return;
         try {
             const res = await paymentService.applyCoupon({
                 couponCode: couponCode.trim(),
-                amount: totalAmount,
+                amount: grossAmount,
             });
             if (res.success && res.data?.valid) {
                 setDiscount(res.data.discount);
@@ -145,7 +149,7 @@ export default function BloodTestOrderSummaryScreen() {
             // Initiate payment for blood test (use labOrderId, not bookingId)
             const payRes = await paymentService.initiatePayment({
                 labOrderId: bookingId,
-                amount: totalAmount,
+                amount: grossAmount,
                 paymentMethod: selectedMethod,
                 couponCode: couponApplied ? couponCode : undefined,
             });

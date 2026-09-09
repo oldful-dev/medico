@@ -752,6 +752,14 @@ export default function CheckoutScreen() {
         const isForcedPaid = isPaidBookingForce || isPaidBookingOverride;
         const chargeAmount = isForcedPaid ? standardRateAmount : finalAmount;
 
+        // The backend re-applies the coupon from `couponCode`, so /initiate must
+        // receive the PRE-discount amount — sending finalAmount (already
+        // discounted) + couponCode would discount twice. Display still uses
+        // finalAmount; the real charge is whatever the backend returns.
+        const initiateAmount = (couponApplied && !isForcedPaid)
+            ? Math.round(amountWithTaxAndFee)
+            : chargeAmount;
+
         // ─── Wellness/Product Validation ───────────────────────────────────────
         if (isWellness) {
             // Check if all wellness products are still enabled
@@ -1001,7 +1009,7 @@ export default function CheckoutScreen() {
             // ─── STEP 3: Create Razorpay order on backend
             setFlowState('initiating_order');
             const initiatePayload: any = {
-                amount: chargeAmount,
+                amount: initiateAmount,
                 paymentMethod: selectedMethod,
                 couponCode: couponApplied ? couponCode : undefined,
                 ...(isUpgraded && selectedUpgradePlan && {
