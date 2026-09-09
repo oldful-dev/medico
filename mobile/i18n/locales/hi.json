@@ -94,7 +94,21 @@
     "enter_complete_otp": "पूरा OTP डालें",
     "session_expired": "समाप्त",
     "session_expired_message": "सत्र खत्म। फिर लॉगिन करें।",
-    "login_again": "फिर लॉगिन"
+    "login_again": "फिर लॉगिन",
+    "failed_request_otp": "OTP का अनुरोध विफल",
+    "otp_resent": "OTP सफलतापूर्वक फिर से भेजा गया",
+    "failed_resend_otp": "OTP फिर से भेजने में विफल",
+    "invalid_expired_otp": "अमान्य या समाप्त OTP",
+    "invalid_otp_title": "अमान्य OTP",
+    "check_code_retry": "कृपया कोड जाँचें और पुनः प्रयास करें।",
+    "something_wrong_retry": "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
+    "could_not_resend_otp": "OTP फिर से नहीं भेज सके। कृपया पुनः प्रयास करें।",
+    "google_no_token": "Google साइन-इन विफल — कोई टोकन प्राप्त नहीं हुआ।",
+    "google_signin_failed": "Google साइन-इन विफल। कृपया पुनः प्रयास करें।",
+    "google_play_unavailable": "Google Play सेवाएँ उपलब्ध नहीं या पुरानी हैं।",
+    "login_failed_title": "लॉगिन विफल",
+    "google_ios_soon": "iOS पर Google साइन-इन जल्द आ रहा है।",
+    "apple_signin_soon": "Apple से साइन इन जल्द आ रहा है।"
   },
   "profile_setup": {
     "title": "प्रोफ़ाइल बनाएँ",
@@ -125,7 +139,25 @@
     "name_required": "नाम ज़रूरी",
     "gender_required": "लिंग चुनें",
     "emergency_required": "आपातकाल नं. ज़रूरी",
-    "invalid_emergency": "सही 10 अंक डालें"
+    "invalid_emergency": "सही 10 अंक डालें",
+    "header_line1": "चलिए बनाते हैं आपकी",
+    "header_line2": "प्रोफ़ाइल",
+    "email_id_placeholder": "अपनी ईमेल आईडी दर्ज करें",
+    "mobile_placeholder": "मोबाइल नंबर",
+    "address_placeholder": "पता",
+    "address_placeholder_denied": "अपना पूरा पता लिखें",
+    "flat_house_placeholder": "फ्लैट / मकान नंबर लिखें",
+    "emergency_no_short": "आपातकालीन नंबर",
+    "unique_id": "यूनिक आईडी",
+    "otp_hint": "+91 {{phone}} पर भेजा गया 4-अंकीय कोड दर्ज करें",
+    "verify": "सत्यापित करें",
+    "resend": "फिर से भेजें",
+    "policy_agree": "मैंने पढ़ा और सहमत हूँ ",
+    "master_agreement": "आयुक्सा का मास्टर एग्रीमेंट",
+    "already_member": "पहले से सदस्य हैं? ",
+    "login": "लॉग इन",
+    "select_gender": "लिंग चुनें",
+    "select_language": "भाषा चुनें"
   },
   "home": {
     "tab_title": "होम",
@@ -1548,7 +1580,7 @@
   "service_checkout": {
     "header": "चेकआउट",
     "service_summary": "सेवा सारांश",
-    "booking_fee": "बुकिंग शुल्क",
+    "booking_fee": "आयुक्सा बुकिंग शुल्क",
     "platform_fee": "प्लेटफ़ॉर्म शुल्क",
     "taxes_gst": "कर और GST",
     "service_address": "सेवा पता",
@@ -2661,7 +2693,8 @@
     "apply": "लागू करें",
     "confirm_booking": "बुकिंग की पुष्टि करें",
     "booking_failed_title": "बुकिंग विफल",
-    "slot_unavailable_msg": "हम यह स्लॉट आरक्षित नहीं कर सके। कृपया कोई अन्य समय आज़माएँ या थोड़ी देर बाद देखें।"
+    "slot_unavailable_msg": "हम यह स्लॉट आरक्षित नहीं कर सके। कृपया कोई अन्य समय आज़माएँ या थोड़ी देर बाद देखें।",
+    "platform_fee": "आयुक्सा बुकिंग शुल्क"
   },
   "blood_test_success": {
     "header": "भुगतान सफल!",
@@ -2930,7 +2963,7 @@
     "success_title": "सफल",
     "error_title": "गलती",
     "payment_failed_verification_msg": "भुगतान मिला पर सत्यापन नहीं हुआ। 24 घंटे में हल होगा। दोबारा भुगतान न करें।",
-    "booking_fee": "बुकिंग शुल्क",
+    "booking_fee": "आयुक्सा बुकिंग शुल्क",
     "payment_method_title": "भुगतान विधि",
     "upgrade_success_title": "अपग्रेड सफल!",
     "payment_success_title": "भुगतान सफल!",
@@ -3656,5 +3689,14 @@
   "security": {
     "rooted_device_title": "डिवाइस सुरक्षा सूचना",
     "rooted_device_msg": "यह डिवाइस रूटेड या जेलब्रोकन प्रतीत होता है, जिससे इस पर संग्रहीत डेटा की सुरक्षा कम हो सकती है। आप ऐप का उपयोग जारी रख सकते हैं, लेकिन हम आपकी स्वास्थ्य जानकारी तक पहुँचने के लिए एक मानक, असंशोधित डिवाइस का उपयोग करने की सलाह देते हैं।"
+  },
+  "fees": {
+    "service_fee": "सेवा शुल्क",
+    "ayuxa_booking_fee": "आयुक्सा बुकिंग शुल्क",
+    "delivery_fee": "डिलीवरी शुल्क",
+    "collection_fee": "नमूना संग्रह शुल्क",
+    "taxes_gst": "कर एवं जीएसटी",
+    "free": "निःशुल्क",
+    "final_payable": "अंतिम देय राशि"
   }
 }

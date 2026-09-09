@@ -75,6 +75,10 @@ export default function ServicesPage() {
     });
     const [formFields, setFormFields] = useState([]);
 
+    // Blood test is the one diagnostic whose per-test Service Fee comes from the
+    // Redcliffe Labs API, not from admin config — its price fields are read-only here.
+    const isBloodTestService = form.slug === "blood-test" || form.route === "/blood-test";
+
     const loadServices = useCallback(async () => {
         try {
             setLoading(true);
@@ -768,7 +772,16 @@ export default function ServicesPage() {
                                 {/* Section 3: Pricing & Checkout Configuration */}
                                 <div style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-lg)", padding: "20px", background: "var(--bg-glass)" }}>
                                     <h5 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "600", color: "var(--accent-primary)", borderBottom: "1px solid rgba(4, 131, 87, 0.08)", paddingBottom: "8px" }}>3. Pricing & Checkout Config</h5>
-                                    
+
+                                    {isBloodTestService && (
+                                        <div style={{
+                                            marginBottom: "16px", fontSize: 13, padding: "10px 14px", borderRadius: 8,
+                                            background: "rgba(59, 130, 246, 0.12)", color: "#2563EB", lineHeight: 1.5,
+                                        }}>
+                                            🩸 <strong>Blood Test — Service Fee is partner-controlled.</strong> Individual test prices are fetched live from the <strong>Redcliffe Labs API</strong> per package, so the Base Price below is <strong>not charged to the customer</strong> — it is only a display/reference figure. The Ayuxa Booking Fee, Platform Fee and Tax are set under <strong>Pricing → Service Charges</strong> for the <em>Blood Test</em> category.
+                                        </div>
+                                    )}
+
                                     {form.category === "HOME_ESSENTIALS" ? (
                                         <div className="form-grid-3" style={{ marginBottom: "16px" }}>
                                             <div className="form-group" style={{ marginBottom: 0 }}>
@@ -812,10 +825,11 @@ export default function ServicesPage() {
                                         <div className="form-grid-3" style={{ marginBottom: "16px" }}>
                                             <div className="form-group" style={{ marginBottom: 0 }}>
                                                 <label className="form-label">Payment Mode *</label>
-                                                <select 
-                                                    className="form-input" 
+                                                <select
+                                                    className="form-input"
                                                     style={{ cursor: "pointer" }}
-                                                    value={form.paymentMode || "INQUIRY"} 
+                                                    value={form.paymentMode || "INQUIRY"}
+                                                    disabled={isBloodTestService}
                                                     onChange={e => setForm({ ...form, paymentMode: e.target.value })}
                                                 >
                                                     <option value="INQUIRY">INQUIRY (No Payment)</option>
@@ -823,24 +837,29 @@ export default function ServicesPage() {
                                                 </select>
                                             </div>
                                             <div className="form-group" style={{ marginBottom: 0 }}>
-                                                <label className="form-label">Base Price (₹) *</label>
-                                                <input 
-                                                    type="number" 
-                                                    className="form-input" 
-                                                    required 
+                                                <label className="form-label">
+                                                    {isBloodTestService ? "Service Fee — set by Redcliffe API" : "Base Price (₹) *"}
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    className="form-input"
+                                                    required={!isBloodTestService}
+                                                    disabled={isBloodTestService}
+                                                    readOnly={isBloodTestService}
                                                     min={0}
-                                                    value={form.basePrice} 
+                                                    placeholder={isBloodTestService ? "Fetched live per test package" : undefined}
+                                                    value={isBloodTestService ? "" : form.basePrice}
                                                     onChange={e => setForm({ ...form, basePrice: e.target.value })}
                                                 />
                                             </div>
                                             <div className="form-group" style={{ marginBottom: 0 }}>
                                                 <label className="form-label">Pricing Subtext *</label>
-                                                <input 
-                                                    type="text" 
-                                                    className="form-input" 
-                                                    required 
+                                                <input
+                                                    type="text"
+                                                    className="form-input"
+                                                    required
                                                     placeholder="e.g. Pay ₹0 / Submit Request"
-                                                    value={form.pricingText} 
+                                                    value={form.pricingText}
                                                     onChange={e => setForm({ ...form, pricingText: e.target.value })}
                                                 />
                                             </div>
@@ -991,9 +1010,14 @@ export default function ServicesPage() {
                                                  {["dropdown", "radio", "checkbox", "benefits"].includes(field.type) && (
                                                      <div className="form-group" style={{ marginTop: 4, marginBottom: 12 }}>
                                                          <label className="form-label text-xs">Options List (Comma separated — format as &quot;Option: Price&quot; to set custom prices e.g. &quot;Short Visit (2 Hours): 499, Full Shift (8 Hours): 1299&quot;) *</label>
-                                                         <input 
-                                                             type="text" 
-                                                             className="form-input" 
+                                                         {isBloodTestService && (
+                                                             <p className="text-xs" style={{ margin: "0 0 4px", color: "#2563EB" }}>
+                                                                 🩸 For blood tests, any prices typed here are ignored — the actual test/package price is pulled live from the Redcliffe Labs API at checkout.
+                                                             </p>
+                                                         )}
+                                                         <input
+                                                             type="text"
+                                                             className="form-input"
                                                              required
                                                              placeholder='e.g. Short Visit (2 Hours): 499, Full Shift (8 Hours): 1299'
                                                              value={field.optionsString} 

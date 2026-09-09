@@ -317,11 +317,35 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                         effectiveGstRate = 0;
                     }
                 }
-                const subtotal = effectiveGstRate === 0
-                    ? paymentRecord.amount
-                    : paymentRecord.amount / (1 + effectiveGstRate / 100);
-                const gstAmount = paymentRecord.amount - subtotal;
                 const invoiceNumber = await generateInvoiceNumber();
+
+                // ─── Fee split for the invoice ──────────────────────────────
+                // Prefer the split persisted on the source record (booking /
+                // lab order / product order) so the invoice shows the exact
+                // Service Fee / Ayuxa Booking Fee / Delivery Fee the customer
+                // agreed to. Fall back to a single Service Fee line only for
+                // legacy records with no stored split.
+                const src = paymentRecord.booking || paymentRecord.labOrder || paymentRecord.productOrder;
+                let feeServiceFee = 0, feeAyuxaBookingFee = 0, feeDeliveryFee = 0, feeTaxAmount = 0;
+                if (src && (src.serviceFee || src.ayuxaBookingFee || src.deliveryFee)) {
+                    feeServiceFee = Number(src.serviceFee || 0);
+                    feeAyuxaBookingFee = Number(src.ayuxaBookingFee || 0);
+                    feeDeliveryFee = Number(src.deliveryFee || 0);
+                    feeTaxAmount = Number(src.taxAmount || 0);
+                }
+
+                let subtotal, gstAmount;
+                if (feeTaxAmount > 0 && (feeServiceFee || feeAyuxaBookingFee || feeDeliveryFee)) {
+                    // We have the real split — subtotal is the pre-tax sum, GST is exact.
+                    subtotal = feeServiceFee + feeAyuxaBookingFee + feeDeliveryFee;
+                    gstAmount = feeTaxAmount;
+                } else {
+                    // Legacy: back-calc from the total at the effective rate.
+                    subtotal = effectiveGstRate === 0
+                        ? paymentRecord.amount
+                        : paymentRecord.amount / (1 + effectiveGstRate / 100);
+                    gstAmount = paymentRecord.amount - subtotal;
+                }
 
                 invoice = await tx.invoice.create({
                     data: {
@@ -331,6 +355,9 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                         gstRate: effectiveGstRate,
                         gstAmount,
                         totalAmount: paymentRecord.amount,
+                        serviceFee: feeServiceFee,
+                        ayuxaBookingFee: feeAyuxaBookingFee,
+                        deliveryFee: feeDeliveryFee,
                         billingName: paymentRecord.user?.name || 'Customer',
                     },
                 });
@@ -409,8 +436,12 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                     gstRate: invoice.gstRate,
                     gstAmount: invoice.gstAmount,
                     totalAmount: payment.amount,
+                    // Distinct fee lines — never merged (compliance).
+                    serviceFee: invoice.serviceFee,
+                    ayuxaBookingFee: invoice.ayuxaBookingFee,
+                    deliveryFee: invoice.deliveryFee,
                     billingName: payment.user.name,
-                    description: 'Ayuxa Health Tech Platforms Pvt. Ltd.',
+                    description: payment.booking?.service?.name || 'Ayuxa Health Tech Platforms Pvt. Ltd.',
                 });
 
                 const { url } = await uploadFile(pdfBuffer, 'documents/invoices', `invoice-${invoice.invoiceNumber}.pdf`);

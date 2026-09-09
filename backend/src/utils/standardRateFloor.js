@@ -72,4 +72,64 @@ async function computeStandardRateFloor(service, vendorFee) {
     return Number(vendorFee) + extraFeesSum + taxes;
 }
 
-module.exports = { computeStandardRateFloor };
+/**
+ * Same config resolution as computeStandardRateFloor, but returns the canonical
+ * 4-part fee split (Service Fee / Ayuxa Booking Fee / Delivery Fee / Tax) so the
+ * booking row can persist it. `waived` = subscription benefit covered the Ayuxa
+ * fee (bookingFee + platformFee zeroed, and optionally GST on fees).
+ *
+ * @param {object} service
+ * @param {number} serviceFee  resolved vendor/option/base fee for this booking
+ * @param {{ waived?: boolean, waiveGstOnFee?: boolean, deliveryFee?: number }} [opts]
+ * @returns {Promise<import('./feeBreakdown').buildFeeBreakdown>}
+ */
+async function computeFeeBreakdown(service, serviceFee, opts = {}) {
+    const { buildFeeBreakdown } = require('./feeBreakdown');
+    const { waived = false, waiveGstOnFee = false, deliveryFee = 0 } = opts;
+
+    if (!service) {
+        return buildFeeBreakdown({ serviceFee, deliveryFee });
+    }
+
+    const lookupCategory = service.slug.toUpperCase().replace(/-/g, '_');
+    let config = await prisma.serviceCharge.findUnique({ where: { serviceCategory: lookupCategory } });
+    if (!config && service.category) {
+        config = await prisma.serviceCharge.findUnique({ where: { serviceCategory: service.category.toUpperCase() } });
+    }
+    if (!config && service.serviceType) {
+        config = await prisma.serviceCharge.findUnique({ where: { serviceCategory: service.serviceType.toUpperCase() } });
+    }
+
+    let bookingFee = 299, platformFee = 50, taxPercentage = 18;
+    let convenienceFee = 0, emergencyFee = 0, visitFee = 0, nightCharge = 0, surgeCharge = 0;
+    if (config && config.isActive) {
+        bookingFee = config.bookingFee;
+        platformFee = config.platformFee;
+        taxPercentage = config.taxPercentage > 0 ? config.taxPercentage : 18;
+        convenienceFee = config.convenienceFee || 0;
+        emergencyFee = config.emergencyFee || 0;
+        visitFee = config.visitFee || 0;
+        nightCharge = config.nightCharge || 0;
+        surgeCharge = config.surgeCharge || 0;
+    }
+
+    if (waived) { bookingFee = 0; platformFee = 0; }
+
+    const isHomeEssential =
+        service.serviceType === 'HOME_ESSENTIALS' ||
+        service.category === 'HOME_ESSENTIALS' ||
+        HOME_CATEGORIES.includes(lookupCategory);
+
+    const extraFeesSum = bookingFee + platformFee + convenienceFee + emergencyFee + visitFee + nightCharge + surgeCharge;
+    const taxableAmount = isHomeEssential ? (Number(serviceFee) + extraFeesSum) : extraFeesSum;
+    const taxes = (waived && waiveGstOnFee) ? 0 : Math.round(taxableAmount * (taxPercentage / 100) * 100) / 100;
+
+    return buildFeeBreakdown({
+        serviceFee,
+        bookingFee, platformFee, convenienceFee, emergencyFee, visitFee, nightCharge, surgeCharge,
+        deliveryFee,
+        taxAmount: taxes,
+    });
+}
+
+module.exports = { computeStandardRateFloor, computeFeeBreakdown };

@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { buildFeeBreakdown } = require('../utils/feeBreakdown');
 
 // ─── Service category → required planType mapping ───────────────────────────
 const CARE_CATEGORIES = [
@@ -249,6 +250,26 @@ exports.calculateCheckout = async (req, res) => {
         const providerRevenue = serviceFeeVal + Number(diagnosticFee);
         const ayuxaRevenue = extraFeesSum;
 
+        // Canonical 4-part split (Service Fee / Ayuxa Booking Fee / Delivery Fee /
+        // Tax) — the client persists this verbatim on the booking so invoices and
+        // reports show identical numbers. See utils/feeBreakdown.js.
+        const feeBreakdown = buildFeeBreakdown({
+            serviceFee: serviceFeeVal + Number(diagnosticFee),
+            bookingFee,
+            platformFee,
+            convenienceFee,
+            emergencyFee,
+            visitFee,
+            nightCharge,
+            surgeCharge,
+            deliveryFee: 0, // services have no delivery leg; lab/product set their own
+            taxAmount: taxes,
+            // No `discount` here: a subscription waiver is already reflected by
+            // bookingFee/platformFee being 0. Passing benefitDiscount too would
+            // subtract the waived amount a second time (finalPayable short by ₹benefitDiscount).
+            discount: 0,
+        });
+
         res.status(200).json({
             success: true,
             data: {
@@ -257,6 +278,7 @@ exports.calculateCheckout = async (req, res) => {
                 taxPercentage: taxPercentage > 0 ? taxPercentage : 18,
                 ayuxaRevenue,
                 providerRevenue,
+                feeBreakdown,
                 breakdown: {
                     serviceFee: serviceFeeVal,
                     vendorFee: serviceFeeVal,

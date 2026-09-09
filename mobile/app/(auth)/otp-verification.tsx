@@ -64,7 +64,7 @@ export default function OtpVerificationScreen() {
         try {
             const res = await authService.verifyOTP({ phoneNumber, otp });
             if (!res.success || !res.data) {
-                triggerAlert('Invalid OTP', res.message ?? 'Please check the code and try again.');
+                triggerAlert(t('auth.invalid_otp_title'), res.message ?? t('auth.check_code_retry'));
                 return;
             }
             if (res.data.isNewUser) {
@@ -79,7 +79,7 @@ export default function OtpVerificationScreen() {
                 router.replace('/(tabs)');
             }
         } catch {
-            triggerAlert(t('common.error'), 'Something went wrong. Please try again.');
+            triggerAlert(t('common.error'), t('auth.something_wrong_retry'));
             otpRef.current?.clear();
         } finally {
             setIsVerifying(false);
@@ -94,7 +94,7 @@ export default function OtpVerificationScreen() {
             setTimer(RESEND_TIMEOUT);
             setCanResend(false);
         } catch {
-            triggerAlert(t('common.error'), 'Could not resend OTP. Please try again.');
+            triggerAlert(t('common.error'), t('auth.could_not_resend_otp'));
         }
     }, [canResend, phoneNumber]);
 

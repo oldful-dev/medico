@@ -900,6 +900,8 @@ export default function ServiceCheckoutScreen() {
             latitude: lat,
             longitude: lng,
             isPaidBooking: isForcedPaid,
+            // Fee split the customer saw — server persists it (or recomputes if stale).
+            feeBreakdown: (calculatedPrices as any)?.feeBreakdown,
             formDataJson: {
               ...(payload.formDataJson || {}),
               ...(isUpgraded

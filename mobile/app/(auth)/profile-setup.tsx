@@ -341,8 +341,8 @@ export default function ProfileSetupScreen() {
                 <View style={styles.header}>
                     <Image source={logoImage} style={styles.headerLogo} resizeMode="contain" />
                     <View style={styles.headerRight}>
-                        <Text style={[styles.headerSubtitle, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>Let&apos;s Create your</Text>
-                        <Text style={[styles.headerTitle, { color: isDarkMode ? '#2FFF89' : '#0EDD94' }]}>PROFILE</Text>
+                        <Text style={[styles.headerSubtitle, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>{t('profile_setup.header_line1')}</Text>
+                        <Text style={[styles.headerTitle, { color: isDarkMode ? '#2FFF89' : '#0EDD94' }]}>{t('profile_setup.header_line2')}</Text>
                     </View>
                 </View>
 
@@ -383,7 +383,7 @@ export default function ProfileSetupScreen() {
                 <View style={[styles.row, { marginBottom: 15 }]}>
                     <TouchableOpacity style={{ flex: 1 }} onPress={handleSelectLanguage} activeOpacity={0.7}>
                         <FormInput
-                            placeholder="Language"
+                            placeholder={t('profile_setup.language')}
                             showChevron
                             style={styles.flexInput}
                             editable={false}
@@ -394,7 +394,7 @@ export default function ProfileSetupScreen() {
 
                     <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowDatePicker(true)} activeOpacity={0.7}>
                         <FormInput
-                            placeholder="DOB"
+                            placeholder={t('profile_setup.dob_placeholder')}
                             style={styles.flexInput}
                             editable={false}
                             value={dateOfBirth ? formatDOB(dateOfBirth) : ''}
@@ -404,7 +404,7 @@ export default function ProfileSetupScreen() {
 
                     <TouchableOpacity style={{ flex: 1 }} onPress={handleSelectGender} activeOpacity={0.7}>
                         <FormInput
-                            placeholder="Gender"
+                            placeholder={t('profile_setup.gender')}
                             showChevron
                             style={styles.flexInput}
                             editable={false}
@@ -431,7 +431,7 @@ export default function ProfileSetupScreen() {
 
                 {/* ─── Row 3: Email ─── */}
                 <FormInput
-                    placeholder="Enter your Email ID"
+                    placeholder={t('profile_setup.email_id_placeholder')}
                     keyboardType="email-address"
                     style={styles.fullWidthInput}
                     value={email}
@@ -440,7 +440,7 @@ export default function ProfileSetupScreen() {
 
                 {/* ─── Row 4: Mobile Number (read-only if verified; editable if not) ─── */}
                 <FormInput
-                    placeholder="Mobile Number"
+                    placeholder={t('profile_setup.mobile_placeholder')}
                     value={isPhoneVerified ? (passedPhone ? passedPhone.replace('+91', '') : phoneInput) : phoneInput}
                     prefix="+91"
                     keyboardType="phone-pad"
@@ -453,7 +453,7 @@ export default function ProfileSetupScreen() {
                         !isPhoneVerified ? (
                             <TouchableOpacity onPress={handleReqOTP} disabled={phoneInput.length !== 10 || isVerifyingOtp}>
                                 <Text style={[styles.verifyBtnText, phoneInput.length === 10 ? { color: '#048357' } : { color: '#CCC' }]}>
-                                    {otpSent ? 'RESEND' : 'VERIFY'}
+                                    {otpSent ? t('profile_setup.resend') : t('profile_setup.verify')}
                                 </Text>
                             </TouchableOpacity>
                         ) : (
@@ -465,7 +465,7 @@ export default function ProfileSetupScreen() {
                 {/* ─── OTP Input for Unverified Flow ─── */}
                 {!isPhoneVerified && otpSent && (
                     <View style={styles.otpVerifyContainer}>
-                        <Text style={styles.otpHint}>Enter 4-digit code sent to +91 {phoneInput}</Text>
+                        <Text style={styles.otpHint}>{t('profile_setup.otp_hint', { phone: phoneInput })}</Text>
                         <OTPInput otpRef={otpRef} length={4} onComplete={handleVerifyOTP} />
                     </View>
                 )}
@@ -475,7 +475,7 @@ export default function ProfileSetupScreen() {
                 <View style={styles.addressRowWrapper}>
                     <View style={styles.row}>
                         <FormInput
-                            placeholder={locationDenied ? "Type your full address" : "Address"}
+                            placeholder={locationDenied ? t('profile_setup.address_placeholder_denied') : t('profile_setup.address_placeholder')}
                             value={line2}
                             editable={locationDenied}
                             onChangeText={locationDenied ? setLine2 : undefined}
@@ -492,7 +492,7 @@ export default function ProfileSetupScreen() {
                         </TouchableOpacity>
                     </View>
                     <FormInput
-                        placeholder="Type Flat / House Number"
+                        placeholder={t('profile_setup.flat_house_placeholder')}
                         style={[styles.fullWidthInput, { marginTop: 15 }]}
                         value={line1}
                         onChangeText={setLine1}
@@ -502,7 +502,7 @@ export default function ProfileSetupScreen() {
                 {/* ─── Row 6: Emergency Number + Auto ID (Shared Row) ─── */}
                 <View style={styles.row}>
                     <FormInput
-                        placeholder="Emergency No"
+                        placeholder={t('profile_setup.emergency_no_short')}
                         prefix="+91"
                         keyboardType="phone-pad"
                         style={styles.flexInput}
@@ -512,7 +512,7 @@ export default function ProfileSetupScreen() {
                         maxLength={10}
                     />
                     <FormInput
-                        placeholder="Unique ID"
+                        placeholder={t('profile_setup.unique_id')}
                         editable={false}
                         style={styles.flexInput}
                         value="TBD"
@@ -531,12 +531,12 @@ export default function ProfileSetupScreen() {
                     </TouchableOpacity>
 
                     <Text style={styles.policyText}>
-                        <Text style={[styles.policyTextNormal, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>I have Read and agreed to the </Text>
+                        <Text style={[styles.policyTextNormal, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>{t('profile_setup.policy_agree')}</Text>
                         <Text
                             style={[styles.policyTextUnderline, { color: isDarkMode ? '#E0E0E0' : '#000000' }]}
                             onPress={() => router.push('/terms-policy')}
                         >
-                            Ayuxa&apos;s Master Agreement
+                            {t('profile_setup.master_agreement')}
                         </Text>
                     </Text>
                 </View>
@@ -555,9 +555,9 @@ export default function ProfileSetupScreen() {
 
                 {/* ─── Already a member? Login ─── */}
                 <View style={styles.loginRow}>
-                    <Text style={[styles.loginText, { color: isDarkMode ? '#A0A0A0' : '#848484' }]}>Already a member? </Text>
+                    <Text style={[styles.loginText, { color: isDarkMode ? '#A0A0A0' : '#848484' }]}>{t('profile_setup.already_member')}</Text>
                     <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-                        <Text style={[styles.loginLink, { color: '#02743F' }]}>Login</Text>
+                        <Text style={[styles.loginLink, { color: '#02743F' }]}>{t('profile_setup.login')}</Text>
                     </TouchableOpacity>
                 </View>
 

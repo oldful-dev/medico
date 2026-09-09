@@ -9,11 +9,25 @@ const { v4: uuidv4 } = require('uuid');
  */
 exports.holdBooking = async (req, res) => {
     try {
-        const { bookingType, patient, additionalMembers, address, packages, slot } = req.body;
+        const { bookingType, patient, additionalMembers, address, packages, slot, feeBreakdown } = req.body;
         const userId = req.user.id;
 
         // 1. Generate idempotency key
         const clientRefId = `LAB-${uuidv4().substring(0, 8).toUpperCase()}`;
+
+        // ─── Fee split ──────────────────────────────────────────────────────
+        // Blood tests: serviceFee = diagnostic package cost, deliveryFee = home
+        // collection charge (usually 0), ayuxaBookingFee = any Ayuxa handling
+        // fee (usually 0). Derived from the packages if the client didn't send
+        // an explicit breakdown.
+        const pkgTotal = Array.isArray(packages)
+            ? packages.reduce((s, p) => s + Number(p.price || p.cost || p.offer_price || 0), 0)
+            : 0;
+        const fb = feeBreakdown && typeof feeBreakdown === 'object' ? feeBreakdown : {};
+        const serviceFee = Number(fb.serviceFee ?? pkgTotal) || 0;
+        const ayuxaBookingFee = Number(fb.ayuxaBookingFee || 0);
+        const deliveryFee = Number(fb.deliveryFee || 0);
+        const taxAmount = Number(fb.taxAmount || 0);
 
         // 2. Draft db payload
         const newOrderData = {
@@ -26,8 +40,12 @@ exports.holdBooking = async (req, res) => {
             address: address || {},
             packages,
             slot,
+            serviceFee,
+            ayuxaBookingFee,
+            deliveryFee,
+            taxAmount,
             // Calculate a temporary expiration just in case Redcliffe fails.
-            holdExpiresAt: new Date(Date.now() + 30 * 60 * 1000) 
+            holdExpiresAt: new Date(Date.now() + 30 * 60 * 1000)
         };
 
         // 3. Create local order record BEFORE calling Redcliffe

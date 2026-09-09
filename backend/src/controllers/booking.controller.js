@@ -5,7 +5,8 @@ const { emitToAdmins } = require('../services/socket.service');
 const { logger } = require('../config/logger');
 const { getNotificationRecipients } = require('../services/companyConfig.service');
 const { assertCaregiverIsAssignable } = require('../utils/assignmentEligibility');
-const { computeStandardRateFloor } = require('../utils/standardRateFloor');
+const { computeStandardRateFloor, computeFeeBreakdown } = require('../utils/standardRateFloor');
+const { deriveFeeBreakdown } = require('../utils/feeBreakdown');
 const { resolveOptionPrice } = require('./checkout.controller');
 const { BOOKING_TRANSITIONS, isValidTransition, recordStatusTransition } = require('../utils/statusTransitions');
 
@@ -345,7 +346,7 @@ const createBooking = async (req, res, next) => {
             scheduledDate, scheduledTime, addressLine, latitude, longitude,
             symptoms, doctorType, staffType, shiftDuration, startDate, endDate, requirements,
             pickupAddress, dropAddress, vehicleType,
-            amount, formDataJson, paymentMethod
+            amount, formDataJson, paymentMethod, feeBreakdown: clientFeeBreakdown
         } = req.body;
 
         const finalUserId = userId || (req.user && req.user.id);
@@ -500,12 +501,56 @@ const createBooking = async (req, res, next) => {
                 // Subscription active  → CONFIRMED + paymentStatus=SUCCESS (free booking)
                 const isCOD = paymentMethod === 'CASH' || paymentMethod === 'cash' || !chargeAmount || chargeAmount === 0;
 
+                // ─── Fee split (Service Fee / Ayuxa Booking Fee / Delivery / Tax) ──
+                // Persist the same 4-part breakdown the customer saw, so invoices
+                // and reports never re-derive or mix the fees. See utils/feeBreakdown.js.
+                const feeWaived = !!(updatedFormDataJson.bookingFeeWaived || updatedFormDataJson.platformFeeWaived);
+                let feeSplit;
+                try {
+                    if (isSubscriptionCovering || chargeAmount === 0) {
+                        // Subscription fully covered the booking — all fees are 0.
+                        feeSplit = { serviceFee: 0, ayuxaBookingFee: 0, deliveryFee: 0, taxAmount: 0, discount: 0, finalPayable: 0, components: {} };
+                    } else if (clientFeeBreakdown && typeof clientFeeBreakdown === 'object'
+                        && Number(clientFeeBreakdown.serviceFee) >= 0) {
+                        // Client sent the split it displayed — trust it, but only if
+                        // it reconciles to the charged amount (±₹2 for rounding).
+                        const { buildFeeBreakdown } = require('../utils/feeBreakdown');
+                        const built = buildFeeBreakdown({
+                            serviceFee: clientFeeBreakdown.serviceFee,
+                            bookingFee: clientFeeBreakdown.ayuxaBookingFee,   // already summed on client
+                            platformFee: 0,
+                            deliveryFee: clientFeeBreakdown.deliveryFee,
+                            taxAmount: clientFeeBreakdown.taxAmount,
+                            discount: clientFeeBreakdown.discount,
+                        });
+                        feeSplit = Math.abs(built.finalPayable - chargeAmount) <= 2
+                            ? built
+                            : (isBloodTest
+                                ? deriveFeeBreakdown({ total: chargeAmount, taxAmount: 0 })
+                                : await computeFeeBreakdown(service, resolvedVendorFee, { waived: feeWaived, waiveGstOnFee: !!updatedFormDataJson.gstOnFeeWaived }));
+                    } else {
+                        feeSplit = isBloodTest
+                            ? deriveFeeBreakdown({ total: chargeAmount, taxAmount: 0 })
+                            : await computeFeeBreakdown(service, resolvedVendorFee, {
+                                waived: feeWaived,
+                                waiveGstOnFee: !!updatedFormDataJson.gstOnFeeWaived,
+                            });
+                    }
+                } catch (e) {
+                    feeSplit = deriveFeeBreakdown({ total: chargeAmount });
+                }
+
                 booking = await prisma.booking.create({
                     data: {
                         bookingCode,
                         userId: finalUserId,
                         serviceId: finalServiceId,
                         cityId: finalCityId,
+                        serviceFee: feeSplit.serviceFee,
+                        ayuxaBookingFee: feeSplit.ayuxaBookingFee,
+                        deliveryFee: feeSplit.deliveryFee,
+                        taxAmount: feeSplit.taxAmount,
+                        feeBreakdown: feeSplit,
                         scheduledDate: scheduledDate.includes('T')
                             ? new Date(scheduledDate)
                             : new Date(`${scheduledDate}T12:00:00.000Z`),
@@ -1043,11 +1088,15 @@ const downloadInvoice = async (req, res, next) => {
             billingAddress: booking.addressLine || 'N/A',
             billingPhone: booking.user?.phone || 'N/A',
             description: `${booking.service?.name || 'Healthcare Service'} (${booking.bookingCode})`,
-            serviceFee: Math.max(0, Number(booking.amount || 0) - 349),
-            ayuxaPlatformCharge: Math.min(349, Number(booking.amount || 0)),
-            subtotal: Number(booking.amount || 0),
+            // Use the fee split persisted on the booking — never guess a surcharge.
+            serviceFee: Number(booking.serviceFee || 0),
+            ayuxaBookingFee: Number(booking.ayuxaBookingFee || 0),
+            deliveryFee: Number(booking.deliveryFee || 0),
+            subtotal: Number(booking.serviceFee || 0) + Number(booking.ayuxaBookingFee || 0) + Number(booking.deliveryFee || 0)
+                || Number(booking.amount || 0),
             gstRate: 18,
-            gstAmount: Math.round(Number(booking.amount || 0) * 0.18 * 100) / 100,
+            gstAmount: Number(booking.taxAmount || 0)
+                || Math.round(Number(booking.amount || 0) * 0.18 * 100) / 100,
             totalAmount: Number(booking.amount || 0)
         };
 

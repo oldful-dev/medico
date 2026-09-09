@@ -139,6 +139,12 @@ const createProductOrder = async (req, res, next) => {
                         productId: product.id,
                         quantity,
                         amount,
+                        // Single-item order: whole amount is the product/service fee,
+                        // no delivery or booking fee on this path.
+                        serviceFee: amount,
+                        ayuxaBookingFee: 0,
+                        deliveryFee: 0,
+                        taxAmount: 0,
                         address,
                         status: 'PENDING',
                     },

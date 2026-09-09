@@ -100,7 +100,7 @@ export default function LoginScreen() {
             }).start();
         } catch (error) {
             const apiError = error as ApiError;
-            triggerAlert(t('common.error'), apiError.message || 'Failed to request OTP');
+            triggerAlert(t('common.error'), apiError.message || t('auth.failed_request_otp'));
         } finally {
             setIsLoading(false);
         }
@@ -113,10 +113,10 @@ export default function LoginScreen() {
             await authService.requestOTP({ phoneNumber: formattedPhone });
             setTimer(30);
             setCanResend(false);
-            triggerAlert(t('common.success'), 'OTP resent successfully', 'checkmark-circle-outline');
+            triggerAlert(t('common.success'), t('auth.otp_resent'), 'checkmark-circle-outline');
         } catch (error) {
             const apiError = error as ApiError;
-            triggerAlert(t('common.error'), apiError.message || 'Failed to resend OTP');
+            triggerAlert(t('common.error'), apiError.message || t('auth.failed_resend_otp'));
         } finally {
             setIsLoading(false);
         }
@@ -153,7 +153,7 @@ export default function LoginScreen() {
                 }
             } catch (error) {
                 const apiError = error as ApiError;
-                triggerAlert(t('common.error'), apiError.message || 'Invalid or expired OTP');
+                triggerAlert(t('common.error'), apiError.message || t('auth.invalid_expired_otp'));
                 otpRef.current?.clear();
             } finally {
                 setIsLoading(false);
@@ -175,7 +175,7 @@ export default function LoginScreen() {
             const user = userInfo.data?.user;
 
             if (!idToken || !user) {
-                triggerAlert(t('common.error'), 'Google sign-in failed — no token received.');
+                triggerAlert(t('common.error'), t('auth.google_no_token'));
                 return;
             }
 
@@ -202,7 +202,7 @@ export default function LoginScreen() {
                 await login(response.data.accessToken, response.data.refreshToken, response.data.user.id);
                 router.replace('/(tabs)');
             } else {
-                triggerAlert(t('common.error'), 'Google sign-in failed. Please try again.');
+                triggerAlert(t('common.error'), t('auth.google_signin_failed'));
             }
         } catch (error: any) {
             if (error.code === statusCodes.SIGN_IN_CANCELLED) {
@@ -210,7 +210,7 @@ export default function LoginScreen() {
             } else if (error.code === statusCodes.IN_PROGRESS) {
                 // already in progress — silent
             } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-                triggerAlert(t('common.error'), 'Google Play Services not available or outdated.');
+                triggerAlert(t('common.error'), t('auth.google_play_unavailable'));
             } else {
                 console.error('Google sign-in error:', JSON.stringify(error, null, 2));
 
@@ -223,7 +223,7 @@ export default function LoginScreen() {
                     errorMessage = 'Network error. Please check your internet connection.';
                 }
 
-                triggerAlert('Login Failed', errorMessage);
+                triggerAlert(t('auth.login_failed_title'), errorMessage);
             }
         } finally {
             setIsGoogleLoading(false);
@@ -356,7 +356,7 @@ export default function LoginScreen() {
                             style={[styles.socialIconButton, isGoogleLoading && { opacity: 0.6 }]}
                             activeOpacity={0.7}
                             onPress={Platform.OS === 'ios'
-                                ? () => triggerAlert(t('common.coming_soon'), 'Google sign-in on iOS is coming soon.', 'time-outline')
+                                ? () => triggerAlert(t('common.coming_soon'), t('auth.google_ios_soon'), 'time-outline')
                                 : handleGoogleSignIn}
                             disabled={isGoogleLoading}
                         >
@@ -370,7 +370,7 @@ export default function LoginScreen() {
                         <TouchableOpacity
                             style={styles.socialIconButton}
                             activeOpacity={0.7}
-                            onPress={() => triggerAlert(t('common.coming_soon'), 'Sign in with Apple is coming soon.', 'time-outline')}
+                            onPress={() => triggerAlert(t('common.coming_soon'), t('auth.apple_signin_soon'), 'time-outline')}
                         >
                             <Ionicons name="logo-apple" size={24} color={colors.textDark} />
                         </TouchableOpacity>

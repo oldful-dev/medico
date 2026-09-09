@@ -94,7 +94,21 @@
     "enter_complete_otp": "পুরো OTP দিন।",
     "session_expired": "মেয়াদ শেষ",
     "session_expired_message": "মেয়াদ শেষ। আবার লগইন করুন।",
-    "login_again": "আবার লগইন"
+    "login_again": "আবার লগইন",
+    "failed_request_otp": "OTP অনুরোধ ব্যর্থ হয়েছে",
+    "otp_resent": "OTP সফলভাবে পুনরায় পাঠানো হয়েছে",
+    "failed_resend_otp": "OTP পুনরায় পাঠাতে ব্যর্থ",
+    "invalid_expired_otp": "অবৈধ বা মেয়াদোত্তীর্ণ OTP",
+    "invalid_otp_title": "অবৈধ OTP",
+    "check_code_retry": "অনুগ্রহ করে কোডটি পরীক্ষা করে আবার চেষ্টা করুন।",
+    "something_wrong_retry": "কিছু ভুল হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+    "could_not_resend_otp": "OTP পুনরায় পাঠানো যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+    "google_no_token": "Google সাইন-ইন ব্যর্থ — কোনো টোকেন পাওয়া যায়নি।",
+    "google_signin_failed": "Google সাইন-ইন ব্যর্থ। অনুগ্রহ করে আবার চেষ্টা করুন।",
+    "google_play_unavailable": "Google Play পরিষেবা উপলব্ধ নেই বা পুরানো।",
+    "login_failed_title": "লগইন ব্যর্থ",
+    "google_ios_soon": "iOS-এ Google সাইন-ইন শীঘ্রই আসছে।",
+    "apple_signin_soon": "Apple দিয়ে সাইন ইন শীঘ্রই আসছে।"
   },
   "profile_setup": {
     "title": "প্রোফাইল গড়ুন",
@@ -125,7 +139,25 @@
     "name_required": "নাম দেওয়া জরুরি",
     "gender_required": "লিঙ্গ বাছুন",
     "emergency_required": "জরুরি নম্বর দিতেই হবে",
-    "invalid_emergency": "সঠিক ১০ সংখ্যার জরুরি নম্বর দিন"
+    "invalid_emergency": "সঠিক ১০ সংখ্যার জরুরি নম্বর দিন",
+    "header_line1": "চলুন আপনার তৈরি করি",
+    "header_line2": "প্রোফাইল",
+    "email_id_placeholder": "আপনার ইমেল আইডি লিখুন",
+    "mobile_placeholder": "মোবাইল নম্বর",
+    "address_placeholder": "ঠিকানা",
+    "address_placeholder_denied": "আপনার সম্পূর্ণ ঠিকানা টাইপ করুন",
+    "flat_house_placeholder": "ফ্ল্যাট / বাড়ির নম্বর টাইপ করুন",
+    "emergency_no_short": "জরুরি নম্বর",
+    "unique_id": "ইউনিক আইডি",
+    "otp_hint": "+91 {{phone}} এ পাঠানো 4-সংখ্যার কোড লিখুন",
+    "verify": "যাচাই করুন",
+    "resend": "পুনরায় পাঠান",
+    "policy_agree": "আমি পড়েছি এবং সম্মত হয়েছি ",
+    "master_agreement": "আয়ুক্সার মাস্টার চুক্তি",
+    "already_member": "ইতিমধ্যে সদস্য? ",
+    "login": "লগইন",
+    "select_gender": "লিঙ্গ নির্বাচন করুন",
+    "select_language": "ভাষা নির্বাচন করুন"
   },
   "home": {
     "tab_title": "হোম",
@@ -1455,7 +1487,7 @@
   "service_checkout": {
     "header": "চেকআউট",
     "service_summary": "সার্ভিস সারসংক্ষেপ",
-    "booking_fee": "বুকিং ফি",
+    "booking_fee": "আয়ুক্সা বুকিং ফি",
     "platform_fee": "প্ল্যাটফর্ম ফি",
     "taxes_gst": "ট্যাক্স ও GST",
     "service_address": "সার্ভিস ঠিকানা",
@@ -2568,7 +2600,8 @@
     "apply": "প্রয়োগ করুন",
     "confirm_booking": "বুকিং নিশ্চিত করুন",
     "booking_failed_title": "বুকিং ব্যর্থ হয়েছে",
-    "slot_unavailable_msg": "আমরা এই স্লটটি সংরক্ষণ করতে পারিনি। অনুগ্রহ করে অন্য সময় চেষ্টা করুন বা কিছুক্ষণ পরে আবার দেখুন।"
+    "slot_unavailable_msg": "আমরা এই স্লটটি সংরক্ষণ করতে পারিনি। অনুগ্রহ করে অন্য সময় চেষ্টা করুন বা কিছুক্ষণ পরে আবার দেখুন।",
+    "platform_fee": "আয়ুক্সা বুকিং ফি"
   },
   "blood_test_success": {
     "header": "পেমেন্ট সফল!",
@@ -2812,7 +2845,7 @@
     "dismiss": "বাদ দিন",
     "check_status": "স্ট্যাটাস চেক",
     "service_fee": "সার্ভিস ফি",
-    "booking_fee": "বুকিং ফি",
+    "booking_fee": "আয়ুক্সা বুকিং ফি",
     "platform_fee": "প্ল্যাটফর্ম ফি",
     "taxes_gst": "ট্যাক্স ও GST",
     "subscription_applied": "(সাবস্ক্রিপশন সুবিধা প্রযুক্ত)",
@@ -3656,5 +3689,14 @@
   "security": {
     "rooted_device_title": "ডিভাইস নিরাপত্তা বিজ্ঞপ্তি",
     "rooted_device_msg": "এই ডিভাইসটি রুট করা বা জেলব্রোকেন বলে মনে হচ্ছে, যা এতে সংরক্ষিত ডেটার নিরাপত্তা কমাতে পারে। আপনি অ্যাপটি ব্যবহার চালিয়ে যেতে পারেন, তবে আপনার স্বাস্থ্য তথ্য অ্যাক্সেস করার জন্য একটি স্ট্যান্ডার্ড, অপরিবর্তিত ডিভাইস ব্যবহার করার পরামর্শ দিই।"
+  },
+  "fees": {
+    "service_fee": "পরিষেবা ফি",
+    "ayuxa_booking_fee": "আয়ুক্সা বুকিং ফি",
+    "delivery_fee": "ডেলিভারি ফি",
+    "collection_fee": "নমুনা সংগ্রহ ফি",
+    "taxes_gst": "কর ও জিএসটি",
+    "free": "বিনামূল্যে",
+    "final_payable": "চূড়ান্ত প্রদেয় পরিমাণ"
   }
 }

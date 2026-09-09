@@ -83,6 +83,14 @@ export interface LabBookingPayload {
         time: string;
         slotId: number;
     };
+    // Fee split — serviceFee = test cost, others usually 0 for lab tests.
+    feeBreakdown?: {
+        serviceFee: number;
+        ayuxaBookingFee: number;
+        deliveryFee: number;
+        taxAmount: number;
+    };
+    paymentMethod?: string;
 }
 
 export interface LabBookingResponse {

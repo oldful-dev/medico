@@ -94,7 +94,21 @@
     "enter_complete_otp": "ಪೂರ್ಣ OTP ಹಾಕಿ.",
     "session_expired": "ಅವಧಿ ಮುಗಿದಿದೆ",
     "session_expired_message": "ಲಾಗಿನ್ ಅವಧಿ ಮುಗಿದಿದೆ. ಮತ್ತೆ ಲಾಗಿನ್ ಮಾಡಿ.",
-    "login_again": "ಮತ್ತೆ ಲಾಗಿನ್"
+    "login_again": "ಮತ್ತೆ ಲಾಗಿನ್",
+    "failed_request_otp": "OTP ವಿನಂತಿ ವಿಫಲವಾಗಿದೆ",
+    "otp_resent": "OTP ಯಶಸ್ವಿಯಾಗಿ ಮತ್ತೆ ಕಳುಹಿಸಲಾಗಿದೆ",
+    "failed_resend_otp": "OTP ಮತ್ತೆ ಕಳುಹಿಸಲು ವಿಫಲವಾಗಿದೆ",
+    "invalid_expired_otp": "ಅಮಾನ್ಯ ಅಥವಾ ಅವಧಿ ಮೀರಿದ OTP",
+    "invalid_otp_title": "ಅಮಾನ್ಯ OTP",
+    "check_code_retry": "ದಯವಿಟ್ಟು ಕೋಡ್ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "something_wrong_retry": "ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "could_not_resend_otp": "OTP ಮತ್ತೆ ಕಳುಹಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "google_no_token": "Google ಸೈನ್-ಇನ್ ವಿಫಲವಾಗಿದೆ — ಟೋಕನ್ ಸ್ವೀಕರಿಸಲಿಲ್ಲ.",
+    "google_signin_failed": "Google ಸೈನ್-ಇನ್ ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "google_play_unavailable": "Google Play ಸೇವೆಗಳು ಲಭ್ಯವಿಲ್ಲ ಅಥವಾ ಹಳೆಯದಾಗಿವೆ.",
+    "login_failed_title": "ಲಾಗಿನ್ ವಿಫಲವಾಗಿದೆ",
+    "google_ios_soon": "iOS ನಲ್ಲಿ Google ಸೈನ್-ಇನ್ ಶೀಘ್ರದಲ್ಲೇ ಬರುತ್ತಿದೆ.",
+    "apple_signin_soon": "Apple ನೊಂದಿಗೆ ಸೈನ್ ಇನ್ ಶೀಘ್ರದಲ್ಲೇ ಬರುತ್ತಿದೆ."
   },
   "profile_setup": {
     "title": "ಪ್ರೊಫೈಲ್ ರಚಿಸಿ",
@@ -125,7 +139,25 @@
     "name_required": "ಹೆಸರು ಬೇಕು",
     "gender_required": "ಲಿಂಗ ಆರಿಸಿ",
     "emergency_required": "ತುರ್ತು ಸಂಖ್ಯೆ ಬೇಕು",
-    "invalid_emergency": "ಸರಿಯಾದ ತುರ್ತು ಸಂಖ್ಯೆ ಹಾಕಿ"
+    "invalid_emergency": "ಸರಿಯಾದ ತುರ್ತು ಸಂಖ್ಯೆ ಹಾಕಿ",
+    "header_line1": "ನಿಮ್ಮದನ್ನು ರಚಿಸೋಣ",
+    "header_line2": "ಪ್ರೊಫೈಲ್",
+    "email_id_placeholder": "ನಿಮ್ಮ ಇಮೇಲ್ ಐಡಿ ನಮೂದಿಸಿ",
+    "mobile_placeholder": "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ",
+    "address_placeholder": "ವಿಳಾಸ",
+    "address_placeholder_denied": "ನಿಮ್ಮ ಪೂರ್ಣ ವಿಳಾಸವನ್ನು ಟೈಪ್ ಮಾಡಿ",
+    "flat_house_placeholder": "ಫ್ಲಾಟ್ / ಮನೆ ಸಂಖ್ಯೆ ಟೈಪ್ ಮಾಡಿ",
+    "emergency_no_short": "ತುರ್ತು ಸಂಖ್ಯೆ",
+    "unique_id": "ಅನನ್ಯ ಐಡಿ",
+    "otp_hint": "+91 {{phone}} ಗೆ ಕಳುಹಿಸಲಾದ 4-ಅಂಕಿಯ ಕೋಡ್ ನಮೂದಿಸಿ",
+    "verify": "ಪರಿಶೀಲಿಸಿ",
+    "resend": "ಮತ್ತೆ ಕಳುಹಿಸಿ",
+    "policy_agree": "ನಾನು ಓದಿದ್ದೇನೆ ಮತ್ತು ಒಪ್ಪಿಕೊಂಡಿದ್ದೇನೆ ",
+    "master_agreement": "ಆಯುಕ್ಸಾದ ಮಾಸ್ಟರ್ ಒಪ್ಪಂದ",
+    "already_member": "ಈಗಾಗಲೇ ಸದಸ್ಯರೇ? ",
+    "login": "ಲಾಗಿನ್",
+    "select_gender": "ಲಿಂಗ ಆಯ್ಕೆಮಾಡಿ",
+    "select_language": "ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ"
   },
   "home": {
     "tab_title": "ಹೋಮ್",
@@ -1455,7 +1487,7 @@
   "service_checkout": {
     "header": "ಪಾವತಿ",
     "service_summary": "ಸೇವೆ ಸಾರಾಂಶ",
-    "booking_fee": "ಬುಕಿಂಗ್ ಫೀಸ್",
+    "booking_fee": "ಆಯುಕ್ಸಾ ಬುಕಿಂಗ್ ಶುಲ್ಕ",
     "platform_fee": "ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಫೀಸ್",
     "taxes_gst": "ತೆರಿಗೆ ಮತ್ತು GST",
     "service_address": "ಸೇವೆ ವಿಳಾಸ",
@@ -2568,7 +2600,8 @@
     "apply": "ಅನ್ವಯಿಸಿ",
     "confirm_booking": "ಬುಕಿಂಗ್ ದೃಢೀಕರಿಸಿ",
     "booking_failed_title": "ಬುಕಿಂಗ್ ವಿಫಲವಾಗಿದೆ",
-    "slot_unavailable_msg": "ನಾವು ಈ ಸ್ಲಾಟ್ ಕಾಯ್ದಿರಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಬೇರೆ ಸಮಯವನ್ನು ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಪರಿಶೀಲಿಸಿ."
+    "slot_unavailable_msg": "ನಾವು ಈ ಸ್ಲಾಟ್ ಕಾಯ್ದಿರಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಬೇರೆ ಸಮಯವನ್ನು ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಪರಿಶೀಲಿಸಿ.",
+    "platform_fee": "ಆಯುಕ್ಸಾ ಬುಕಿಂಗ್ ಶುಲ್ಕ"
   },
   "blood_test_success": {
     "header": "ಪಾವತಿ ಯಶಸ್ವಿ!",
@@ -2812,7 +2845,7 @@
     "dismiss": "ತೆಗೆದುಹಾಕು",
     "check_status": "ಸ್ಥಿತಿ ಪರಿಶೀಲಿಸಿ",
     "service_fee": "ಸೇವಾ ಶುಲ್ಕ",
-    "booking_fee": "ಬುಕಿಂಗ್ ಫೀಸ್",
+    "booking_fee": "ಆಯುಕ್ಸಾ ಬುಕಿಂಗ್ ಶುಲ್ಕ",
     "platform_fee": "ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಫೀಸ್",
     "taxes_gst": "ತೆರಿಗೆ ಮತ್ತು GST",
     "subscription_applied": "(ಚಂದಾದಾರಿಕೆ ಲಾಭ ಅನ್ವಯಿಸಿದೆ)",
@@ -3656,5 +3689,14 @@
   "security": {
     "rooted_device_title": "ಸಾಧನ ಭದ್ರತಾ ಸೂಚನೆ",
     "rooted_device_msg": "ಈ ಸಾಧನವು ರೂಟ್ ಆಗಿರುವಂತೆ ಅಥವಾ ಜೈಲ್‌ಬ್ರೇಕ್ ಆಗಿರುವಂತೆ ತೋರುತ್ತದೆ, ಇದು ಅದರಲ್ಲಿ ಸಂಗ್ರಹಿಸಲಾದ ಡೇಟಾದ ಭದ್ರತೆಯನ್ನು ಕಡಿಮೆ ಮಾಡಬಹುದು. ನೀವು ಆ್ಯಪ್ ಬಳಸುವುದನ್ನು ಮುಂದುವರಿಸಬಹುದು, ಆದರೆ ನಿಮ್ಮ ಆರೋಗ್ಯ ಮಾಹಿತಿಯನ್ನು ಪ್ರವೇಶಿಸಲು ಪ್ರಮಾಣಿತ, ಬದಲಾಯಿಸದ ಸಾಧನವನ್ನು ಬಳಸಲು ನಾವು ಶಿಫಾರಸು ಮಾಡುತ್ತೇವೆ."
+  },
+  "fees": {
+    "service_fee": "ಸೇವಾ ಶುಲ್ಕ",
+    "ayuxa_booking_fee": "ಆಯುಕ್ಸಾ ಬುಕಿಂಗ್ ಶುಲ್ಕ",
+    "delivery_fee": "ವಿತರಣಾ ಶುಲ್ಕ",
+    "collection_fee": "ಮಾದರಿ ಸಂಗ್ರಹ ಶುಲ್ಕ",
+    "taxes_gst": "ತೆರಿಗೆ ಮತ್ತು ಜಿಎಸ್‌ಟಿ",
+    "free": "ಉಚಿತ",
+    "final_payable": "ಅಂತಿಮ ಪಾವತಿಸಬೇಕಾದ ಮೊತ್ತ"
   }
 }

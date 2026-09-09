@@ -237,6 +237,12 @@ const checkoutCart = async (req, res, next) => {
                         shippingCharge,
                         discount: 0,
                         amount: totalAmount,
+                        // Canonical fee split — products: serviceFee = product cost,
+                        // deliveryFee = shipping, ayuxaBookingFee = 0 (no booking fee).
+                        serviceFee: subtotal,
+                        ayuxaBookingFee: 0,
+                        deliveryFee: shippingCharge,
+                        taxAmount: tax,
                         address: resolvedAddress,
                         status: 'PENDING',
                         items: lineItems,

@@ -228,6 +228,13 @@ export default function PricingPage() {
     );
     const conflictCount = serviceCharges.filter(c => c.hasConflict).length;
 
+    // Diagnostic categories: the Service Fee (test price) is fetched live from the
+    // Redcliffe Labs API per package, NOT from this table. Only the Ayuxa Booking
+    // Fee / Platform Fee / Tax below are editable here.
+    const DIAGNOSTIC_CATEGORIES = ['BLOOD_TEST', 'SCAN_ECG', 'DIAGNOSTICS_FITNESS'];
+    const isDiagnostic = (cat) => DIAGNOSTIC_CATEGORIES.includes((cat || '').toUpperCase());
+    const hasDiagnosticRow = serviceCharges.some(c => isDiagnostic(c.serviceCategory));
+
     if (loading) return <div className="page-header"><h2>Loading Pricing Engine...</h2></div>;
 
     return (
@@ -309,6 +316,20 @@ export default function PricingPage() {
                         </div>
                     )}
 
+                    {hasDiagnosticRow && (
+                        <div style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 16px", marginBottom: 16, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: "var(--radius-md)" }}>
+                            <span style={{ fontSize: 16, flexShrink: 0 }}>🩸</span>
+                            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                                <strong>Blood Test / Diagnostics — Service Fee is partner-controlled.</strong> The
+                                test price (Service Fee) is fetched live from the <strong>Redcliffe Labs API</strong> per
+                                package at checkout — it is <strong>not</strong> read from this table and any value entered
+                                in the Vendor Service Fee field is ignored for these categories. You can still edit the
+                                <strong> Ayuxa Booking Fee</strong>, <strong>Ayuxa Platform Fee</strong> and <strong>Tax</strong>,
+                                which apply on top of the Redcliffe price.
+                            </div>
+                        </div>
+                    )}
+
                     <div className="card">
                         <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
                             <table className="data-table">
@@ -352,12 +373,25 @@ export default function PricingPage() {
                                                         {scopeLabel(charge.scope)}
                                                     </span>
                                                 </td>
-                                                <td>{formatCurrency(charge.serviceFee || 0)}</td>
                                                 <td>
-                                                    {charge.hasConflict && <span title="Disagrees with Vendor Service Fee — see banner above">⚠️ </span>}
-                                                    {charge.matchedService?.basePrice != null
-                                                        ? formatCurrency(charge.matchedService.basePrice)
-                                                        : <span className="text-muted">—</span>}
+                                                    {isDiagnostic(charge.serviceCategory) ? (
+                                                        <span
+                                                            className="badge badge-info"
+                                                            title="Fetched live from the Redcliffe Labs API per test package — this field is ignored for diagnostics"
+                                                        >
+                                                            Redcliffe API
+                                                        </span>
+                                                    ) : formatCurrency(charge.serviceFee || 0)}
+                                                </td>
+                                                <td>
+                                                    {isDiagnostic(charge.serviceCategory)
+                                                        ? <span className="text-muted" title="Not applicable — price comes from Redcliffe">—</span>
+                                                        : <>
+                                                            {charge.hasConflict && <span title="Disagrees with Vendor Service Fee — see banner above">⚠️ </span>}
+                                                            {charge.matchedService?.basePrice != null
+                                                                ? formatCurrency(charge.matchedService.basePrice)
+                                                                : <span className="text-muted">—</span>}
+                                                        </>}
                                                 </td>
                                                 <td>{formatCurrency(charge.bookingFee)}</td>
                                                 <td>{formatCurrency(charge.platformFee)}</td>
@@ -463,14 +497,22 @@ export default function PricingPage() {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label className="form-label">Vendor Service Fee / Base Price (₹) *</label>
-                                        <p className="text-sm text-muted" style={{ marginTop: -2, marginBottom: 4 }}>Set by the vendor/provider — never waived by a subscription plan.</p>
+                                        {isDiagnostic(form.serviceCategory) ? (
+                                            <p className="text-sm" style={{ marginTop: -2, marginBottom: 4, color: "#3B82F6" }}>
+                                                🩸 Ignored for diagnostics — the test price is fetched live from the Redcliffe Labs API per package.
+                                            </p>
+                                        ) : (
+                                            <p className="text-sm text-muted" style={{ marginTop: -2, marginBottom: 4 }}>Set by the vendor/provider — never waived by a subscription plan.</p>
+                                        )}
                                         <input
                                             type="number"
                                             className="form-input"
-                                            required
+                                            required={!isDiagnostic(form.serviceCategory)}
+                                            disabled={isDiagnostic(form.serviceCategory)}
                                             min="0"
                                             step="0.01"
-                                            value={form.serviceFee}
+                                            value={isDiagnostic(form.serviceCategory) ? '' : form.serviceFee}
+                                            placeholder={isDiagnostic(form.serviceCategory) ? 'From Redcliffe API' : undefined}
                                             onChange={e => setForm({ ...form, serviceFee: e.target.value })}
                                         />
                                     </div>

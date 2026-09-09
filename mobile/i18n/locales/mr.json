@@ -94,7 +94,21 @@
     "enter_complete_otp": "कृपया पूर्ण OTP टाका.",
     "session_expired": "सेशन संपले",
     "session_expired_message": "तुमचे सेशन संपले आहे. पुन्हा लॉगिन करा.",
-    "login_again": "पुन्हा लॉगिन"
+    "login_again": "पुन्हा लॉगिन",
+    "failed_request_otp": "OTP विनंती अयशस्वी",
+    "otp_resent": "OTP यशस्वीरित्या पुन्हा पाठवला",
+    "failed_resend_otp": "OTP पुन्हा पाठवण्यात अयशस्वी",
+    "invalid_expired_otp": "अवैध किंवा कालबाह्य OTP",
+    "invalid_otp_title": "अवैध OTP",
+    "check_code_retry": "कृपया कोड तपासा आणि पुन्हा प्रयत्न करा.",
+    "something_wrong_retry": "काहीतरी चूक झाली. कृपया पुन्हा प्रयत्न करा.",
+    "could_not_resend_otp": "OTP पुन्हा पाठवता आला नाही. कृपया पुन्हा प्रयत्न करा.",
+    "google_no_token": "Google साइन-इन अयशस्वी — टोकन मिळाले नाही.",
+    "google_signin_failed": "Google साइन-इन अयशस्वी. कृपया पुन्हा प्रयत्न करा.",
+    "google_play_unavailable": "Google Play सेवा उपलब्ध नाहीत किंवा जुन्या आहेत.",
+    "login_failed_title": "लॉगिन अयशस्वी",
+    "google_ios_soon": "iOS वर Google साइन-इन लवकरच येत आहे.",
+    "apple_signin_soon": "Apple सह साइन इन लवकरच येत आहे."
   },
   "profile_setup": {
     "title": "प्रोफाइल तयार करा",
@@ -125,7 +139,25 @@
     "name_required": "नाव आवश्यक आहे",
     "gender_required": "कृपया लिंग निवडा",
     "emergency_required": "तुर्त संपर्क नंबर आवश्यक",
-    "invalid_emergency": "कृपया अचूक १० अंकी संपर्क नंबर टाका"
+    "invalid_emergency": "कृपया अचूक १० अंकी संपर्क नंबर टाका",
+    "header_line1": "चला तुमची तयार करूया",
+    "header_line2": "प्रोफाइल",
+    "email_id_placeholder": "तुमचा ईमेल आयडी प्रविष्ट करा",
+    "mobile_placeholder": "मोबाइल क्रमांक",
+    "address_placeholder": "पत्ता",
+    "address_placeholder_denied": "तुमचा संपूर्ण पत्ता टाइप करा",
+    "flat_house_placeholder": "फ्लॅट / घर क्रमांक टाइप करा",
+    "emergency_no_short": "आणीबाणी क्रमांक",
+    "unique_id": "युनिक आयडी",
+    "otp_hint": "+91 {{phone}} वर पाठवलेला 4-अंकी कोड प्रविष्ट करा",
+    "verify": "सत्यापित करा",
+    "resend": "पुन्हा पाठवा",
+    "policy_agree": "मी वाचले आणि सहमत आहे ",
+    "master_agreement": "आयुक्साचा मास्टर करार",
+    "already_member": "आधीच सदस्य आहात? ",
+    "login": "लॉगिन",
+    "select_gender": "लिंग निवडा",
+    "select_language": "भाषा निवडा"
   },
   "home": {
     "tab_title": "मुख्यपृष्ठ",
@@ -1548,7 +1580,7 @@
   "service_checkout": {
     "header": "चेकआऊट",
     "service_summary": "सेवेचा सारांश",
-    "booking_fee": "बुकिंग फी",
+    "booking_fee": "आयुक्सा बुकिंग शुल्क",
     "platform_fee": "प्लेटफॉर्म फी",
     "taxes_gst": "कर आणि GST",
     "service_address": "सेवेचा पत्ता",
@@ -2661,7 +2693,8 @@
     "apply": "लागू करा",
     "confirm_booking": "बुकिंग निश्चित करा",
     "booking_failed_title": "बुकिंग अयशस्वी",
-    "slot_unavailable_msg": "आम्ही हा स्लॉट राखून ठेवू शकलो नाही. कृपया वेगळी वेळ वापरून पहा किंवा थोड्या वेळाने पुन्हा तपासा."
+    "slot_unavailable_msg": "आम्ही हा स्लॉट राखून ठेवू शकलो नाही. कृपया वेगळी वेळ वापरून पहा किंवा थोड्या वेळाने पुन्हा तपासा.",
+    "platform_fee": "आयुक्सा बुकिंग शुल्क"
   },
   "blood_test_success": {
     "header": "पेमेंट यशस्वी!",
@@ -2905,7 +2938,7 @@
     "dismiss": "काढून टाका",
     "check_status": "स्थिती तपासा",
     "service_fee": "सेवा फी",
-    "booking_fee": "बुकिंग फी",
+    "booking_fee": "आयुक्सा बुकिंग शुल्क",
     "platform_fee": "प्लेटफॉर्म फी",
     "taxes_gst": "कर आणि GST",
     "subscription_applied": "(सबस्क्रिप्शनचे फायदे लागू झाले)",
@@ -3656,5 +3689,14 @@
   "security": {
     "rooted_device_title": "डिव्हाइस सुरक्षा सूचना",
     "rooted_device_msg": "हे डिव्हाइस रूट केलेले किंवा जेलब्रोकन असल्याचे दिसते, ज्यामुळे त्यावर साठवलेल्या डेटाची सुरक्षा कमी होऊ शकते. तुम्ही अ‍ॅप वापरणे सुरू ठेवू शकता, परंतु तुमची आरोग्य माहिती अ‍ॅक्सेस करण्यासाठी मानक, अपरिवर्तित डिव्हाइस वापरण्याची आम्ही शिफारस करतो."
+  },
+  "fees": {
+    "service_fee": "सेवा शुल्क",
+    "ayuxa_booking_fee": "आयुक्सा बुकिंग शुल्क",
+    "delivery_fee": "वितरण शुल्क",
+    "collection_fee": "नमुना संकलन शुल्क",
+    "taxes_gst": "कर आणि जीएसटी",
+    "free": "मोफत",
+    "final_payable": "अंतिम देय रक्कम"
   }
 }

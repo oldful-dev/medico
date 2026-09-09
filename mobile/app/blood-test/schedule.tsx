@@ -158,7 +158,27 @@ export default function BloodTestScheduleScreen() {
     if (activeAddress.pincode) setPincode(activeAddress.pincode);
     if (activeAddress.landmark) setLandmark(activeAddress.landmark);
     setCoordsFrom(activeAddress.latitude, activeAddress.longitude);
+
+    // Saved address with no lat/long — Redcliffe serviceability + slots need
+    // real coords, so forward-geocode from the address text / pincode.
+    const la = Number(activeAddress.latitude), lo = Number(activeAddress.longitude);
+    if (!Number.isFinite(la) || !Number.isFinite(lo) || (la === 0 && lo === 0)) {
+      const query = addrText || activeAddress.pincode || "";
+      if (query) {
+        locationService.getCoordinatesFromAddress(query).then(res => {
+          if (res) setCoordsFrom(res.latitude, res.longitude);
+        });
+      }
+    }
   }, [activeAddress]);
+
+  // Check serviceability whenever we have coords — covers the seeded Active
+  // Service Location on mount, not just explicit detect/pick actions.
+  useEffect(() => {
+    if (!coords.lat || !coords.long) return;
+    checkServiceability(coords.lat, coords.long);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coords.lat, coords.long]);
 
   // Fetch slots when date or location changes. Redcliffe slots are location-
   // specific, so wait until we have coords (address chosen / detected).

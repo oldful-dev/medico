@@ -172,6 +172,37 @@ export const locationService = {
     },
 
     /**
+     * Forward geocode an address string / pincode to coordinates. Used when a
+     * saved address has no lat/long but Redcliffe (serviceability, slots) needs
+     * real coords. Google first (same key as reverse geocode), native fallback.
+     */
+    getCoordinatesFromAddress: async (addressText: string): Promise<LocationCoordinates | null> => {
+        const query = (addressText || '').trim();
+        if (!query) return null;
+        try {
+            const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+            if (apiKey) {
+                const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.status === 'OK' && data.results?.length > 0) {
+                    const loc = data.results[0].geometry?.location;
+                    if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)) {
+                        return { latitude: loc.lat, longitude: loc.lng };
+                    }
+                }
+            }
+            const results = await Location.geocodeAsync(query);
+            if (results.length > 0 && Number.isFinite(results[0].latitude) && Number.isFinite(results[0].longitude)) {
+                return { latitude: results[0].latitude, longitude: results[0].longitude };
+            }
+        } catch (error) {
+            console.warn('Forward geocoding failed:', error);
+        }
+        return null;
+    },
+
+    /**
      * Extract pincode from address or coordinates
      */
     getPincodeFromAddress: async (coords: LocationCoordinates, addressText?: string): Promise<string | null> => {

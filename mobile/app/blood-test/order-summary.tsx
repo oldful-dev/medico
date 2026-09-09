@@ -65,10 +65,16 @@ export default function BloodTestOrderSummaryScreen() {
         console.error('Failed to parse booking data:', e);
     }
 
-    const baseAmount = parseFloat(params.amount || '0');
-    const gst = Math.round(baseAmount * 0.18 * 100) / 100;
-    const convenienceFee = 0; // Free for blood tests
-    const totalAmount = Math.round((baseAmount + gst + convenienceFee - discount) * 100) / 100;
+    // Fee split — kept as separate lines, never merged (compliance).
+    //   serviceFee      = diagnostic test cost
+    //   ayuxaBookingFee = Ayuxa booking-facilitation fee (0 for lab tests)
+    //   deliveryFee     = home sample collection (currently free)
+    const serviceFee = parseFloat(params.amount || '0');
+    const ayuxaBookingFee = 0;
+    const deliveryFee = 0;
+    const baseAmount = serviceFee;
+    const gst = Math.round(serviceFee * 0.18 * 100) / 100;
+    const totalAmount = Math.round((serviceFee + ayuxaBookingFee + deliveryFee + gst - discount) * 100) / 100;
 
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) return;
@@ -98,7 +104,11 @@ export default function BloodTestOrderSummaryScreen() {
         setIsLoading(true);
         try {
             // Hold blood test booking via Redcliffe
-            const finalBookingData = { ...bookingData, paymentMethod: selectedMethod };
+            const finalBookingData = {
+                ...bookingData,
+                paymentMethod: selectedMethod,
+                feeBreakdown: { serviceFee, ayuxaBookingFee, deliveryFee, taxAmount: gst },
+            };
             console.log('🩸 Order Summary: Creating blood test booking with payload:', JSON.stringify(finalBookingData, null, 2));
             const bookingRes = await labService.holdBooking(finalBookingData);
             console.log('🩸 Order Summary: Full booking response:', JSON.stringify(bookingRes, null, 2));
@@ -302,16 +312,25 @@ export default function BloodTestOrderSummaryScreen() {
                     )}
                 </View>
 
-                {/* Price Breakdown */}
+                {/* Price Breakdown — each fee is a separate line, never merged */}
                 <View style={styles.card}>
                     <View style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>{t('blood_test_summary.service_fee', 'Service Fee (Tests)')}</Text>
-                        <Text style={styles.breakdownValue}>₹{baseAmount.toFixed(2)}</Text>
+                        <Text style={styles.breakdownLabel}>{t('fees.service_fee')}</Text>
+                        <Text style={styles.breakdownValue}>₹{serviceFee.toFixed(2)}</Text>
                     </View>
 
+                    {ayuxaBookingFee > 0 && (
+                        <View style={styles.breakdownRow}>
+                            <Text style={styles.breakdownLabel}>{t('fees.ayuxa_booking_fee')}</Text>
+                            <Text style={styles.breakdownValue}>₹{ayuxaBookingFee.toFixed(2)}</Text>
+                        </View>
+                    )}
+
                     <View style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>{t('blood_test_summary.platform_fee', 'Platform & Collection Charges')}</Text>
-                        <Text style={styles.breakdownValue}>₹{convenienceFee.toFixed(2)}</Text>
+                        <Text style={styles.breakdownLabel}>{t('fees.delivery_fee')}</Text>
+                        <Text style={styles.breakdownValue}>
+                            {deliveryFee > 0 ? `₹${deliveryFee.toFixed(2)}` : t('fees.free')}
+                        </Text>
                     </View>
 
                     <View style={styles.breakdownRow}>

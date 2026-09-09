@@ -66,10 +66,17 @@ export default function CartOrderSummaryScreen() {
         console.error('Failed to parse booking data:', e);
     }
 
-    const baseAmount = parseFloat(params.amount || '0');
-    const gst = Math.round(baseAmount * 0.18 * 100) / 100;
-    const convenienceFee = 0;
-    const totalAmount = Math.round((baseAmount + gst + convenienceFee - discount) * 100) / 100;
+    // ── Fee split (kept as separate lines — never merged) ─────────────────
+    //   serviceFee      = diagnostic test cost (the cart total)
+    //   ayuxaBookingFee = Ayuxa's fee for facilitating the booking (0 for lab tests)
+    //   deliveryFee     = home sample collection charge (currently free)
+    //   gst             = tax on the taxable portion
+    const serviceFee = parseFloat(params.amount || '0');
+    const ayuxaBookingFee = 0;
+    const deliveryFee = 0;
+    const baseAmount = serviceFee;
+    const gst = Math.round(serviceFee * 0.18 * 100) / 100;
+    const totalAmount = Math.round((serviceFee + ayuxaBookingFee + deliveryFee + gst - discount) * 100) / 100;
 
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) return;
@@ -119,7 +126,11 @@ export default function CartOrderSummaryScreen() {
         try {
             // For Phase 1, we assume Bloodwork API for lab orders.
             // Future phases will split logic based on `category`.
-            const finalBookingData = { ...bookingData, paymentMethod: selectedMethod };
+            const finalBookingData = {
+                ...bookingData,
+                paymentMethod: selectedMethod,
+                feeBreakdown: { serviceFee, ayuxaBookingFee, deliveryFee, taxAmount: gst },
+            };
             const bookingRes = await labService.holdBooking(finalBookingData);
 
             const bookingId = (bookingRes as any)?.id;
@@ -278,8 +289,20 @@ export default function CartOrderSummaryScreen() {
 
                 <View style={dynamicStyles.card}>
                     <View style={dynamicStyles.breakdownRow}>
-                        <Text style={dynamicStyles.breakdownLabel}>{t('blood_test_summary.subtotal')}</Text>
-                        <Text style={dynamicStyles.breakdownValue}>₹{baseAmount.toFixed(2)}</Text>
+                        <Text style={dynamicStyles.breakdownLabel}>{t('fees.service_fee')}</Text>
+                        <Text style={dynamicStyles.breakdownValue}>₹{serviceFee.toFixed(2)}</Text>
+                    </View>
+                    {ayuxaBookingFee > 0 && (
+                        <View style={dynamicStyles.breakdownRow}>
+                            <Text style={dynamicStyles.breakdownLabel}>{t('fees.ayuxa_booking_fee')}</Text>
+                            <Text style={dynamicStyles.breakdownValue}>₹{ayuxaBookingFee.toFixed(2)}</Text>
+                        </View>
+                    )}
+                    <View style={dynamicStyles.breakdownRow}>
+                        <Text style={dynamicStyles.breakdownLabel}>{t('fees.delivery_fee')}</Text>
+                        <Text style={dynamicStyles.breakdownValue}>
+                            {deliveryFee > 0 ? `₹${deliveryFee.toFixed(2)}` : t('fees.free')}
+                        </Text>
                     </View>
                     <View style={dynamicStyles.breakdownRow}>
                         <Text style={dynamicStyles.breakdownLabel}>{t('blood_test_summary.gst')}</Text>

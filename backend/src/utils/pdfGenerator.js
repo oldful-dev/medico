@@ -50,50 +50,43 @@ const generateInvoicePDF = async (invoiceData) => {
         const description = invoiceData.description || 'Home Nurse Visit';
         const discount = '0.00';
 
-        const serviceFeeNum = invoiceData.serviceFee !== undefined 
-            ? Number(invoiceData.serviceFee) 
-            : (invoiceData.ayuxaPlatformCharge !== undefined ? Math.max(0, itemSubtotalNum - Number(invoiceData.ayuxaPlatformCharge)) : itemSubtotalNum);
-        
-        const platformChargeNum = invoiceData.ayuxaPlatformCharge !== undefined 
-            ? Number(invoiceData.ayuxaPlatformCharge) 
-            : (invoiceData.serviceFee !== undefined ? Math.max(0, itemSubtotalNum - serviceFeeNum) : 0);
+        // ─── Fee split (Service Fee / Ayuxa Booking Fee / Delivery Fee) ───────
+        // These are kept as DISTINCT invoice lines and must never be merged or
+        // ambiguously labelled (compliance requirement). Values come straight
+        // from what was persisted on the booking / lab order / product order.
+        //   serviceFee      — provider / vendor / diagnostic / product cost
+        //   ayuxaBookingFee — Ayuxa's fee for facilitating & managing the booking
+        //   deliveryFee     — sample collection / shipping / logistics
+        const hasExplicitSplit =
+            invoiceData.serviceFee !== undefined || invoiceData.ayuxaBookingFee !== undefined;
 
-        let invoiceRows = '';
-
-        if (platformChargeNum > 0 && serviceFeeNum > 0) {
-            invoiceRows = `
-                <tr>
-                    <td style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf;">
-                        <img src="${imageLoader.check}" style="width: 11px; height: 11px; vertical-align: middle; margin-right: 6px;" alt="✔" />
-                        <span style="vertical-align: middle;">Service Fee (${description})</span>
-                    </td>
-                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">Rs. ${serviceFeeNum.toFixed(2)}</td>
-                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">1</td>
-                    <td class="right" style="padding: 10px; font-size: 10px; font-weight: 600; border-bottom: 1px solid #bfbfbf; text-align: right;">Rs. ${serviceFeeNum.toFixed(2)}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf;">
-                        <img src="${imageLoader.check}" style="width: 11px; height: 11px; vertical-align: middle; margin-right: 6px;" alt="✔" />
-                        <span style="vertical-align: middle;">Ayuxa Platform & Booking Surcharges</span>
-                    </td>
-                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">Rs. ${platformChargeNum.toFixed(2)}</td>
-                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">1</td>
-                    <td class="right" style="padding: 10px; font-size: 10px; font-weight: 600; border-bottom: 1px solid #bfbfbf; text-align: right;">Rs. ${platformChargeNum.toFixed(2)}</td>
-                </tr>
-            `;
+        let serviceFeeNum, ayuxaBookingFeeNum, deliveryFeeNum;
+        if (hasExplicitSplit) {
+            serviceFeeNum = Math.max(0, Number(invoiceData.serviceFee || 0));
+            ayuxaBookingFeeNum = Math.max(0, Number(invoiceData.ayuxaBookingFee ?? invoiceData.ayuxaPlatformCharge ?? 0));
+            deliveryFeeNum = Math.max(0, Number(invoiceData.deliveryFee || 0));
         } else {
-            invoiceRows = `
+            // Legacy invoice with no stored split — show the whole taxable base as
+            // one Service Fee line rather than guessing a surcharge amount.
+            serviceFeeNum = itemSubtotalNum;
+            ayuxaBookingFeeNum = 0;
+            deliveryFeeNum = 0;
+        }
+
+        const feeRow = (labelText, amt) => `
                 <tr>
                     <td style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf;">
                         <img src="${imageLoader.check}" style="width: 11px; height: 11px; vertical-align: middle; margin-right: 6px;" alt="✔" />
-                        <span style="vertical-align: middle;">Service Fee (${description})</span>
+                        <span style="vertical-align: middle;">${labelText}</span>
                     </td>
-                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">Rs. ${subTotalFormatted}</td>
+                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">Rs. ${amt.toFixed(2)}</td>
                     <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">1</td>
-                    <td class="right" style="padding: 10px; font-size: 10px; font-weight: 600; border-bottom: 1px solid #bfbfbf; text-align: right;">Rs. ${subTotalFormatted}</td>
-                </tr>
-            `;
-        }
+                    <td class="right" style="padding: 10px; font-size: 10px; font-weight: 600; border-bottom: 1px solid #bfbfbf; text-align: right;">Rs. ${amt.toFixed(2)}</td>
+                </tr>`;
+
+        let invoiceRows = feeRow(`Service Fee (${description})`, serviceFeeNum);
+        if (ayuxaBookingFeeNum > 0) invoiceRows += feeRow('Ayuxa Booking Fee (booking facilitation &amp; management)', ayuxaBookingFeeNum);
+        if (deliveryFeeNum > 0) invoiceRows += feeRow('Delivery / Collection Fee', deliveryFeeNum);
 
         const htmlContent = `
         <!DOCTYPE html>

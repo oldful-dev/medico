@@ -567,6 +567,25 @@ export default function BookingsPage() {
                                     </div>
                                 </div>
 
+                                {/* Fee split — Service Fee vs Ayuxa Booking Fee kept separate */}
+                                {(selected.serviceFee > 0 || selected.ayuxaBookingFee > 0 || selected.deliveryFee > 0) && (
+                                    <div style={{ marginBottom: 16, padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 12 }}>
+                                        <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--text-secondary)' }}>FEE BREAKDOWN</div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                                            <span>Service Fee (provider)</span><span>{formatCurrency(selected.serviceFee || 0)}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                                            <span>Ayuxa Booking Fee</span><span>{formatCurrency(selected.ayuxaBookingFee || 0)}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                                            <span>Delivery / Collection Fee</span><span>{formatCurrency(selected.deliveryFee || 0)}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                                            <span>Taxes &amp; GST</span><span>{formatCurrency(selected.taxAmount || 0)}</span>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <PaymentsSummaryWarning payments={selected.payments} />
 
                                 {/* Staff Assignment */}

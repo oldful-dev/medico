@@ -98,7 +98,21 @@
     "enter_complete_otp": "Please enter the complete OTP.",
     "session_expired": "Session Expired",
     "session_expired_message": "Your session has expired. Please login again to continue.",
-    "login_again": "Login Again"
+    "login_again": "Login Again",
+    "failed_request_otp": "Failed to request OTP",
+    "otp_resent": "OTP resent successfully",
+    "failed_resend_otp": "Failed to resend OTP",
+    "invalid_expired_otp": "Invalid or expired OTP",
+    "invalid_otp_title": "Invalid OTP",
+    "check_code_retry": "Please check the code and try again.",
+    "something_wrong_retry": "Something went wrong. Please try again.",
+    "could_not_resend_otp": "Could not resend OTP. Please try again.",
+    "google_no_token": "Google sign-in failed — no token received.",
+    "google_signin_failed": "Google sign-in failed. Please try again.",
+    "google_play_unavailable": "Google Play Services not available or outdated.",
+    "login_failed_title": "Login Failed",
+    "google_ios_soon": "Google sign-in on iOS is coming soon.",
+    "apple_signin_soon": "Sign in with Apple is coming soon."
   },
   "profile_setup": {
     "title": "Create your profile",
@@ -129,7 +143,25 @@
     "name_required": "Name is required",
     "gender_required": "Please select your gender",
     "emergency_required": "Emergency contact number is required",
-    "invalid_emergency": "Please enter a valid 10-digit emergency contact number"
+    "invalid_emergency": "Please enter a valid 10-digit emergency contact number",
+    "header_line1": "Let's Create your",
+    "header_line2": "PROFILE",
+    "email_id_placeholder": "Enter your Email ID",
+    "mobile_placeholder": "Mobile Number",
+    "address_placeholder": "Address",
+    "address_placeholder_denied": "Type your full address",
+    "flat_house_placeholder": "Type Flat / House Number",
+    "emergency_no_short": "Emergency No",
+    "unique_id": "Unique ID",
+    "otp_hint": "Enter 4-digit code sent to +91 {{phone}}",
+    "verify": "VERIFY",
+    "resend": "RESEND",
+    "policy_agree": "I have Read and agreed to the ",
+    "master_agreement": "Ayuxa's Master Agreement",
+    "already_member": "Already a member? ",
+    "login": "Login",
+    "select_gender": "Select Gender",
+    "select_language": "Select Language"
   },
   "home": {
     "tab_title": "Home",
@@ -1502,7 +1534,7 @@
     "service_summary": "Service Summary",
     "booking_request_title": "Booking Request",
     "inquiry_note": "No payment now — we'll contact you to confirm final pricing and details.",
-    "booking_fee": "Booking Fee",
+    "booking_fee": "Ayuxa Booking Fee",
     "platform_fee": "Platform Fee",
     "taxes_gst": "Taxes & GST",
     "service_address": "Service Address",
@@ -2613,7 +2645,8 @@
     "apply": "Apply",
     "confirm_booking": "Confirm Booking",
     "booking_failed_title": "Booking failed",
-    "slot_unavailable_msg": "We couldn't reserve this slot. Please try a different time or check back shortly."
+    "slot_unavailable_msg": "We couldn't reserve this slot. Please try a different time or check back shortly.",
+    "platform_fee": "Ayuxa Booking Fee"
   },
   "blood_test_success": {
     "header": "Payment Successful!",
@@ -2857,7 +2890,7 @@
     "dismiss": "Dismiss",
     "check_status": "Check Status",
     "service_fee": "Service Fee",
-    "booking_fee": "Booking Fee",
+    "booking_fee": "Ayuxa Booking Fee",
     "platform_fee": "Platform Fee",
     "taxes_gst": "Taxes & GST",
     "subscription_applied": "(Subscription Benefits Applied)",
@@ -3656,5 +3689,14 @@
   "caregiver_support": {
     "title": "Caregiver Support",
     "subtitle": "Professional bedside attendant and daily care assistance at home."
+  },
+  "fees": {
+    "service_fee": "Service Fee",
+    "ayuxa_booking_fee": "Ayuxa Booking Fee",
+    "delivery_fee": "Delivery Fee",
+    "collection_fee": "Sample Collection Fee",
+    "taxes_gst": "Taxes & GST",
+    "free": "FREE",
+    "final_payable": "Final Payable Amount"
   }
 }

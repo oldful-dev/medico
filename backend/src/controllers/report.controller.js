@@ -52,7 +52,10 @@ const revenueByCity = async (req, res, next) => {
                     }),
                     prisma.payment.findMany({
                         where: { status: 'SUCCESS', booking: { cityId: city.id } },
-                        select: { amount: true, booking: { select: { amount: true, formDataJson: true } } }
+                        select: {
+                            amount: true,
+                            booking: { select: { amount: true, serviceFee: true, ayuxaBookingFee: true, deliveryFee: true, taxAmount: true, formDataJson: true } },
+                        },
                     })
                 ]);
 
@@ -62,17 +65,25 @@ const revenueByCity = async (req, res, next) => {
                 const totalSubRev = subPmts._sum.amount || 0;
                 const totalRevenue = totalBookingRev + totalSubRev;
 
-                // Compute explicit split: Ayuxa Platform Charges (Booking + Platform Fees + Subscriptions) vs Provider Service Revenue
-                let ayuxaBookingSurcharges = 0;
+                // Revenue split from the fee columns PERSISTED on each booking —
+                // never re-derived or defaulted. Legacy bookings with no split
+                // fall back to formDataJson, then to the historic 299/50 flat.
+                let serviceFeeRev = 0, ayuxaBookingFeeRev = 0, deliveryFeeRev = 0;
                 (bookingDetails || []).forEach(p => {
-                    const formData = p.booking?.formDataJson || {};
-                    const bFee = Number(formData.bookingFee || 299);
-                    const pFee = Number(formData.platformFee || 50);
-                    ayuxaBookingSurcharges += (bFee + pFee);
+                    const b = p.booking || {};
+                    if (b.ayuxaBookingFee || b.serviceFee || b.deliveryFee) {
+                        serviceFeeRev += Number(b.serviceFee || 0);
+                        ayuxaBookingFeeRev += Number(b.ayuxaBookingFee || 0);
+                        deliveryFeeRev += Number(b.deliveryFee || 0);
+                    } else {
+                        const fd = b.formDataJson || {};
+                        const legacy = Number(fd.bookingFee || 299) + Number(fd.platformFee || 50);
+                        ayuxaBookingFeeRev += legacy;
+                        serviceFeeRev += Math.max(0, Number(b.amount || 0) - legacy);
+                    }
                 });
-                // Ensure surcharges do not exceed total booking amount
-                ayuxaBookingSurcharges = Math.min(totalBookingRev, ayuxaBookingSurcharges);
-
+                // Ayuxa revenue = subscriptions + Ayuxa Booking Fee portion of bookings.
+                const ayuxaBookingSurcharges = Math.min(totalBookingRev, Math.round(ayuxaBookingFeeRev * 100) / 100);
                 const ayuxaRevenue = Math.round((totalSubRev + ayuxaBookingSurcharges) * 100) / 100;
                 const providerRevenue = Math.max(0, Math.round((totalRevenue - ayuxaRevenue) * 100) / 100);
 
@@ -82,6 +93,11 @@ const revenueByCity = async (req, res, next) => {
                     totalRevenue,
                     ayuxaRevenue,
                     providerRevenue,
+                    // Explicit fee-type breakdown for accounting.
+                    serviceFeeRevenue: Math.round(serviceFeeRev * 100) / 100,
+                    ayuxaBookingFeeRevenue: ayuxaBookingSurcharges,
+                    deliveryFeeRevenue: Math.round(deliveryFeeRev * 100) / 100,
+                    subscriptionRevenue: Math.round(totalSubRev * 100) / 100,
                     userCount: userCount,
                 };
             })

@@ -73,6 +73,15 @@ export interface CreateBookingPayload {
     // Financial
     amount?: number;
     paymentMethod?: string;
+    // Canonical fee split the customer saw (Service / Ayuxa Booking / Delivery /
+    // Tax). Server persists it verbatim if it reconciles to `amount`.
+    feeBreakdown?: {
+        serviceFee: number;
+        ayuxaBookingFee: number;
+        deliveryFee: number;
+        taxAmount: number;
+        discount?: number;
+    };
 
     // Dynamic form data
     formDataJson?: Record<string, any>;

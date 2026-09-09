@@ -250,6 +250,19 @@ model Booking {
   dropAddress        String?
   vehicleType        String?
   amount             Float          @default(0)
+  // Fee split captured at booking time.
+  //   serviceFee      = provider/vendor/diagnostic charge
+  //   ayuxaBookingFee = Ayuxa's fee for facilitating/managing the booking
+  //                     (booking fee + platform fee + any convenience/visit/
+  //                      night/surge charges — the whole Ayuxa-side surcharge)
+  //   deliveryFee     = collection / delivery / logistics charge
+  //   taxAmount       = GST on whatever is taxable for this service type
+  // amount == serviceFee + ayuxaBookingFee + deliveryFee + taxAmount - discount
+  serviceFee         Float          @default(0) @map("service_fee")
+  ayuxaBookingFee    Float          @default(0) @map("ayuxa_booking_fee")
+  deliveryFee        Float          @default(0) @map("delivery_fee")
+  taxAmount          Float          @default(0) @map("tax_amount")
+  feeBreakdown       Json?          @map("fee_breakdown") // full itemised snapshot for audit
   status             BookingStatus  @default(PENDING)
   adminNotes         String?
   isEscalated        Boolean        @default(false)
@@ -464,23 +477,28 @@ model Payment {
 }
 
 model Invoice {
-  id             String    @id @default(uuid())
-  paymentId      String    @unique
-  invoiceNumber  String    @unique
-  invoiceDate    DateTime  @default(now())
-  subtotal       Float
-  gstRate        Float     @default(18) // legacy — overall rate (kept for compat)
-  gstAmount      Float
-  totalAmount    Float
-  lineItemGst    Json? // { carePlan: 0, homePlan: 18, product: 18, fees: 18 } per-line breakdown
-  pdfUrl         String?
-  emailSentAt    DateTime?
-  billingName    String?
-  billingAddress String?
-  billingGstin   String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  payment        Payment   @relation(fields: [paymentId], references: [id])
+  id              String    @id @default(uuid())
+  paymentId       String    @unique
+  invoiceNumber   String    @unique
+  invoiceDate     DateTime  @default(now())
+  subtotal        Float
+  gstRate         Float     @default(18) // legacy — overall rate (kept for compat)
+  gstAmount       Float
+  totalAmount     Float
+  // Itemised fee split — mirrors Booking/LabOrder/ProductOrder. Shown as
+  // separate lines on the invoice PDF; 0 when not applicable.
+  serviceFee      Float     @default(0) @map("service_fee")
+  ayuxaBookingFee Float     @default(0) @map("ayuxa_booking_fee")
+  deliveryFee     Float     @default(0) @map("delivery_fee")
+  lineItemGst     Json? // { carePlan: 0, homePlan: 18, product: 18, fees: 18 } per-line breakdown
+  pdfUrl          String?
+  emailSentAt     DateTime?
+  billingName     String?
+  billingAddress  String?
+  billingGstin    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  payment         Payment   @relation(fields: [paymentId], references: [id])
 
   @@map("invoices")
 }
@@ -825,6 +843,12 @@ model ProductOrder {
   quantity            Int       @default(1)
   amount              Float
   shippingCharge      Float     @default(0)
+  // Fee split — products: serviceFee = product price, deliveryFee = shipping,
+  // ayuxaBookingFee = 0 (no booking-facilitation fee on product orders).
+  serviceFee          Float     @default(0) @map("service_fee")
+  ayuxaBookingFee     Float     @default(0) @map("ayuxa_booking_fee")
+  deliveryFee         Float     @default(0) @map("delivery_fee")
+  taxAmount           Float     @default(0) @map("tax_amount")
   status              String    @default("PENDING")
   address             String?
   courierName         String?
@@ -868,6 +892,12 @@ model LabOrder {
   packages           Json?
   slot               Json?
   paymentDetails     Json?
+  // Fee split — see Booking model comment. serviceFee = diagnostic/test cost,
+  // ayuxaBookingFee = Ayuxa booking/platform fee, deliveryFee = sample collection.
+  serviceFee         Float            @default(0) @map("service_fee")
+  ayuxaBookingFee    Float            @default(0) @map("ayuxa_booking_fee")
+  deliveryFee        Float            @default(0) @map("delivery_fee")
+  taxAmount          Float            @default(0) @map("tax_amount")
   holdExpiresAt      DateTime?
   trackingLink       String?
   reportUrl          String?
