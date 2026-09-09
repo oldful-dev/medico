@@ -32,7 +32,7 @@ const getMyReferral = async (req, res, next) => {
             });
         }
 
-        const [config, referrals] = await Promise.all([
+        const [config, referrals, myReferral] = await Promise.all([
             getReferralConfig(),
             prisma.referral.findMany({
                 where: { referrerId: userId },
@@ -42,7 +42,21 @@ const getMyReferral = async (req, res, next) => {
                     // Reward coupon so the app can show "you earned CODE".
                 },
             }),
+            // Was this user themselves referred? Surface their welcome coupon.
+            prisma.referral.findUnique({ where: { refereeId: userId } }),
         ]);
+
+        let welcomeCoupon = null;
+        if (myReferral?.refereeCouponId) {
+            const c = await prisma.coupon.findUnique({
+                where: { id: myReferral.refereeCouponId },
+                select: { code: true, discountValue: true, discountType: true, validUntil: true, usedCount: true, isActive: true },
+            });
+            // Only show it while it's still usable.
+            if (c && c.isActive && c.usedCount === 0 && (!c.validUntil || new Date(c.validUntil) > new Date())) {
+                welcomeCoupon = c;
+            }
+        }
 
         const rewardedCount = referrals.filter(r => r.status === 'REWARDED').length;
         const pendingCount = referrals.filter(r => r.status === 'PENDING' || r.status === 'QUALIFIED').length;
@@ -59,6 +73,7 @@ const getMyReferral = async (req, res, next) => {
 
         sendResponse(res, 200, {
             referralCode: user.referralCode,
+            welcomeCoupon, // set if THIS user was referred and their bonus is unused
             program: {
                 enabled: config.enabled,
                 referrerRewardValue: config.referrerRewardValue,

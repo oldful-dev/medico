@@ -3724,6 +3724,7 @@
     "status_pending": "অপেক্ষমাণ",
     "status_qualified": "যোগ্য",
     "status_rewarded": "পুরস্কৃত",
-    "status_void": "যোগ্য নয়"
+    "status_void": "যোগ্য নয়",
+    "welcome_coupon": "আপনার স্বাগত বোনাস: {{code}} — প্রথম অর্ডারে {{reward}} ছাড়"
   }
 }

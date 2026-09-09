@@ -3724,6 +3724,7 @@
     "status_pending": "തീർപ്പാക്കാത്തത്",
     "status_qualified": "യോഗ്യത നേടി",
     "status_rewarded": "റിവാർഡ് ലഭിച്ചു",
-    "status_void": "യോഗ്യമല്ല"
+    "status_void": "യോഗ്യമല്ല",
+    "welcome_coupon": "നിങ്ങളുടെ സ്വാഗത ബോണസ്: {{code}} — ആദ്യ ഓർഡറിൽ {{reward}} കിഴിവ്"
   }
 }

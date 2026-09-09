@@ -61,7 +61,9 @@ export default function ProfileSetupScreen() {
     const [language, setLanguage] = useState('English');
     const [line1, setLine1] = useState('');
     const [emergencyNumber, setEmergencyNumber] = useState('');
-    const [referralCode, setReferralCode] = useState((params.referralCode as string) || '');
+    const [referralCode, setReferralCode] = useState(
+        (typeof params.referralCode === 'string' ? params.referralCode : '').toUpperCase()
+    );
     const [line2, setLine2] = useState('Fetching GPS Location...');
     const [locationDenied, setLocationDenied] = useState(false);
     const [agreed, setAgreed] = useState(false);

@@ -78,7 +78,9 @@ const listCoupons = async (req, res, next) => {
         const { page, limit, skip } = paginate(req.query);
         const { search, isActive } = req.query;
 
-        const where = {};
+        // System-issued reward coupons (referral welcome/bonus) are locked to one
+        // user and managed by the referral program — keep them out of this list.
+        const where = { reservedForUserId: null };
         if (isActive !== undefined) where.isActive = isActive === 'true';
         if (search) {
             where.OR = [
@@ -143,6 +145,10 @@ const createCoupon = async (req, res, next) => {
 // PUT /api/admin/coupons/:id
 const updateCoupon = async (req, res, next) => {
     try {
+        const target = await prisma.coupon.findUnique({ where: { id: req.params.id }, select: { reservedForUserId: true } });
+        if (target?.reservedForUserId) {
+            return res.status(403).json({ success: false, message: 'This is a system-issued reward coupon and cannot be edited here.' });
+        }
         const data = parseBody(req.body, { partial: true });
         if (data.code) {
             const clash = await prisma.coupon.findFirst({
@@ -163,6 +169,10 @@ const updateCoupon = async (req, res, next) => {
 // Soft: if it has been redeemed, just deactivate (keep the ledger intact).
 const deleteCoupon = async (req, res, next) => {
     try {
+        const target = await prisma.coupon.findUnique({ where: { id: req.params.id }, select: { reservedForUserId: true } });
+        if (target?.reservedForUserId) {
+            return res.status(403).json({ success: false, message: 'This is a system-issued reward coupon and cannot be deleted here.' });
+        }
         const redemptions = await prisma.couponRedemption.count({ where: { couponId: req.params.id } });
         if (redemptions > 0) {
             const coupon = await prisma.coupon.update({

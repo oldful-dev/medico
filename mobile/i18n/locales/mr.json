@@ -3724,6 +3724,7 @@
     "status_pending": "प्रलंबित",
     "status_qualified": "पात्र",
     "status_rewarded": "बक्षीस मिळाले",
-    "status_void": "पात्र नाही"
+    "status_void": "पात्र नाही",
+    "welcome_coupon": "तुमचा स्वागत बोनस: {{code}} — पहिल्या ऑर्डरवर {{reward}} सूट"
   }
 }

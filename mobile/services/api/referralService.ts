@@ -30,6 +30,14 @@ export interface ReferralEntry {
 
 export interface MyReferral {
     referralCode: string;
+    welcomeCoupon?: {
+        code: string;
+        discountValue: number;
+        discountType: 'flat' | 'percentage';
+        validUntil?: string | null;
+        usedCount: number;
+        isActive: boolean;
+    } | null;
     program: {
         enabled: boolean;
         referrerRewardValue: number;

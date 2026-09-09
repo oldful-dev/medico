@@ -14,9 +14,14 @@ const prisma = require('../config/database');
 async function validateCoupon({ code, amount, userId }) {
     if (!code) return { valid: false, reason: 'No coupon code', discount: 0 };
 
-    const coupon = await prisma.coupon.findUnique({ where: { code: String(code).trim() } });
+    const coupon = await prisma.coupon.findUnique({ where: { code: String(code).trim().toUpperCase() } });
     if (!coupon || !coupon.isActive) {
         return { valid: false, reason: 'Invalid coupon', discount: 0 };
+    }
+
+    // Reward coupons (referral welcome / referrer bonus) are locked to one user.
+    if (coupon.reservedForUserId && coupon.reservedForUserId !== userId) {
+        return { valid: false, reason: 'This coupon is not available on your account', discount: 0 };
     }
 
     const now = new Date();

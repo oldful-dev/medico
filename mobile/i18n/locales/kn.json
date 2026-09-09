@@ -3724,6 +3724,7 @@
     "status_pending": "ಬಾಕಿ",
     "status_qualified": "ಅರ್ಹತೆ ಪಡೆದಿದೆ",
     "status_rewarded": "ಬಹುಮಾನ ಸಿಕ್ಕಿದೆ",
-    "status_void": "ಅರ್ಹವಲ್ಲ"
+    "status_void": "ಅರ್ಹವಲ್ಲ",
+    "welcome_coupon": "ನಿಮ್ಮ ಸ್ವಾಗತ ಬೋನಸ್: {{code}} — ಮೊದಲ ಆರ್ಡರ್‌ನಲ್ಲಿ {{reward}} ರಿಯಾಯಿತಿ"
   }
 }

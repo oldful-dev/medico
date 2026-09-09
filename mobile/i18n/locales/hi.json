@@ -3724,6 +3724,7 @@
     "status_pending": "लंबित",
     "status_qualified": "योग्य",
     "status_rewarded": "इनाम मिला",
-    "status_void": "पात्र नहीं"
+    "status_void": "पात्र नहीं",
+    "welcome_coupon": "आपका वेलकम बोनस: {{code}} — पहले ऑर्डर पर {{reward}} की छूट"
   }
 }

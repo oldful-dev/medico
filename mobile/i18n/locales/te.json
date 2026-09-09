@@ -3724,6 +3724,7 @@
     "status_pending": "పెండింగ్",
     "status_qualified": "అర్హత",
     "status_rewarded": "రివార్డ్ పొందారు",
-    "status_void": "అర్హత లేదు"
+    "status_void": "అర్హత లేదు",
+    "welcome_coupon": "మీ స్వాగత బోనస్: {{code}} — మొదటి ఆర్డర్‌లో {{reward}} తగ్గింపు"
   }
 }

@@ -755,21 +755,22 @@ model InsuranceApplication {
 }
 
 model Coupon {
-  id            String    @id @default(uuid())
-  code          String    @unique
-  description   String?
-  discountType  String    @default("percentage") // "percentage" | "flat"
-  discountValue Float     @default(0)
-  maxDiscount   Float? // cap on a percentage discount
-  minOrderValue Float?
-  usageLimit    Int? // total redemptions allowed across all users (null = unlimited)
-  perUserLimit  Int? // redemptions allowed per user (null = unlimited)
-  usedCount     Int       @default(0) // incremented only on a successful payment
-  isActive      Boolean   @default(true)
-  validFrom     DateTime  @default(now())
-  validUntil    DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(uuid())
+  code              String    @unique
+  description       String?
+  discountType      String    @default("percentage") // "percentage" | "flat"
+  discountValue     Float     @default(0)
+  maxDiscount       Float? // cap on a percentage discount
+  minOrderValue     Float?
+  usageLimit        Int? // total redemptions allowed across all users (null = unlimited)
+  perUserLimit      Int? // redemptions allowed per user (null = unlimited)
+  reservedForUserId String? // if set, ONLY this user may redeem (referral/personal rewards)
+  usedCount         Int       @default(0) // incremented only on a successful payment
+  isActive          Boolean   @default(true)
+  validFrom         DateTime  @default(now())
+  validUntil        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   redemptions CouponRedemption[]
 

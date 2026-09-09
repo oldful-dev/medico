@@ -90,6 +90,18 @@ export default function ReferEarnScreen() {
                         </View>
                     )}
 
+                    {data.welcomeCoupon && (
+                        <View style={styles.welcomeBanner}>
+                            <Ionicons name="pricetag" size={16} color={colors.primary} />
+                            <Text style={styles.welcomeText}>
+                                {t('refer_earn.welcome_coupon', {
+                                    code: data.welcomeCoupon.code,
+                                    reward: rewardLabel(data.welcomeCoupon.discountValue, data.welcomeCoupon.discountType),
+                                })}
+                            </Text>
+                        </View>
+                    )}
+
                     {/* Hero */}
                     <View style={styles.hero}>
                         <Ionicons name="gift" size={40} color={colors.primary} />
@@ -192,6 +204,8 @@ const makeStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
     errorText: { fontFamily: Fonts.regular, fontSize: 13, color: colors.textMuted, textAlign: 'center' },
     disabledBanner: { backgroundColor: isDark ? '#3A2A0A' : '#FEF3C7', borderRadius: Radius.md, padding: 12, marginBottom: 16 },
     disabledText: { fontFamily: Fonts.medium, fontSize: 12, color: isDark ? '#FDE68A' : '#92400E', textAlign: 'center' },
+    welcomeBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: isDark ? '#0C2A1E' : '#EFF7F3', borderRadius: Radius.md, padding: 12, marginBottom: 16 },
+    welcomeText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12, color: colors.primary },
     hero: { alignItems: 'center', marginBottom: 20 },
     heroTitle: { fontFamily: Fonts.bold, fontSize: 18, color: colors.textDark, textAlign: 'center', marginTop: 10 },
     heroSub: { fontFamily: Fonts.regular, fontSize: 13, color: colors.textMuted, textAlign: 'center', marginTop: 6 },

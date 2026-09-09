@@ -3724,6 +3724,7 @@
     "status_pending": "Pending",
     "status_qualified": "Qualified",
     "status_rewarded": "Rewarded",
-    "status_void": "Not eligible"
+    "status_void": "Not eligible",
+    "welcome_coupon": "Your welcome bonus: {{code}} — {{reward}} off your first order"
   }
 }

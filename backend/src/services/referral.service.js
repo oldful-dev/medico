@@ -82,6 +82,7 @@ async function issueRewardCoupon(tx, { prefix, userId, discountType, discountVal
             discountValue,
             usageLimit: 1,
             perUserLimit: 1,
+            reservedForUserId: userId, // ONLY this user can redeem — a leaked code is useless
             isActive: true,
             validUntil,
         },
@@ -156,6 +157,10 @@ async function linkReferralAtSignup({ refereeUserId, refereePhone, code }) {
  * Idempotent: safe to call for every payment; only acts on a PENDING referral
  * whose referee is this payer and whose first qualifying order this is.
  * Runs OUTSIDE the payment transaction (best-effort, must not block the payment).
+ *
+ * Note: only PREPAID orders qualify a referral — processPaymentSuccess fires for
+ * Razorpay/webhook payments, not COD. This is deliberate: a COD order can be
+ * refused at the door, so tying a payout to one invites abuse.
  */
 async function qualifyReferralForPayment({ payerUserId, paymentId, paidAmount }) {
     try {
@@ -163,6 +168,14 @@ async function qualifyReferralForPayment({ payerUserId, paymentId, paidAmount })
             where: { refereeId: payerUserId },
         });
         if (!referral || referral.status !== 'PENDING') return;
+
+        // A qualifying order must be a real paid transaction. ₹0 orders (fully
+        // subscription-covered, free bookings) don't count — otherwise a referrer
+        // could farm rewards from signups that never spend anything.
+        if (!(Number(paidAmount) > 0)) {
+            logger.info(`[Referral] ${referral.id} zero-amount payment — stays PENDING`);
+            return;
+        }
 
         const cfg = await getReferralConfig();
         if (cfg.minFirstOrderValue > 0 && Number(paidAmount) < cfg.minFirstOrderValue) {

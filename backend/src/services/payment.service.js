@@ -402,6 +402,26 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
             return { payment: finalPayment || updatedPayment, subscription: activeSub, invoice, createdInvoice };
         });
 
+        // ── Referral: if this payer was referred and this is their first
+        // qualifying order, reward the referrer. Best-effort, outside the payment
+        // transaction — a referral hiccup must never fail a real payment. Runs
+        // even on the `skipped` (already-processed) path so a retried verification
+        // still gets a chance to qualify a referral that a transient error missed.
+        // qualifyReferralForPayment is itself idempotent (acts only on PENDING).
+        try {
+            const { qualifyReferralForPayment } = require('./referral.service');
+            const p = txResult.payment;
+            if (p) {
+                await qualifyReferralForPayment({
+                    payerUserId: p.userId,
+                    paymentId: p.id,
+                    paidAmount: p.amount,
+                });
+            }
+        } catch (refErr) {
+            logger.warn('[PaymentService] referral qualify failed (non-fatal):', refErr.message);
+        }
+
         if (txResult.skipped) {
             return { payment: txResult.payment, invoice: txResult.invoice };
         }
@@ -410,20 +430,6 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
         const subscription = txResult.subscription;
         const invoice = txResult.invoice;
         const createdInvoice = txResult.createdInvoice;
-
-        // ── Referral: if this payer was referred and this is their first
-        // qualifying order, reward the referrer. Best-effort, outside the payment
-        // transaction — a referral hiccup must never fail a real payment.
-        try {
-            const { qualifyReferralForPayment } = require('./referral.service');
-            await qualifyReferralForPayment({
-                payerUserId: payment.userId,
-                paymentId: payment.id,
-                paidAmount: payment.amount,
-            });
-        } catch (refErr) {
-            logger.warn('[PaymentService] referral qualify failed (non-fatal):', refErr.message);
-        }
 
         // 2. IMMEDIATE: Real-time Admin WebSocket Notifications (fire before any async work)
         try {

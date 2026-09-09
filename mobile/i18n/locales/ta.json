@@ -3724,6 +3724,7 @@
     "status_pending": "நிலுவையில்",
     "status_qualified": "தகுதி பெற்றது",
     "status_rewarded": "வெகுமதி பெற்றது",
-    "status_void": "தகுதியற்றது"
+    "status_void": "தகுதியற்றது",
+    "welcome_coupon": "உங்கள் வரவேற்பு போனஸ்: {{code}} — முதல் ஆர்டரில் {{reward}} தள்ளுபடி"
   }
 }
