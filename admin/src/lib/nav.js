@@ -51,6 +51,7 @@ export const NAV_SECTIONS = [
             { id: "plans", href: "/plans", label: "Plans & Subscriptions", icon: CreditCard, roles: ['SUPER_ADMIN', 'BILLING_EXECUTIVE'] },
             { id: "payments", href: "/payments", label: "Payments & Invoices", icon: CreditCard, roles: ['SUPER_ADMIN', 'BILLING_EXECUTIVE'] },
             { id: "pricing", href: "/pricing", label: "Pricing Engine", icon: DollarSign, roles: ['SUPER_ADMIN', 'BILLING_EXECUTIVE'] },
+            { id: "promotions", href: "/promotions", label: "Promotions & Coupons", icon: Sparkles, roles: ['SUPER_ADMIN', 'BILLING_EXECUTIVE'] },
             { id: "failed-payments", href: "/payments?status=FAILED", label: "Failed Payments", icon: AlertTriangle, roles: ['SUPER_ADMIN', 'BILLING_EXECUTIVE'] },
             { id: "cod", href: "/payments?method=CASH", label: "Cash on Delivery", icon: Banknote, roles: ['SUPER_ADMIN', 'BILLING_EXECUTIVE'] },
         ],

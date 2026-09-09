@@ -454,6 +454,15 @@ export const serviceChargeAPI = {
     delete: (id) => api.delete(`/admin/service-charges/${id}`),
 };
 
+// ── Coupons / Promotions ─────────────────────────────
+export const couponAPI = {
+    getAll: (params) => api.get('/admin/coupons', { params }),
+    getById: (id) => api.get(`/admin/coupons/${id}`),
+    create: (data) => api.post('/admin/coupons', data),
+    update: (id, data) => api.put(`/admin/coupons/${id}`, data),
+    delete: (id) => api.delete(`/admin/coupons/${id}`),
+};
+
 // ── Active Sessions ──────────────────────────────────
 export const sessionAPI = {
     getActive: (params) => api.get('/sessions/active', { params }),

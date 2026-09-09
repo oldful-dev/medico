@@ -86,6 +86,31 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                 });
             }
 
+            // C2. Coupon redemption — recorded ONLY here, on a confirmed payment.
+            // Idempotent on paymentId, so a retried verification won't double-count.
+            if (paymentRecord.couponCode && paymentRecord.discountAmount > 0) {
+                const already = await tx.couponRedemption.findUnique({
+                    where: { paymentId: paymentRecord.id },
+                });
+                if (!already) {
+                    const coupon = await tx.coupon.findUnique({ where: { code: paymentRecord.couponCode } });
+                    if (coupon) {
+                        await tx.couponRedemption.create({
+                            data: {
+                                couponId: coupon.id,
+                                userId: paymentRecord.userId,
+                                paymentId: paymentRecord.id,
+                                discount: paymentRecord.discountAmount,
+                            },
+                        });
+                        await tx.coupon.update({
+                            where: { id: coupon.id },
+                            data: { usedCount: { increment: 1 } },
+                        });
+                    }
+                }
+            }
+
             let activeSub = null;
             let waiveBooking = true;
             let waivePlatform = true;

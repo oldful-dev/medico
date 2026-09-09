@@ -716,8 +716,9 @@ export default function CheckoutScreen() {
             } else {
                 triggerAlert(t('checkout.invalid_coupon'), t('checkout.invalid_coupon_msg'));
             }
-        } catch {
-            triggerAlert(t('common.error'), t('checkout.coupon_error'));
+        } catch (e: any) {
+            // Backend returns a specific reason (expired / already used / min order …).
+            triggerAlert(t('checkout.invalid_coupon'), e?.message || t('checkout.coupon_error'));
         } finally {
             setCouponLoading(false);
         }

@@ -13,6 +13,7 @@ const { sendWhatsApp } = require('../utils/notifications');
 const emailService = require('../services/email');
 const { sendDLTSMS } = require('../utils/fast2sms');
 const { emitToAdmins } = require('../services/socket.service');
+const { validateCoupon } = require('../utils/couponValidator');
 const crypto = require('crypto');
 
 // GET /api/payments
@@ -149,28 +150,19 @@ const initiatePayment = async (req, res, next) => {
             }
         }
 
-        // Apply coupon if provided
+        // Apply coupon if provided. Same validator the preview endpoint uses, so
+        // an expired / exhausted / per-user-capped coupon is rejected here too.
+        // usedCount / redemption rows are written only on payment success
+        // (payment.service.processPaymentSuccess) — never here.
+        let appliedCouponCode = null;
         if (couponCode) {
-            const coupon = await prisma.coupon.findUnique({ where: { code: couponCode } });
-            if (coupon && coupon.isActive) {
-                if (coupon.discountType === 'percentage') {
-                    discountAmount = Math.min(
-                        (amount * coupon.discountValue) / 100,
-                        coupon.maxDiscount || Infinity
-                    );
-                } else {
-                    discountAmount = coupon.discountValue;
-                }
-                if (coupon.minOrderValue && amount < coupon.minOrderValue) {
-                    discountAmount = 0;
-                }
-                finalAmount = amount - discountAmount;
-
-                await prisma.coupon.update({
-                    where: { id: coupon.id },
-                    data: { usedCount: { increment: 1 } },
-                });
+            const result = await validateCoupon({ code: couponCode, amount, userId: userId || req.user.id });
+            if (!result.valid) {
+                return res.status(400).json({ success: false, message: result.reason || 'Invalid coupon' });
             }
+            discountAmount = result.discount;
+            finalAmount = amount - discountAmount;
+            appliedCouponCode = result.coupon.code;
         }
 
         let resolvedSubId = subscriptionId;
@@ -254,7 +246,7 @@ const initiatePayment = async (req, res, next) => {
                     ...(resolvedSubId && { subscriptionId: resolvedSubId }),
                     ...(productOrderId && { productOrderId }),
                     amount: finalAmount,
-                    ...(couponCode && { couponCode }),
+                    ...(appliedCouponCode && { couponCode: appliedCouponCode }),
                     discountAmount,
                     razorpayOrderId: razorpayOrder.id,
                     status: 'INITIATED',
@@ -475,33 +467,17 @@ const getRefundStatus = async (req, res, next) => {
 const applyCoupon = async (req, res, next) => {
     try {
         const { couponCode, amount } = req.body;
-        const coupon = await prisma.coupon.findUnique({ where: { code: couponCode } });
+        const result = await validateCoupon({ code: couponCode, amount, userId: req.user?.id });
 
-        if (!coupon || !coupon.isActive) {
-            return res.status(400).json({ success: false, message: 'Invalid coupon' });
-        }
-        if (coupon.validUntil && new Date() > coupon.validUntil) {
-            return res.status(400).json({ success: false, message: 'Coupon expired' });
-        }
-        if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
-            return res.status(400).json({ success: false, message: 'Coupon usage limit reached' });
-        }
-        if (coupon.minOrderValue && amount < coupon.minOrderValue) {
-            return res.status(400).json({ success: false, message: `Minimum order ₹${coupon.minOrderValue}` });
-        }
-
-        let discount = 0;
-        if (coupon.discountType === 'percentage') {
-            discount = Math.min((amount * coupon.discountValue) / 100, coupon.maxDiscount || Infinity);
-        } else {
-            discount = coupon.discountValue;
+        if (!result.valid) {
+            return res.status(400).json({ success: false, message: result.reason || 'Invalid coupon' });
         }
 
         sendResponse(res, 200, {
             valid: true,
-            discount,
-            finalAmount: amount - discount,
-            coupon: { code: coupon.code, description: coupon.description },
+            discount: result.discount,
+            finalAmount: amount - result.discount,
+            coupon: { code: result.coupon.code, description: result.coupon.description },
         });
     } catch (error) {
         next(error);
