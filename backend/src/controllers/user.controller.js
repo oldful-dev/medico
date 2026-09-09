@@ -7,6 +7,7 @@ const { uploadFile, toCDNUrl, refreshSignedUrl } = require('../utils/storage.ser
 const { analyzeMedicalReportFromGCS, analyzeMedicalReportFromBuffer } = require('../utils/ocr.service');
 const { createAuditLog } = require('../middleware/audit');
 const { logger } = require('../config/logger');
+const { generateReferralCode, linkReferralAtSignup } = require('../services/referral.service');
 
 // Genuinely irreversible redaction for account deletion. The previous
 // `deleted_${userId}_${phone}` format preserved the original phone/email
@@ -264,7 +265,7 @@ const getUserById = async (req, res, next) => {
 // POST /api/users  (Admin creates user OR post-OTP registration)
 const createUser = async (req, res, next) => {
     try {
-        const { name, phone, email, gender, dateOfBirth, cityId, preferredLanguage, profileImageUrl, emergencyNumber, flatNumber, addressLine, line1, line2 } = req.body;
+        const { name, phone, email, gender, dateOfBirth, cityId, preferredLanguage, profileImageUrl, emergencyNumber, flatNumber, addressLine, line1, line2, referralCode: enteredReferralCode } = req.body;
 
         if (!name || name.trim().length < 3) return sendResponse(res, 400, null, 'name is required (min 3 characters)');
         if (!phone) return sendResponse(res, 400, null, 'phone is required');
@@ -285,6 +286,7 @@ const createUser = async (req, res, next) => {
         }
 
         const uniqueUserId = await generateUserId(cityId);
+        const referralCode = await generateReferralCode();
 
         const user = await prisma.user.create({
             data: {
@@ -297,9 +299,22 @@ const createUser = async (req, res, next) => {
                 cityId,
                 preferredLanguage: preferredLanguage || 'en',
                 profileImageUrl: profileImageUrl || null,
+                referralCode,
             },
             include: { city: { select: { name: true, code: true } } },
         });
+
+        // If they entered someone's referral code — link it + issue their welcome
+        // coupon. Best-effort: a bad/missing code never blocks signup.
+        let referralApplied = null;
+        if (enteredReferralCode) {
+            const r = await linkReferralAtSignup({
+                refereeUserId: user.id,
+                refereePhone: phone,
+                code: enteredReferralCode,
+            });
+            if (r.linked) referralApplied = { welcomeCouponCode: r.refereeCouponCode };
+        }
 
         // Create default address if provided during registration
         const finalLine1 = line1 || flatNumber || '';
@@ -375,6 +390,7 @@ const createUser = async (req, res, next) => {
             ...safeUser,
             accessToken,
             refreshToken,
+            referralApplied,
         }, 'User created successfully');
     } catch (error) {
         next(error);

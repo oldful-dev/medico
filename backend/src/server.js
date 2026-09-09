@@ -65,6 +65,7 @@ const analyticsRoutes = require('./routes/analytics.routes');
 const whatsappTestRoutes = require('./routes/whatsapp-test.routes');
 const serviceChargeRoutes = require('./routes/serviceCharge.routes');
 const couponRoutes = require('./routes/coupon.routes');
+const referralRoutes = require('./routes/referral.routes');
 const activityRoutes = require('./routes/activity.routes');
 const familyMemberRoutes = require('./routes/familyMember.routes');
 const meetupRoutes = require('./routes/meetup.routes');
@@ -217,6 +218,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 // Admin tools (mounted before generic /api/admin to prevent parameter shadowing)
 app.use('/api/admin/service-charges', serviceChargeRoutes);
 app.use('/api/admin/coupons', couponRoutes);
+app.use('/api/admin/referrals', referralRoutes.adminRouter);
 
 // Admin
 app.use('/api/admin', adminRoutes);
@@ -227,6 +229,7 @@ app.use('/api/cities', cityRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/users', familyMemberRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api/referrals', referralRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/caregivers', caregiverRoutes);
 app.use('/api/public/team', require('./routes/publicTeam.routes'));

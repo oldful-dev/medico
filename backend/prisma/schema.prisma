@@ -76,6 +76,8 @@ model User {
   pushEnabled           Boolean                      @default(true)
   smsEnabled            Boolean                      @default(true)
   whatsappEnabled       Boolean                      @default(true)
+  referralCode          String?                      @unique // this user's own code to share
+  referredById          String? // the user who referred them (set once, at signup)
   addresses             Address[]
   bookings              Booking[]
   emergencyContacts     EmergencyContact[]
@@ -95,6 +97,10 @@ model User {
   waitlistEntries       WaitlistEntry[]
   meetupRegistrations   MeetupRegistration[]
   sessions              UserSession[]
+  referredBy            User?                        @relation("UserReferrals", fields: [referredById], references: [id])
+  referredUsers         User[]                       @relation("UserReferrals")
+  referralsMade         Referral[]                   @relation("ReferrerReferrals")
+  referralAsReferee     Referral?                    @relation("RefereeReferral")
 
   @@map("users")
 }
@@ -786,6 +792,40 @@ model CouponRedemption {
 
   @@index([couponId, userId])
   @@map("coupon_redemptions")
+}
+
+// One row per referred signup. Lifecycle:
+//   PENDING   — referee registered with a code, no qualifying order yet
+//   QUALIFIED — referee's first payment succeeded (rewards being issued)
+//   REWARDED  — both coupons issued; terminal
+//   VOID      — self-referral / fraud / referrer cap hit at qualify time
+enum ReferralStatus {
+  PENDING
+  QUALIFIED
+  REWARDED
+  VOID
+}
+
+model Referral {
+  id               String         @id @default(uuid())
+  referrerId       String
+  refereeId        String         @unique // a user can be referred at most once
+  status           ReferralStatus @default(PENDING)
+  codeUsed         String // snapshot of the referrer's code at signup time
+  refereePaymentId String? // the first successful payment that qualified it
+  referrerCouponId String? // reward coupon issued to the referrer
+  refereeCouponId  String? // welcome coupon issued to the referee
+  rewardValue      Float          @default(0) // referrer reward amount, snapshotted
+  voidReason       String?
+  createdAt        DateTime       @default(now())
+  qualifiedAt      DateTime?
+  rewardedAt       DateTime?
+
+  referrer User @relation("ReferrerReferrals", fields: [referrerId], references: [id])
+  referee  User @relation("RefereeReferral", fields: [refereeId], references: [id])
+
+  @@index([referrerId, status])
+  @@map("referrals")
 }
 
 model MediaAsset {

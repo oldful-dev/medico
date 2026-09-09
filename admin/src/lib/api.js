@@ -463,6 +463,14 @@ export const couponAPI = {
     delete: (id) => api.delete(`/admin/coupons/${id}`),
 };
 
+// ── Referrals ────────────────────────────────────────
+export const referralAPI = {
+    list: (params) => api.get('/admin/referrals', { params }),
+    stats: () => api.get('/admin/referrals/stats'),
+    getConfig: () => api.get('/admin/referrals/config'),
+    updateConfig: (data) => api.put('/admin/referrals/config', data),
+};
+
 // ── Active Sessions ──────────────────────────────────
 export const sessionAPI = {
     getActive: (params) => api.get('/sessions/active', { params }),

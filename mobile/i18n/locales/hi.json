@@ -157,7 +157,8 @@
     "already_member": "पहले से सदस्य हैं? ",
     "login": "लॉग इन",
     "select_gender": "लिंग चुनें",
-    "select_language": "भाषा चुनें"
+    "select_language": "भाषा चुनें",
+    "referral_code_placeholder": "रेफरल कोड (वैकल्पिक)"
   },
   "home": {
     "tab_title": "होम",
@@ -606,7 +607,9 @@
     "download_your_data_sub": "आपके पंजीकृत ईमेल पर भेजा गया",
     "download_data_title": "डेटा भेजा गया",
     "download_data_success": "आपका डेटा आपके पंजीकृत पते पर ईमेल कर दिया गया है।",
-    "download_data_failed": "आपका डेटा भेजने में विफल। कृपया पुनः प्रयास करें।"
+    "download_data_failed": "आपका डेटा भेजने में विफल। कृपया पुनः प्रयास करें।",
+    "refer_earn_title": "रेफर करें और कमाएँ",
+    "refer_earn_sub": "दोस्तों को आमंत्रित करें, दोनों को इनाम मिलेगा"
   },
   "plans": {
     "tab_title": "योजनाएँ",
@@ -3698,5 +3701,29 @@
     "taxes_gst": "कर एवं जीएसटी",
     "free": "निःशुल्क",
     "final_payable": "अंतिम देय राशि"
+  },
+  "refer_earn": {
+    "title": "रेफर करें और कमाएँ",
+    "load_error": "रेफरल विवरण लोड नहीं हो सका",
+    "program_paused": "रेफरल कार्यक्रम फिलहाल रुका हुआ है। दोबारा शुरू होने पर आपका कोड काम करेगा।",
+    "hero_title": "{{friendReward}} दें, {{yourReward}} पाएँ",
+    "hero_sub": "आपके दोस्त को पहले ऑर्डर पर बचत होती है। ऑर्डर पूरा होने पर आपको इनाम मिलता है।",
+    "your_code": "आपका रेफरल कोड",
+    "share": "शेयर करें",
+    "share_message": "Ayuxa Care पर मुझसे जुड़ें! मेरा कोड {{code}} इस्तेमाल करें और अपने पहले ऑर्डर पर {{reward}} की छूट पाएँ। डाउनलोड: https://ayuxacare.com",
+    "stat_invited": "आमंत्रित",
+    "stat_rewarded": "इनाम मिला",
+    "stat_earned": "कमाया",
+    "slots_left": "{{count}} इनाम स्लॉट बचे हैं",
+    "how_title": "यह कैसे काम करता है",
+    "how_1": "अपना कोड किसी दोस्त के साथ शेयर करें",
+    "how_2": "वे आपके कोड से साइन अप करते हैं और वेलकम छूट पाते हैं",
+    "how_3": "जब वे अपना पहला भुगतान ऑर्डर पूरा करते हैं, तो आपको {{reward}} की छूट मिलती है",
+    "your_referrals": "आपके रेफरल",
+    "reward_coupon": "इनाम: {{code}}",
+    "status_pending": "लंबित",
+    "status_qualified": "योग्य",
+    "status_rewarded": "इनाम मिला",
+    "status_void": "पात्र नहीं"
   }
 }

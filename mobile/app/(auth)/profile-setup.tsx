@@ -61,6 +61,7 @@ export default function ProfileSetupScreen() {
     const [language, setLanguage] = useState('English');
     const [line1, setLine1] = useState('');
     const [emergencyNumber, setEmergencyNumber] = useState('');
+    const [referralCode, setReferralCode] = useState((params.referralCode as string) || '');
     const [line2, setLine2] = useState('Fetching GPS Location...');
     const [locationDenied, setLocationDenied] = useState(false);
     const [agreed, setAgreed] = useState(false);
@@ -270,6 +271,7 @@ export default function ProfileSetupScreen() {
                 emergencyNumber: cleanEmergency.length === 10 ? `+91${cleanEmergency}` : undefined,
                 line1: line1.trim() || undefined,
                 line2: validAddress ? line2 : undefined,
+                referralCode: referralCode.trim() || undefined,
             } as any);
 
             if (!response.success || !response.data) {
@@ -315,7 +317,12 @@ export default function ProfileSetupScreen() {
             }
 
             // ── Step 4: Navigate home ──
-            router.replace('/(tabs)');
+            // If a referral welcome coupon was issued, hand it to the home screen
+            // so it can surface a "you got ₹X off" banner.
+            const welcomeCoupon = (tokens as any)?.referralApplied?.welcomeCouponCode;
+            router.replace(welcomeCoupon
+                ? { pathname: '/(tabs)', params: { welcomeCoupon } }
+                : '/(tabs)');
 
         } catch (error) {
             const apiError = error as ApiError;
@@ -519,6 +526,15 @@ export default function ProfileSetupScreen() {
                         fontSize={12}
                     />
                 </View>
+
+                {/* ─── Referral code (optional) ─── */}
+                <FormInput
+                    placeholder={t('profile_setup.referral_code_placeholder')}
+                    style={[styles.fullWidthInput, { marginTop: 4 }]}
+                    value={referralCode}
+                    onChangeText={(v: string) => setReferralCode(v.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                    maxLength={12}
+                />
 
                 {/* ─── Checkbox: Policies ─── */}
                 <View style={styles.checkboxRow}>

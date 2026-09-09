@@ -557,6 +557,15 @@ export default function AccountScreen() {
                     onPress={() => router.push('/my-sos-alerts' as any)}
                     colors={colors}
                 />
+                <MenuRow
+                    icon="gift-outline"
+                    iconBg="#E8F5E9"
+                    iconColor="#02743F"
+                    title={t('account.refer_earn_title')}
+                    subtitle={t('account.refer_earn_sub')}
+                    onPress={() => router.push('/refer-earn' as any)}
+                    colors={colors}
+                />
 
                 {/* ═══════════════════════════════════════
                     SECTION 3 — Medical & Health

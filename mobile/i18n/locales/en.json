@@ -161,7 +161,8 @@
     "already_member": "Already a member? ",
     "login": "Login",
     "select_gender": "Select Gender",
-    "select_language": "Select Language"
+    "select_language": "Select Language",
+    "referral_code_placeholder": "Referral code (optional)"
   },
   "home": {
     "tab_title": "Home",
@@ -610,7 +611,9 @@
     "live_chat_subtitle": "Connect with our support executives instantly on WhatsApp",
     "live_chat_info": "Our support buddies are available to help you with service bookings, payment issues, doctor slots, and more.",
     "live_chat_status": "Support Active Online",
-    "live_chat": "Live Chat"
+    "live_chat": "Live Chat",
+    "refer_earn_title": "Refer & Earn",
+    "refer_earn_sub": "Invite friends, you both get rewarded"
   },
   "plans": {
     "tab_title": "Plans",
@@ -3698,5 +3701,29 @@
     "taxes_gst": "Taxes & GST",
     "free": "FREE",
     "final_payable": "Final Payable Amount"
+  },
+  "refer_earn": {
+    "title": "Refer & Earn",
+    "load_error": "Could not load referral details",
+    "program_paused": "The referral program is currently paused. Your code still works once it resumes.",
+    "hero_title": "Give {{friendReward}}, get {{yourReward}}",
+    "hero_sub": "Your friend saves on their first order. You get a reward when they complete it.",
+    "your_code": "Your referral code",
+    "share": "Share",
+    "share_message": "Join me on Ayuxa Care! Use my code {{code}} and get {{reward}} off your first order. Download: https://ayuxacare.com",
+    "stat_invited": "Invited",
+    "stat_rewarded": "Rewarded",
+    "stat_earned": "Earned",
+    "slots_left": "{{count}} reward slots left",
+    "how_title": "How it works",
+    "how_1": "Share your code with a friend",
+    "how_2": "They sign up with your code and get a welcome discount",
+    "how_3": "When they complete their first paid order, you get {{reward}} off",
+    "your_referrals": "Your referrals",
+    "reward_coupon": "Reward: {{code}}",
+    "status_pending": "Pending",
+    "status_qualified": "Qualified",
+    "status_rewarded": "Rewarded",
+    "status_void": "Not eligible"
   }
 }

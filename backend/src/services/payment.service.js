@@ -411,6 +411,20 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
         const invoice = txResult.invoice;
         const createdInvoice = txResult.createdInvoice;
 
+        // ── Referral: if this payer was referred and this is their first
+        // qualifying order, reward the referrer. Best-effort, outside the payment
+        // transaction — a referral hiccup must never fail a real payment.
+        try {
+            const { qualifyReferralForPayment } = require('./referral.service');
+            await qualifyReferralForPayment({
+                payerUserId: payment.userId,
+                paymentId: payment.id,
+                paidAmount: payment.amount,
+            });
+        } catch (refErr) {
+            logger.warn('[PaymentService] referral qualify failed (non-fatal):', refErr.message);
+        }
+
         // 2. IMMEDIATE: Real-time Admin WebSocket Notifications (fire before any async work)
         try {
             if (payment?.booking) {

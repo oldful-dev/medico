@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Sparkles, Plus, ToggleLeft, ToggleRight, Edit2, Trash2 } from "lucide-react";
-import { couponAPI } from "@/lib/api";
+import { Sparkles, Plus, ToggleLeft, ToggleRight, Edit2, Trash2, Gift } from "lucide-react";
+import { couponAPI, referralAPI } from "@/lib/api";
 import { showToast, formatDate } from "@/lib/hooks";
 
 const EMPTY = {
@@ -17,6 +17,7 @@ const EMPTY = {
 const toDateInput = (v) => (v ? new Date(v).toISOString().slice(0, 10) : "");
 
 export default function PromotionsPage() {
+    const [tab, setTab] = useState("coupons");
     const [coupons, setCoupons] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -113,9 +114,21 @@ export default function PromotionsPage() {
     return (
         <div>
             <div className="page-header">
-                <h2>Promotions &amp; Coupons</h2>
-                <p>Create and manage discount codes applied at checkout</p>
+                <h2>Promotions</h2>
+                <p>Discount codes and the referral program</p>
             </div>
+
+            <div className="filter-bar" style={{ gap: 8 }}>
+                <button className={`btn btn-sm ${tab === "coupons" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("coupons")}>
+                    <Sparkles size={14} /> Coupons
+                </button>
+                <button className={`btn btn-sm ${tab === "referrals" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("referrals")}>
+                    <Gift size={14} /> Referral Program
+                </button>
+            </div>
+
+            {tab === "referrals" ? <ReferralsTab /> : (
+            <>
             <div className="filter-bar">
                 <button className="btn btn-primary" onClick={openAdd}><Plus size={16} /> Add Coupon</button>
             </div>
@@ -158,8 +171,10 @@ export default function PromotionsPage() {
                     <div className="text-muted" style={{ padding: 24 }}>No coupons yet. Click “Add Coupon” to create one.</div>
                 )}
             </div>
+            </>
+            )}
 
-            {showModal && (
+            {showModal && tab === "coupons" && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
@@ -262,5 +277,161 @@ export default function PromotionsPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+// ── Referral Program tab ─────────────────────────────────────────────────────
+
+const CFG_EMPTY = {
+    enabled: true, discountType: "flat",
+    referrerRewardValue: 100, refereeRewardValue: 100,
+    maxRewardsPerReferrer: 20, rewardValidityDays: 60, minFirstOrderValue: 0,
+};
+
+const REF_STATUS_BADGE = {
+    PENDING: "badge-warning", QUALIFIED: "badge-info",
+    REWARDED: "badge-success", VOID: "badge-default",
+};
+
+function ReferralsTab() {
+    const [cfg, setCfg] = useState(null);
+    const [cfgDraft, setCfgDraft] = useState(CFG_EMPTY);
+    const [stats, setStats] = useState(null);
+    const [rows, setRows] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [savingCfg, setSavingCfg] = useState(false);
+    const [statusFilter, setStatusFilter] = useState("");
+
+    useEffect(() => { loadAll(); }, []);
+    useEffect(() => { loadRows(); }, [statusFilter]);
+
+    async function loadAll() {
+        setLoading(true);
+        try {
+            const [c, s] = await Promise.all([referralAPI.getConfig(), referralAPI.stats()]);
+            setCfg(c.data?.data || CFG_EMPTY);
+            setCfgDraft(c.data?.data || CFG_EMPTY);
+            setStats(s.data?.data || null);
+            await loadRows();
+        } catch (e) { console.error(e); showToast("Failed to load referral data", "error"); }
+        finally { setLoading(false); }
+    }
+
+    async function loadRows() {
+        try {
+            const res = await referralAPI.list({ limit: 100, ...(statusFilter ? { status: statusFilter } : {}) });
+            setRows(res.data?.data || []);
+        } catch (e) { console.error(e); }
+    }
+
+    async function saveCfg() {
+        setSavingCfg(true);
+        try {
+            const res = await referralAPI.updateConfig(cfgDraft);
+            setCfg(res.data?.data);
+            setCfgDraft(res.data?.data);
+            showToast("Referral program updated");
+        } catch (e) { showToast(e.response?.data?.message || "Save failed", "error"); }
+        finally { setSavingCfg(false); }
+    }
+
+    if (loading) return <div style={{ padding: 24 }} className="text-muted">Loading referral program...</div>;
+
+    const dirty = JSON.stringify(cfg) !== JSON.stringify(cfgDraft);
+    const num = (k, min = 0) => (e) => setCfgDraft({ ...cfgDraft, [k]: Math.max(min, parseFloat(e.target.value) || 0) });
+
+    return (
+        <>
+            <div className="card" style={{ marginBottom: 16 }}>
+                <div className="card-body">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <h4 style={{ margin: 0 }}>Program Settings</h4>
+                        <label className="flex items-center gap-2" style={{ cursor: "pointer" }}>
+                            <input type="checkbox" checked={cfgDraft.enabled}
+                                onChange={e => setCfgDraft({ ...cfgDraft, enabled: e.target.checked })} />
+                            <span style={{ fontWeight: 600 }}>{cfgDraft.enabled ? "Enabled" : "Disabled"}</span>
+                        </label>
+                    </div>
+                    <p className="text-sm text-muted" style={{ marginTop: 0, marginBottom: 12 }}>
+                        Rewards are issued as single-use coupons. The referrer is rewarded only after the referee&apos;s first paid order completes.
+                    </p>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
+                        <div className="form-group">
+                            <label className="form-label">Discount Type</label>
+                            <select className="form-input" value={cfgDraft.discountType}
+                                onChange={e => setCfgDraft({ ...cfgDraft, discountType: e.target.value })}>
+                                <option value="flat">Flat (Rs)</option>
+                                <option value="percentage">Percentage (%)</option>
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Referrer reward</label>
+                            <input className="form-input" type="number" min={0} value={cfgDraft.referrerRewardValue} onChange={num("referrerRewardValue")} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Referee (new user) reward</label>
+                            <input className="form-input" type="number" min={0} value={cfgDraft.refereeRewardValue} onChange={num("refereeRewardValue")} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Max rewards per referrer</label>
+                            <input className="form-input" type="number" min={1} value={cfgDraft.maxRewardsPerReferrer} onChange={num("maxRewardsPerReferrer", 1)} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Reward coupon validity (days)</label>
+                            <input className="form-input" type="number" min={1} value={cfgDraft.rewardValidityDays} onChange={num("rewardValidityDays", 1)} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Min first-order value (Rs)</label>
+                            <input className="form-input" type="number" min={0} value={cfgDraft.minFirstOrderValue} onChange={num("minFirstOrderValue")} />
+                        </div>
+                    </div>
+                    <button className="btn btn-primary btn-sm" style={{ marginTop: 12 }} onClick={saveCfg} disabled={!dirty || savingCfg}>
+                        {savingCfg ? "Saving..." : "Save Settings"}
+                    </button>
+                </div>
+            </div>
+
+            {stats && (
+                <div className="stats-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", marginBottom: 16 }}>
+                    <div className="card"><div className="card-body"><div className="text-sm text-muted">Pending</div><div style={{ fontSize: 22, fontWeight: 700 }}>{stats.pending}</div></div></div>
+                    <div className="card"><div className="card-body"><div className="text-sm text-muted">Qualified</div><div style={{ fontSize: 22, fontWeight: 700 }}>{stats.qualified}</div></div></div>
+                    <div className="card"><div className="card-body"><div className="text-sm text-muted">Rewarded</div><div style={{ fontSize: 22, fontWeight: 700 }}>{stats.rewarded}</div></div></div>
+                    <div className="card"><div className="card-body"><div className="text-sm text-muted">Not eligible</div><div style={{ fontSize: 22, fontWeight: 700 }}>{stats.void}</div></div></div>
+                    <div className="card"><div className="card-body"><div className="text-sm text-muted">Reward paid out</div><div style={{ fontSize: 22, fontWeight: 700 }}>Rs {Math.round(stats.totalRewardPaidOut)}</div></div></div>
+                </div>
+            )}
+
+            <div className="filter-bar">
+                <select className="form-input" style={{ maxWidth: 200 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                    <option value="">All statuses</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="QUALIFIED">Qualified</option>
+                    <option value="REWARDED">Rewarded</option>
+                    <option value="VOID">Not eligible</option>
+                </select>
+            </div>
+            <div className="table-wrap">
+                <table className="table">
+                    <thead>
+                        <tr><th>Referrer</th><th>New user</th><th>Code</th><th>Status</th><th>Reward</th><th>Created</th><th>Rewarded</th></tr>
+                    </thead>
+                    <tbody>
+                        {rows.map(r => (
+                            <tr key={r.id}>
+                                <td>{r.referrer?.name || "-"}<div className="text-sm text-muted">{r.referrer?.uniqueUserId}</div></td>
+                                <td>{r.referee?.name || "-"}<div className="text-sm text-muted">{r.referee?.uniqueUserId}</div></td>
+                                <td style={{ fontFamily: "monospace" }}>{r.codeUsed}</td>
+                                <td><span className={`badge ${REF_STATUS_BADGE[r.status] || "badge-default"}`}>{r.status}</span>
+                                    {r.voidReason && <div className="text-sm text-muted">{r.voidReason}</div>}</td>
+                                <td>{r.status === "REWARDED" ? `Rs ${r.rewardValue}` : "-"}</td>
+                                <td>{formatDate(r.createdAt)}</td>
+                                <td>{r.rewardedAt ? formatDate(r.rewardedAt) : "-"}</td>
+                            </tr>
+                        ))}
+                        {rows.length === 0 && <tr><td colSpan={7} className="text-muted" style={{ padding: 24, textAlign: "center" }}>No referrals yet</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+        </>
     );
 }

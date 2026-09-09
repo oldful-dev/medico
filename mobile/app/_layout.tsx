@@ -184,6 +184,7 @@ function RootLayoutContent() {
         <Stack.Screen name="family-members" options={{ headerShown: false }} />
         <Stack.Screen name="emergency-contacts" options={{ headerShown: false }} />
         <Stack.Screen name="my-sos-alerts" options={{ headerShown: false }} />
+        <Stack.Screen name="refer-earn" options={{ headerShown: false }} />
         <Stack.Screen name="medical-card" options={{ headerShown: false }} />
         <Stack.Screen name="manage-addresses" options={{ headerShown: false }} />
         <Stack.Screen name="payments-wallet" options={{ headerShown: false }} />

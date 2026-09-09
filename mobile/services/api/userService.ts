@@ -49,6 +49,7 @@ export interface CreateUserPayload {
     email?: string;
     cityId: string;
     preferredLanguage?: string;
+    referralCode?: string; // optional code entered at signup
 }
 
 export interface Address {
