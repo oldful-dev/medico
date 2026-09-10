@@ -44,23 +44,18 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="flex flex-row items-center justify-center gap-4 mb-2"
         >
-          <button
-            type="button"
-            disabled
-            aria-label="App Store — coming soon"
-            className="flex items-center gap-2 bg-black/60 text-white/80 px-5 py-3 rounded-2xl shadow-xl cursor-not-allowed"
-          >
+          <button className="flex items-center gap-2 bg-black text-white px-5 py-3 rounded-2xl hover:scale-105 transition-all shadow-xl active:scale-95">
             <div className="relative w-6 h-6 flex items-center justify-center">
               <Image
                 src="/apple-logo.png"
-                alt=""
+                alt="Apple Store"
                 fill
-                className="object-contain mix-blend-screen opacity-70"
+                className="object-contain mix-blend-screen"
               />
             </div>
             <div className="flex flex-col items-start leading-none">
-              <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
-                Coming soon to the
+              <span className="text-[10px] text-gray-300 uppercase font-bold tracking-wider">
+                Download on the
               </span>
               <span className="text-base font-bold tracking-wide mt-0.5">
                 App Store
