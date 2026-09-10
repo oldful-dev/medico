@@ -1,13 +1,20 @@
 node_modules/
 .env
-.env.main
-.env.development
+.env.*
+!.env.example
 dist/
 *.log
 .prisma/
 google-vision-key.json
-.env.local
 firebase_account_config.json
 test.jpg
 test.txt
 test.js
+
+# DB migration / backup artifacts — NEVER commit (contain full production data)
+migration_work/
+*.dump
+*.sql
+!prisma/migrations/**/*.sql
+*.sha256
+db-backups/
