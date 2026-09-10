@@ -1,32 +1,62 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { FileText } from 'lucide-react';
 import { fetchPublishedList, typeToSlug, type LegalDoc } from '@/lib/legal';
 
-const FALLBACK_SETTINGS = {
-  company_name: "Ayuxa Health Tech Platforms Pvt. Ltd.",
-  address: "No. 42, 3rd Main Road, Sector 7, HSR Layout, Bengaluru, Karnataka 560102",
-  official_contact: "+91 94801 98108",
-  customer_care: "080 4728 0789",
-  emails: {
-    support: "support@ayuxacare.com",
-    investor: "office@ayuxa.co.in",
-    careers: "careers@ayuxa.co.in",
-    enquiries: "ho@ayuxa.co.in"
-  },
-  iso_certifications: [] as { label: string; certNumber?: string }[]
-};
+const COMPANY_NAME_FALLBACK = 'Ayuxa Health Tech Platforms Pvt. Ltd.';
 
-function TextSkeleton({ width }: { width: string }) {
-  return <span className="inline-block h-[1em] align-middle bg-gray-700/60 rounded animate-pulse" style={{ width }} />;
-}
+// Update these to the real handles when available.
+const SOCIAL_LINKS: { label: string; href: string; icon: React.ReactNode }[] = [
+  {
+    label: 'Instagram',
+    href: 'https://www.instagram.com/ayuxacare',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="w-[18px] h-[18px]">
+        <path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16Zm0 1.8c-3.15 0-3.5.01-4.74.07-1.14.05-1.76.24-2.17.4-.55.21-.94.47-1.35.88-.41.41-.67.8-.88 1.35-.16.41-.35 1.03-.4 2.17-.06 1.24-.07 1.6-.07 4.74s.01 3.5.07 4.74c.05 1.14.24 1.76.4 2.17.21.55.47.94.88 1.35.41.41.8.67 1.35.88.41.16 1.03.35 2.17.4 1.24.06 1.6.07 4.74.07s3.5-.01 4.74-.07c1.14-.05 1.76-.24 2.17-.4.55-.21.94-.47 1.35-.88.41-.41.67-.8.88-1.35.16-.41.35-1.03.4-2.17.06-1.24.07-1.6.07-4.74s-.01-3.5-.07-4.74c-.05-1.14-.24-1.76-.4-2.17a3.6 3.6 0 0 0-.88-1.35 3.6 3.6 0 0 0-1.35-.88c-.41-.16-1.03-.35-2.17-.4-1.24-.06-1.6-.07-4.74-.07Zm0 3.06a4.98 4.98 0 1 1 0 9.96 4.98 4.98 0 0 1 0-9.96Zm0 1.8a3.18 3.18 0 1 0 0 6.36 3.18 3.18 0 0 0 0-6.36Zm5.19-.87a1.17 1.17 0 1 1 0 2.34 1.17 1.17 0 0 1 0-2.34Z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'LinkedIn',
+    href: 'https://www.linkedin.com/company/ayuxa',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="w-[18px] h-[18px]">
+        <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14ZM7.12 20.45H3.55V9h3.57v11.45ZM22.23 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.46c.98 0 1.77-.77 1.77-1.72V1.72C24 .77 23.21 0 22.23 0Z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Facebook',
+    href: 'https://www.facebook.com/ayuxacare',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="w-[18px] h-[18px]">
+        <path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.69.24 2.69.24v2.97h-1.52c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07Z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'X',
+    href: 'https://x.com/ayuxacare',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="w-[16px] h-[16px]">
+        <path d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.66l-5.21-6.82-5.97 6.82H1.47l7.73-8.83L1.05 2.25h6.83l4.71 6.23 5.65-6.23Zm-1.16 17.52h1.83L7.01 4.13H5.05l12.03 15.64Z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'YouTube',
+    href: 'https://www.youtube.com/@ayuxacare',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="w-[18px] h-[18px]">
+        <path d="M23.5 6.2a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.51A3.02 3.02 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3.02 3.02 0 0 0 2.12 2.14c1.88.51 9.38.51 9.38.51s7.5 0 9.38-.51a3.02 3.02 0 0 0 2.12-2.14C24 15.9 24 12 24 12s0-3.9-.5-5.8ZM9.6 15.6V8.4l6.2 3.6-6.2 3.6Z" />
+      </svg>
+    ),
+  },
+];
 
 export function Footer() {
-  const [settings, setSettings] = useState<typeof FALLBACK_SETTINGS | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const [companyName, setCompanyName] = useState<string>(COMPANY_NAME_FALLBACK);
   const [legalDocs, setLegalDocs] = useState<LegalDoc[]>([]);
 
   useEffect(() => {
@@ -34,180 +64,67 @@ export function Footer() {
   }, []);
 
   useEffect(() => {
-    const fetchSettings = async () => {
+    const load = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
         const res = await fetch(`${apiUrl}/ui-config/published?t=${Date.now()}`, { cache: 'no-store' });
         const json = await res.json();
-        if (json.success && json.data) {
-          const found = json.data.find((c: { key: string }) => c.key === "company_global_config");
-          if (found && found.configJson) {
-            let parsed = found.configJson;
-            if (typeof parsed === "string") {
-              try { parsed = JSON.parse(parsed); } catch {}
-            }
-            setSettings({
-              company_name: parsed.company_name || FALLBACK_SETTINGS.company_name,
-              address: parsed.address || FALLBACK_SETTINGS.address,
-              official_contact: parsed.official_contact || FALLBACK_SETTINGS.official_contact,
-              customer_care: parsed.customer_care || FALLBACK_SETTINGS.customer_care,
-              emails: {
-                support: parsed.emails?.support || FALLBACK_SETTINGS.emails.support,
-                investor: parsed.emails?.investor || FALLBACK_SETTINGS.emails.investor,
-                careers: parsed.emails?.careers || FALLBACK_SETTINGS.emails.careers,
-                enquiries: parsed.emails?.enquiries || FALLBACK_SETTINGS.emails.enquiries
-              },
-              iso_certifications: Array.isArray(parsed.iso_certifications) ? parsed.iso_certifications : []
-            });
-            return;
-          }
+        const found = json?.data?.find((c: { key: string }) => c.key === 'company_global_config');
+        let parsed = found?.configJson;
+        if (typeof parsed === 'string') {
+          try { parsed = JSON.parse(parsed); } catch {}
         }
-        setLoadFailed(true);
-      } catch (err) {
-        console.error("Failed to load footer settings:", err);
-        setLoadFailed(true);
+        if (parsed?.company_name) setCompanyName(parsed.company_name);
+      } catch {
+        /* keep fallback */
       }
     };
-    fetchSettings();
+    load();
   }, []);
 
-  // Show real fetched data, or the static fallback only once the fetch has
-  // definitively failed/returned nothing — never as a pre-fetch flash.
-  const display = settings || (loadFailed ? FALLBACK_SETTINGS : null);
+  const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-8 bg-[#1B1B1B] text-gray-300 w-full pt-16 pb-8 px-6 font-[var(--font-poppins)] selection:bg-[var(--color-primary)] selection:text-white relative z-40">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
+    <footer className="w-full bg-[var(--color-bg-screen)] border-t border-black/10 font-[var(--font-poppins)]">
+      <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center gap-4 sm:justify-between">
 
-        {/* Brand & Mission */}
-        <div className="col-span-1 md:col-span-1 flex flex-col gap-4">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-14 h-14 relative">
-              <Image
-                src="/onlylogo.png"
-                alt="Ayuxa Logo"
-                fill
-                className="object-contain"
-              />
-            </div>
-            <span className="text-white font-bold text-xl tracking-tight">Ayuxa</span>
-          </div>
-          <p className="text-sm text-gray-400 leading-relaxed pr-4">
-            {display ? display.company_name : <TextSkeleton width="180px" />}
-          </p>
-          <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mt-1">
-            Address:
-            <p className="text-xs text-gray-400 normal-case tracking-normal mt-1 leading-relaxed">
-              {display ? display.address : <TextSkeleton width="90%" />}
-            </p>
-          </div>
-          <div className="flex flex-col gap-1 mt-1">
-            {!display ? (
-              <TextSkeleton width="140px" />
-            ) : (
-              (display.iso_certifications.length > 0
-                ? display.iso_certifications
-                : [{ label: "ISO 9001-2015 Certified" }]
-              ).map((cert, i) => (
-                <div key={i} className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
-                  {cert.label}
-                  {cert.certNumber ? <span className="normal-case tracking-normal text-gray-600"> · {cert.certNumber}</span> : null}
-                </div>
-              ))
-            )}
-          </div>
+        {/* Copyright */}
+        <p className="text-xs text-black/55 order-3 sm:order-1 text-center sm:text-left">
+          &copy; {year} {companyName}. All rights reserved.
+        </p>
+
+        {/* Legal links */}
+        <nav
+          aria-label="Legal"
+          className="order-1 sm:order-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1"
+        >
+          {legalDocs.map((doc) => (
+            <Link
+              key={doc.id}
+              href={`/${typeToSlug(doc.type)}`}
+              className="text-xs text-black/60 hover:text-[var(--color-primary)] transition-colors"
+            >
+              {doc.title}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Social links */}
+        <div className="order-2 sm:order-3 flex items-center gap-3">
+          {SOCIAL_LINKS.map((s) => (
+            <a
+              key={s.label}
+              href={s.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={s.label}
+              title={s.label}
+              className="text-black/45 hover:text-[var(--color-primary)] transition-colors"
+            >
+              {s.icon}
+            </a>
+          ))}
         </div>
-
-        {/* Navigation */}
-        <div className="flex flex-col gap-3">
-          <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-2">Navigation</h3>
-          <Link href="/" className="text-sm hover:text-[var(--color-primary)] transition-colors w-fit">Home</Link>
-          <Link href="/about" className="text-sm hover:text-[var(--color-primary)] transition-colors w-fit">About Us</Link>
-          <Link href="/team" className="text-sm hover:text-[var(--color-primary)] transition-colors w-fit">Team</Link>
-          <Link href="/community-care" className="text-sm hover:text-[var(--color-primary)] transition-colors w-fit">Community</Link>
-          <Link href="/careers" className="text-sm hover:text-[var(--color-primary)] transition-colors w-fit">Careers</Link>
-          <Link href="/blogs" className="text-sm hover:text-[var(--color-primary)] transition-colors w-fit">Blog</Link>
-          <Link href="/contact" className="text-sm hover:text-[var(--color-primary)] transition-colors w-fit">Contact Us</Link>
-        </div>
-
-        {/* Legal Policies */}
-        <div className="flex flex-col gap-3">
-          <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-2">Legal</h3>
-          {legalDocs.length === 0
-            ? <TextSkeleton width="150px" />
-            : legalDocs.map((doc) => (
-                <Link
-                  key={doc.id}
-                  href={`/${typeToSlug(doc.type)}`}
-                  className="text-sm hover:text-white transition-colors w-fit flex items-center gap-2"
-                >
-                  <FileText className="w-4 h-4 shrink-0" /> {doc.title}
-                </Link>
-              ))}
-        </div>
-
-        {/* Contact Info */}
-        <div className="flex flex-col gap-4">
-          <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-1">Contact Information</h3>
-          
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Client Support</span>
-            {display ? (
-              <a href={`mailto:${display.emails.support}`} className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
-                {display.emails.support}
-              </a>
-            ) : <TextSkeleton width="160px" />}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Investor Relations</span>
-            {display ? (
-              <a href={`mailto:${display.emails.investor}`} className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
-                {display.emails.investor}
-              </a>
-            ) : <TextSkeleton width="160px" />}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Careers</span>
-            {display ? (
-              <a href={`mailto:${display.emails.careers}`} className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
-                {display.emails.careers}
-              </a>
-            ) : <TextSkeleton width="160px" />}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">General Enquiries</span>
-            {display ? (
-              <a href={`mailto:${display.emails.enquiries}`} className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
-                {display.emails.enquiries}
-              </a>
-            ) : <TextSkeleton width="160px" />}
-          </div>
-
-          <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-gray-800">
-            <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Official Contact Number</span>
-            {display ? (
-              <a href={`tel:${display.official_contact}`} className="text-sm text-gray-300 hover:text-white transition-colors font-medium">
-                {display.official_contact}
-              </a>
-            ) : <TextSkeleton width="130px" />}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Customer Care</span>
-            {display ? (
-              <a href={`tel:${display.customer_care}`} className="text-sm text-gray-300 hover:text-white transition-colors font-medium">
-                {display.customer_care}
-              </a>
-            ) : <TextSkeleton width="130px" />}
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto mt-16 pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-center gap-4">
-        <p className="text-xs text-gray-500">© {new Date().getFullYear()} {display ? display.company_name : <TextSkeleton width="180px" />}. All rights reserved.</p>
       </div>
     </footer>
   );

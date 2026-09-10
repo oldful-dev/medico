@@ -10,6 +10,12 @@ const poppins = Poppins({
 export const metadata = {
   title: "Ayuxa Admin Panel",
   description: "Comprehensive elder care management admin dashboard for Ayuxa",
+  icons: {
+    icon: [
+      { url: "/onlylogo.png", type: "image/png", sizes: "any" },
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
+    ],
+  },
 };
 
 export default function RootLayout({ children }) {
