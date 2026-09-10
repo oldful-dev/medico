@@ -55,7 +55,7 @@ export function Hero() {
             </div>
             <div className="flex flex-col items-start leading-none">
               <span className="text-[10px] text-gray-300 uppercase font-bold tracking-wider">
-                Download on the
+                Coming Soon on
               </span>
               <span className="text-base font-bold tracking-wide mt-0.5">
                 App Store
