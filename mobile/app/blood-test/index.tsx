@@ -127,6 +127,11 @@ export default function BloodTestScreen() {
     const colors = useThemeColors();
     const styles = makeStyles(colors, isDarkMode);
 
+    const [activeTab, setActiveTab] = useState<'featured' | 'all'>('featured');
+    const [featuredPackages, setFeaturedPackages] = useState<LabPackage[]>([]);
+    const [loadingFeatured, setLoadingFeatured] = useState(false);
+    const [featuredFetched, setFeaturedFetched] = useState(false);
+
     const [packages, setPackages] = useState<LabPackage[]>([]);       // paginated catalog
     const [searchResults, setSearchResults] = useState<LabPackage[] | null>(null); // server search hits; null = not searching
     const [loading, setLoading] = useState(false);
@@ -147,7 +152,30 @@ export default function BloodTestScreen() {
     const { addItem, itemCount } = useCart();
     const { showToast } = useToast();
 
-    useEffect(() => { fetchPackages(); }, []);
+    useEffect(() => { fetchFeatured(); }, []);
+
+    useEffect(() => {
+        if (activeTab === 'all' && packages.length === 0 && !loading) fetchPackages();
+    }, [activeTab]);
+
+    const fetchFeatured = async () => {
+        setLoadingFeatured(true);
+        try {
+            const items = await labService.getFeaturedPackages();
+            setFeaturedPackages(items);
+        } catch { /* silent */ } finally {
+            setLoadingFeatured(false);
+            setFeaturedFetched(true);
+        }
+    };
+
+    // If the admin hasn't featured anything yet, don't strand the user on an
+    // empty tab — fall back to the full catalog automatically.
+    useEffect(() => {
+        if (featuredFetched && featuredPackages.length === 0 && activeTab === 'featured') {
+            setActiveTab('all');
+        }
+    }, [featuredFetched, featuredPackages.length]);
 
     useEffect(() => {
         // Rebook: the package may not be on the first loaded page, so search
@@ -352,6 +380,53 @@ export default function BloodTestScreen() {
                     )}
                 </View>
 
+                {/* Featured / All Tests tabs */}
+                <View style={styles.tabRow}>
+                    {(['featured', 'all'] as const).map((tab) => {
+                        const active = activeTab === tab;
+                        return (
+                            <TouchableOpacity
+                                key={tab}
+                                onPress={() => setActiveTab(tab)}
+                                style={[styles.tabBtn, active && { borderBottomColor: colors.primary }]}
+                                activeOpacity={0.75}
+                            >
+                                <Text style={[styles.tabBtnText, { color: active ? colors.primary : themeColors.textMuted }]}>
+                                    {tab === 'featured' ? t('blood_test.tab_featured') : t('blood_test.tab_all')}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+
+                {activeTab === 'featured' ? (
+                    loadingFeatured ? (
+                        <View style={styles.loadingBox}>
+                            <ActivityIndicator size="large" color={colors.primary} />
+                            <Text style={[styles.loadingText, { color: themeColors.textMuted }]}>{t('blood_test.loading_packages')}</Text>
+                        </View>
+                    ) : (
+                        <FlatList
+                            data={featuredPackages}
+                            renderItem={renderItem}
+                            keyExtractor={item => item.code}
+                            numColumns={2}
+                            columnWrapperStyle={styles.gridRow}
+                            contentContainerStyle={styles.listContent}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                <View style={styles.emptyBox}>
+                                    <Ionicons name="star-outline" size={42} color={themeColors.textMuted} style={{ opacity: 0.35, marginBottom: 10 }} />
+                                    <Text style={[styles.emptyTitle, { color: themeColors.textDark }]}>{t('blood_test.featured_empty_title')}</Text>
+                                    <Text style={[styles.emptySub, { color: themeColors.textMuted }]}>{t('blood_test.featured_empty_sub')}</Text>
+                                </View>
+                            }
+                            maxToRenderPerBatch={10}
+                            initialNumToRender={8}
+                        />
+                    )
+                ) : (
+                <>
                 {/* Category chips — built from what the API actually returned */}
                 <ScrollView
                     horizontal
@@ -448,6 +523,8 @@ export default function BloodTestScreen() {
                         maxToRenderPerBatch={10}
                         initialNumToRender={8}
                     />
+                )}
+                </>
                 )}
             </View>
 
@@ -550,6 +627,20 @@ const makeStyles = (themeColors: ThemeColors, isDarkMode: boolean) => StyleSheet
     },
 
     // Chips
+    // Tabs
+    tabRow: {
+        flexDirection: 'row',
+        paddingHorizontal: Spacing.lg,
+        marginBottom: Spacing.sm,
+        gap: Spacing.lg,
+    },
+    tabBtn: {
+        paddingBottom: 8,
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    tabBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body },
+
     chipsScroll: { flexGrow: 0, marginBottom: Spacing.sm },
     chipsRow: { paddingHorizontal: Spacing.lg, gap: Spacing.sm, paddingRight: Spacing.xl },
     chip: {

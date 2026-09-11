@@ -131,6 +131,172 @@ const getPackageDetails = async (req, res, next) => {
     }
 };
 
+// GET /api/labs/packages/featured  (public)
+// The app's "Featured" tab: admin-curated codes, resolved to LIVE Redcliffe
+// data (price/discount can change daily on Redcliffe's side, so we never
+// serve a stale snapshot — only the code + order is ours).
+const getFeaturedPackages = async (req, res, next) => {
+    try {
+        const featured = await prisma.featuredLabPackage.findMany({
+            where: { isActive: true },
+            orderBy: { sortOrder: 'asc' },
+        });
+        if (featured.length === 0) {
+            return sendResponse(res, 200, []);
+        }
+
+        // Redcliffe's search-by-name endpoint doubles as search-by-code (it
+        // matches on the code field too), so one call per featured code —
+        // small admin-curated lists only, no pagination needed here.
+        const results = await Promise.all(
+            featured.map(async (f) => {
+                try {
+                    const { data } = await rc.getPackages(f.code, 1);
+                    const match = (data || []).find((p) => p.code === f.code);
+                    if (!match) return null;
+                    return {
+                        code: match.code,
+                        name: match.name,
+                        cost: match.package_center_prices?.package_price ?? match.cost ?? 0,
+                        discounted_cost: match.package_center_prices?.offer_price ?? match.discounted_cost ?? null,
+                        tests_count: match.parameter ?? match.tests_count ?? null,
+                        packages_count: match.packages_count ?? 1,
+                        fasting: !!(match.fasting_time ?? match.fasting ?? match.is_fasting),
+                        type: match.type ?? null,
+                        description: match.description ?? null,
+                        fasting_time: match.fasting_time ?? null,
+                        tat_time: match.tat_time ?? null,
+                        specimen_instructions: match.specimen_instructions || null,
+                        test_category: match.test_category ?? null,
+                        category_for_web: match.category_for_web ?? [],
+                    };
+                } catch (err) {
+                    logger.warn(`[FeaturedPackages] lookup failed for code ${f.code}:`, err.message);
+                    return null;
+                }
+            })
+        );
+
+        // Drop any code Redcliffe no longer has (removed/renamed on their side)
+        // rather than showing a broken card — admin can re-curate separately.
+        sendResponse(res, 200, results.filter(Boolean));
+    } catch (error) {
+        logger.error('getFeaturedPackages error:', error.message);
+        next(error);
+    }
+};
+
+// ─── Admin: manage the featured selection ────────────────────────────────
+
+// GET /api/labs/admin/featured
+const adminListFeatured = async (req, res, next) => {
+    try {
+        const list = await prisma.featuredLabPackage.findMany({
+            orderBy: { sortOrder: 'asc' },
+        });
+        sendResponse(res, 200, list);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/labs/admin/featured  { code }
+// Validates the code against Redcliffe's live catalog before saving, so the
+// admin can't accidentally feature a typo'd/nonexistent package.
+const adminAddFeatured = async (req, res, next) => {
+    try {
+        const { code } = req.body;
+        if (!code || typeof code !== 'string') {
+            return res.status(400).json({ success: false, message: 'code is required' });
+        }
+
+        const existing = await prisma.featuredLabPackage.findUnique({ where: { code } });
+        if (existing) {
+            return res.status(409).json({ success: false, message: 'This test is already featured' });
+        }
+
+        const { data } = await rc.getPackages(code, 1);
+        const match = (data || []).find((p) => p.code === code);
+        if (!match) {
+            return res.status(404).json({ success: false, message: 'No Redcliffe package found with that code' });
+        }
+
+        const maxOrder = await prisma.featuredLabPackage.aggregate({ _max: { sortOrder: true } });
+        const created = await prisma.featuredLabPackage.create({
+            data: {
+                code: match.code,
+                name: match.name,
+                sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,
+                addedById: req.user?.id || null,
+            },
+        });
+        sendResponse(res, 201, created, 'Added to featured tests');
+    } catch (error) {
+        logger.error('adminAddFeatured error:', error.message);
+        next(error);
+    }
+};
+
+// PUT /api/labs/admin/featured/reorder  { codes: [code, code, ...] }
+// Full reorder in one call — the admin UI drags/reorders a list client-side
+// then submits the final order, simpler than N individual sortOrder patches.
+const adminReorderFeatured = async (req, res, next) => {
+    try {
+        const { codes } = req.body;
+        if (!Array.isArray(codes) || codes.length === 0) {
+            return res.status(400).json({ success: false, message: 'codes must be a non-empty array' });
+        }
+        await prisma.$transaction(
+            codes.map((code, i) =>
+                prisma.featuredLabPackage.update({ where: { code }, data: { sortOrder: i } })
+            )
+        );
+        sendResponse(res, 200, null, 'Order updated');
+    } catch (error) {
+        logger.error('adminReorderFeatured error:', error.message);
+        next(error);
+    }
+};
+
+// PUT /api/labs/admin/featured/:code/toggle
+const adminToggleFeatured = async (req, res, next) => {
+    try {
+        const { code } = req.params;
+        const existing = await prisma.featuredLabPackage.findUnique({ where: { code } });
+        if (!existing) {
+            return res.status(404).json({ success: false, message: 'Featured test not found' });
+        }
+        const updated = await prisma.featuredLabPackage.update({
+            where: { code },
+            data: { isActive: !existing.isActive },
+        });
+        sendResponse(res, 200, updated);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// DELETE /api/labs/admin/featured/:code
+const adminRemoveFeatured = async (req, res, next) => {
+    try {
+        const { code } = req.params;
+        await prisma.featuredLabPackage.delete({ where: { code } }).catch((err) => {
+            if (err.code === 'P2025') {
+                const notFound = new Error('Featured test not found');
+                notFound.status = 404;
+                throw notFound;
+            }
+            throw err;
+        });
+        sendResponse(res, 200, null, 'Removed from featured tests');
+    } catch (error) {
+        if (error.status === 404) {
+            return res.status(404).json({ success: false, message: error.message });
+        }
+        next(error);
+    }
+};
+
 // POST /api/labs/book
 // Step 1 of booking flow — creates a temporary booking (locked for 30 mins).
 // Must be followed by POST /api/labs/booking/:id/confirm to make it permanent.
@@ -664,6 +830,12 @@ module.exports = {
     getTimeSlots,
     getPackages,
     getPackageDetails,
+    getFeaturedPackages,
+    adminListFeatured,
+    adminAddFeatured,
+    adminReorderFeatured,
+    adminToggleFeatured,
+    adminRemoveFeatured,
     bookLabTest,
     confirmLabBooking,
     getLabBookingStatus,

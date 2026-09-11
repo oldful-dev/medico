@@ -11,6 +11,13 @@ router.put('/booking/:id/reschedule', authenticateAdmin, ctrl.rescheduleLabOrder
 router.post('/booking/:id/admin-cancel', authenticateAdmin, ctrl.adminCancelLabOrder);
 router.get('/admin/booking/:id/invoice', authenticateAdmin, ctrl.getLabOrderInvoice);
 
+// ─── Admin: Featured Tests curation ──────────
+router.get('/admin/featured', authenticateAdmin, ctrl.adminListFeatured);
+router.post('/admin/featured', authenticateAdmin, ctrl.adminAddFeatured);
+router.put('/admin/featured/reorder', authenticateAdmin, ctrl.adminReorderFeatured);
+router.put('/admin/featured/:code/toggle', authenticateAdmin, ctrl.adminToggleFeatured);
+router.delete('/admin/featured/:code', authenticateAdmin, ctrl.adminRemoveFeatured);
+
 // ─── Location (public) ───────────────────────
 router.get('/serviceability',   ctrl.checkServiceability);
 router.get('/location/search',  ctrl.searchLocation);
@@ -20,6 +27,9 @@ router.get('/location/latlng',  ctrl.getLatLng);
 router.get('/time-slots', ctrl.getTimeSlots);
 
 // ─── Packages (public) ───────────────────────
+// /packages/featured must come before the /:code param route below, or it'd
+// be swallowed as code="featured".
+router.get('/packages/featured', ctrl.getFeaturedPackages);
 router.get('/packages',       ctrl.getPackages);
 router.get('/packages/:code', ctrl.getPackageDetails);
 

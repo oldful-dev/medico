@@ -164,6 +164,17 @@ export const labService = {
         };
     },
 
+    // Admin-curated picks shown first in the "Featured" tab. Not paginated —
+    // this list is small by design (a handful of hand-picked tests).
+    getFeaturedPackages: async (): Promise<LabPackage[]> => {
+        const response = await apiClient.request<LabPackage[]>({
+            method: 'GET',
+            endpoint: '/labs/packages/featured',
+            timeout: 15000
+        });
+        return response.data || [];
+    },
+
     getPackageDetails: async (code: string) => {
         const response = await apiClient.request<LabPackage>({
             method: 'GET',

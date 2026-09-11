@@ -981,6 +981,25 @@ model LabOrder {
   @@map("lab_orders")
 }
 
+// Admin-curated selection of Redcliffe blood test packages to surface first
+// in the app's "Featured" tab. Deliberately does NOT store test data (price,
+// parameters, description) — that always comes live from Redcliffe via
+// rc.getPackages/getPackageDetails, so it can never drift out of sync with
+// their catalog. `name` here is just a display snapshot for the admin list.
+model FeaturedLabPackage {
+  id        String   @id @default(uuid())
+  code      String   @unique // Redcliffe package code
+  name      String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  addedById String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("featured_lab_packages")
+}
+
 model ActivityUpdate {
   id            String    @id @default(uuid())
   labOrderId    String?   @map("lab_order_id")

@@ -416,6 +416,13 @@ export const labAPI = {
         const token = Cookies.get('adminToken') || '';
         return `${api.defaults.baseURL || '/api'}/labs/admin/booking/${id}/invoice?token=${token}`;
     },
+    // Featured blood test curation
+    searchPackages: (search, page = 1) => api.get('/labs/packages', { params: { search, page } }),
+    getFeatured: () => api.get('/labs/admin/featured'),
+    addFeatured: (code) => api.post('/labs/admin/featured', { code }),
+    reorderFeatured: (codes) => api.put('/labs/admin/featured/reorder', { codes }),
+    toggleFeatured: (code) => api.put(`/labs/admin/featured/${code}/toggle`),
+    removeFeatured: (code) => api.delete(`/labs/admin/featured/${code}`),
 };
 
 export const waitlistAPI = {

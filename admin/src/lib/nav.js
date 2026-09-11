@@ -42,6 +42,7 @@ export const NAV_SECTIONS = [
             { id: "banners", href: "/banners", label: "Home Banner", icon: Sparkles, badge: "New", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'CONTENT_ADMIN'] },
             { id: "media", href: "/media", label: "Media Library", icon: ImageIcon, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CONTENT_ADMIN'] },
             { id: "lab-orders", href: "/lab-orders", label: "Blood Test Orders", icon: TestTube2, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
+            { id: "lab-packages", href: "/lab-packages", label: "Blood Test Catalog", icon: TestTube2, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },
             { id: "notifications", href: "/notifications", label: "Notification Management", icon: Bell, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },
         ],
     },
