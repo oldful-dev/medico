@@ -23,7 +23,7 @@ export const NAV_SECTIONS = [
         title: "User Profiles",
         items: [
             { id: "users", href: "/users", label: "Client & Patient", icon: Users, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'SUPPORT_AGENT'] },
-            { id: "app-users", href: "/app-users", label: "App Users & Installation", icon: Smartphone, roles: ['SUPER_ADMIN'] },
+            { id: "app-users", href: "/app-users", label: "App Users", icon: Smartphone, roles: ['SUPER_ADMIN'] },
         ],
     },
     {

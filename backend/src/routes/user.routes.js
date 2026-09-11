@@ -19,6 +19,9 @@ router.post('/profile/email-my-data', authenticateUser, ctrl.emailMyData);
 
 router.get('/admin/health-reports', authenticateAdmin, cityRestriction, auditReadMiddleware('HealthReport'), ctrl.getAllHealthReports);
 router.get('/health-reports/:reportId/view-url', authenticateAdmin, cityRestriction, auditReadMiddleware('HealthReport'), ctrl.getHealthReportViewUrl);
+// Static route — must come before the /:id param route below or it'd be
+// swallowed as an id lookup.
+router.get('/admin/app-stats', authenticateAdmin, authorize('SUPER_ADMIN'), ctrl.getAppUserStats);
 router.get('/', authenticateAdmin, cityRestriction, ctrl.getUsers);
 router.get('/:id', authenticateAdmin, cityRestriction, auditReadMiddleware('User'), ctrl.getUserById);
 router.post('/', ctrl.createUser);  // Can be called post-OTP or by admin

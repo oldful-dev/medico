@@ -166,6 +166,7 @@ export const userAPI = {
     deleteHealthReport: (reportId) => api.delete(`/users/health-reports/${reportId}`),
     getAllHealthReports: (params) => api.get('/users/admin/health-reports', { params }),
     getHealthReportViewUrl: (reportId) => api.get(`/users/health-reports/${reportId}/view-url`),
+    getAppStats: () => api.get('/users/admin/app-stats'),
 };
 
 // ── Services ─────────────────────────────────────────

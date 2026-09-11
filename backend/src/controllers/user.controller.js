@@ -1332,6 +1332,80 @@ const getHealthReportViewUrl = async (req, res, next) => {
     }
 };
 
+/**
+ * GET /api/users/admin/app-stats  (SUPER_ADMIN only)
+ *
+ * Real user/engagement metrics computed entirely from our own DB —
+ * registered users, DAU/WAU/MAU (from UserSession.lastActiveAt), device/OS
+ * breakdown of active sessions, and a 30-day signup trend.
+ *
+ * Does NOT report a store install count (installs by people who never
+ * signed up) — that number only exists in Google Play Console / App Store
+ * Connect's own reporting, which needs its own service-account credentials
+ * to read and isn't wired up here.
+ */
+const getAppUserStats = async (req, res, next) => {
+    try {
+        const now = new Date();
+        const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const trendStart = new Date(now);
+        trendStart.setDate(trendStart.getDate() - 29);
+        trendStart.setHours(0, 0, 0, 0);
+
+        const [
+            totalUsers,
+            dau,
+            wau,
+            mau,
+            deviceBreakdown,
+            signupsRaw,
+        ] = await Promise.all([
+            prisma.user.count({ where: { status: { not: 'DELETED' } } }),
+            prisma.userSession.groupBy({ by: ['userId'], where: { lastActiveAt: { gte: dayAgo } } }),
+            prisma.userSession.groupBy({ by: ['userId'], where: { lastActiveAt: { gte: weekAgo } } }),
+            prisma.userSession.groupBy({ by: ['userId'], where: { lastActiveAt: { gte: monthAgo } } }),
+            prisma.userSession.groupBy({
+                by: ['deviceType', 'os'],
+                where: { isActive: true, lastActiveAt: { gte: monthAgo } },
+                _count: { _all: true },
+            }),
+            prisma.user.findMany({
+                where: { createdAt: { gte: trendStart }, status: { not: 'DELETED' } },
+                select: { createdAt: true },
+            }),
+        ]);
+
+        // Bucket signups by calendar day (UTC) for the last 30 days.
+        const dayKey = (d) => d.toISOString().slice(0, 10);
+        const trendMap = {};
+        for (let i = 0; i < 30; i++) {
+            const d = new Date(trendStart);
+            d.setDate(d.getDate() + i);
+            trendMap[dayKey(d)] = 0;
+        }
+        for (const u of signupsRaw) {
+            const key = dayKey(new Date(u.createdAt));
+            if (key in trendMap) trendMap[key]++;
+        }
+        const signupTrend = Object.entries(trendMap).map(([date, count]) => ({ date, count }));
+
+        sendResponse(res, 200, {
+            totalRegisteredUsers: totalUsers,
+            activeUsers: { daily: dau.length, weekly: wau.length, monthly: mau.length },
+            deviceBreakdown: deviceBreakdown.map((d) => ({
+                deviceType: d.deviceType,
+                os: d.os,
+                count: d._count._all,
+            })),
+            signupTrend,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getUsers, getUserById, createUser, updateUser,
     blockUser, suspendUser, activateUser,
@@ -1344,4 +1418,5 @@ module.exports = {
     emailMyData,
     getAllHealthReports,
     getHealthReportViewUrl,
+    getAppUserStats,
 };
