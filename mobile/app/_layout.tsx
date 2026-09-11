@@ -14,6 +14,7 @@ import 'react-native-reanimated';
 import '@/i18n/i18n';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useInAppUpdate } from '@/hooks/use-in-app-update';
 import { AuthProvider } from '@/context/AuthContext';
 import { UserProvider } from '@/context/UserContext';
 import { AddressProvider } from '@/context/AddressContext';
@@ -124,6 +125,9 @@ function RootLayoutContent() {
   const colorScheme = useColorScheme();
   const { t } = useTranslation();
   const [showRootedWarning, setShowRootedWarning] = useState(false);
+
+  // Google Play In-App Updates (Android). All UI is Play Core's own.
+  useInAppUpdate();
 
   useEffect(() => {
     (async () => {
