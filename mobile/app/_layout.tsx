@@ -8,6 +8,7 @@ import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import JailMonkey from 'jail-monkey';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import { useTranslation } from 'react-i18next';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import 'react-native-reanimated';
@@ -128,6 +129,12 @@ function RootLayoutContent() {
 
   // Google Play In-App Updates (Android). All UI is Play Core's own.
   useInAppUpdate();
+
+  // App-wide screenshot/screen-recording block, active from the moment the
+  // app opens (not just on individual PHI screens) — this app deals with
+  // medical data end to end, not only on the handful of screens that used to
+  // carry their own usePreventScreenCapture() call.
+  usePreventScreenCapture('app-wide');
 
   useEffect(() => {
     (async () => {

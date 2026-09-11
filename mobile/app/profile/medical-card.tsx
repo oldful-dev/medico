@@ -15,7 +15,6 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
-import { usePreventScreenCapture } from 'expo-screen-capture';
 
 const formatDate = (iso?: string) => {
     if (!iso) return 'N/A';
@@ -40,7 +39,6 @@ const formatDate = (iso?: string) => {
 };
 
 export default function MedicalCardScreen() {
-    usePreventScreenCapture('medical-card'); // blood group, allergies, medications shown here — no screenshots/recordings
     const router = useRouter();
     const { profile } = useUser();
     const { isDarkMode } = useTheme();
