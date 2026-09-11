@@ -22,9 +22,16 @@
 //      that are never set). Google Play Console's "App optimisation"
 //      check flags an unobfuscated release APK/AAB under its Obfuscation
 //      category; this is what actually fixes that, not just silences it.
+//   5. FLAG_SECURE set in MainActivity.onCreate(), before super.onCreate()
+//      runs — closes the native-boot gap that expo-screen-capture's JS-side
+//      usePreventScreenCapture() can't: that hook only sets the flag from a
+//      React useEffect, which can't fire until JS boots and the root layout
+//      mounts, leaving screenshots/recording possible during native launch
+//      and the splash screen. Setting it here means the window is marked
+//      secure before the Activity finishes creating, with no gap at all.
 const fs = require('fs');
 const path = require('path');
-const { withGradleProperties, withAppBuildGradle, withAndroidManifest, withDangerousMod } = require('@expo/config-plugins');
+const { withGradleProperties, withAppBuildGradle, withAndroidManifest, withDangerousMod, withMainActivity } = require('@expo/config-plugins');
 
 const NETWORK_SECURITY_CONFIG_XML = `<?xml version="1.0" encoding="utf-8"?>
 <!--
@@ -295,6 +302,48 @@ const withNetworkSecurityConfigManifest = (config) => {
     });
 };
 
+// expo-screen-capture's usePreventScreenCapture() sets FLAG_SECURE from a
+// React useEffect, which only runs after JS boots and the root layout
+// mounts -- leaving a real (if brief) native-boot window where FLAG_SECURE
+// isn't set yet. Setting it directly in onCreate(), before super.onCreate()
+// even runs, closes that window completely: the window is marked secure
+// before Activity creation finishes, so there is no frame at any point,
+// including the splash screen, where capture is possible on Android.
+// Idempotent against a clean `expo prebuild` regenerating this file, same
+// as every other mod in this plugin.
+const withMainActivitySecureFlag = (config) => {
+    return withMainActivity(config, (config) => {
+        const contents = config.modResults.contents;
+        if (contents.includes('FLAG_SECURE')) return config; // already applied
+
+        const isKotlin = config.modResults.language === 'kt';
+        const importLine = isKotlin ? 'import android.view.WindowManager\n' : 'import android.view.WindowManager;\n';
+        const flagLine = isKotlin
+            ? '    window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)\n'
+            : '    getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);\n';
+
+        let updated = contents;
+        if (!updated.includes('import android.view.WindowManager')) {
+            updated = updated.replace(/^(package [^\n]+\n)/, `$1${importLine}`);
+        }
+
+        const onCreatePattern = isKotlin
+            ? /(override fun onCreate\(savedInstanceState: Bundle\?\)\s*\{\n)/
+            : /(protected void onCreate\(Bundle savedInstanceState\)\s*\{\n)/;
+
+        if (!onCreatePattern.test(updated)) {
+            throw new Error(
+                'withAndroidHardening: could not find onCreate() in MainActivity to set FLAG_SECURE. ' +
+                'The Expo template has likely changed -- update the regex in plugins/withAndroidHardening.js.'
+            );
+        }
+        updated = updated.replace(onCreatePattern, `$1${flagLine}`);
+
+        config.modResults.contents = updated;
+        return config;
+    });
+};
+
 module.exports = function withAndroidHardening(config) {
     config = withGradleJvmMemory(config);
     config = withReleaseSigningProperties(config);
@@ -303,5 +352,6 @@ module.exports = function withAndroidHardening(config) {
     config = withNetworkSecurityConfigManifest(config);
     config = withReleaseOptimization(config);
     config = withRazorpayProguardRules(config);
+    config = withMainActivitySecureFlag(config);
     return config;
 };
