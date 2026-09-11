@@ -12,6 +12,7 @@
   --bg-secondary: #FFFFF8;
   --bg-tertiary: #F5F5DC;
   --bg-card: #FFFFFF;
+  --card-bg: #FFFFFF;
   --bg-card-hover: #FAFAF0;
   --bg-glass: rgba(4, 131, 87, 0.04);
   --bg-glass-hover: rgba(4, 131, 87, 0.08);
@@ -78,6 +79,7 @@
   --bg-secondary: #020617;
   --bg-tertiary: #1E293B;
   --bg-card: #1E293B;
+  --card-bg: #1E293B;
   --bg-card-hover: #1E293B;
   --bg-glass: rgba(16, 185, 129, 0.1);
   --bg-glass-hover: rgba(16, 185, 129, 0.15);

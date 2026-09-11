@@ -488,7 +488,7 @@ export default function ServerUIPage() {
               display: "flex", 
               justifyContent: "space-between", 
               alignItems: "center", 
-              backgroundColor: "var(--card-bg)", 
+              backgroundColor: "var(--bg-card)", 
               padding: "10px 16px", 
               borderRadius: 8, 
               border: "1px solid var(--border-color)" 
@@ -530,30 +530,64 @@ export default function ServerUIPage() {
 
             {historyOpen && (
               <div
-                style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
+                className="modal-overlay"
+                style={{ backdropFilter: "blur(4px)", zIndex: 1100 }}
                 onClick={() => setHistoryOpen(false)}
               >
                 <div
-                  style={{ backgroundColor: "var(--card-bg)", borderRadius: 12, padding: 20, width: 480, maxHeight: "70vh", overflowY: "auto", border: "1px solid var(--border-color)" }}
+                  className="modal"
+                  style={{ 
+                    backgroundColor: "var(--bg-card)", 
+                    borderRadius: "var(--radius-lg)", 
+                    padding: 24, 
+                    width: 520, 
+                    maxWidth: "92%", 
+                    maxHeight: "75vh", 
+                    overflowY: "auto", 
+                    border: "1px solid var(--border-color)", 
+                    boxShadow: "var(--shadow-xl)" 
+                  }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <h3 style={{ margin: 0 }}>Version History</h3>
-                    <button style={{ background: "transparent", border: "none", cursor: "pointer" }} onClick={() => setHistoryOpen(false)}>
-                      <X size={18} />
+                  <div className="modal-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, padding: 0, border: "none" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <History size={18} style={{ color: "var(--accent-primary)" }} />
+                      <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>Version History</h3>
+                    </div>
+                    <button className="btn btn-sm btn-secondary" style={{ padding: 4 }} onClick={() => setHistoryOpen(false)}>
+                      <X size={16} />
                     </button>
                   </div>
                   {historyLoading ? (
-                    <div style={{ padding: 24, textAlign: "center" }}><Loader2 className="spin" size={20} /></div>
+                    <div style={{ padding: 32, textAlign: "center", color: "var(--text-muted)" }}>
+                      <Loader2 className="spin" size={24} style={{ margin: "0 auto 8px" }} />
+                      <div>Loading layout versions...</div>
+                    </div>
                   ) : history.length === 0 ? (
-                    <p style={{ color: "var(--text-secondary)" }}>No previous versions yet — history is recorded starting from the next publish.</p>
+                    <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)" }}>
+                      No previous versions yet — history is recorded starting from the next publish.
+                    </div>
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       {history.map((v) => (
-                        <div key={v.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", border: "1px solid var(--border-color)", borderRadius: 8 }}>
+                        <div 
+                          key={v.id} 
+                          style={{ 
+                            display: "flex", 
+                            justifyContent: "space-between", 
+                            alignItems: "center", 
+                            padding: "12px 14px", 
+                            border: "1px solid var(--border-color)", 
+                            borderRadius: "var(--radius-md)",
+                            backgroundColor: "var(--bg-card)",
+                            boxShadow: "var(--shadow-sm)"
+                          }}
+                        >
                           <div>
-                            <div style={{ fontWeight: 600 }}>Version {v.version}</div>
-                            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
+                              Version {v.version}
+                            </div>
+                            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
                               {v.publishedAt ? new Date(v.publishedAt).toLocaleString() : "—"}
                               {v.publishedBy && <> · by admin {v.publishedBy.slice(0, 8)}</>}
                             </div>
@@ -562,6 +596,7 @@ export default function ServerUIPage() {
                             className="btn btn-sm btn-secondary"
                             onClick={() => handleRollback(v.id)}
                             disabled={rollingBackId === v.id}
+                            style={{ fontWeight: 600 }}
                           >
                             {rollingBackId === v.id ? "Rolling back..." : "Rollback"}
                           </button>

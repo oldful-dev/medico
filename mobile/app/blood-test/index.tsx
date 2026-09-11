@@ -645,11 +645,20 @@ const makeStyles = (themeColors: ThemeColors, isDarkMode: boolean) => StyleSheet
     chipsRow: { paddingHorizontal: Spacing.lg, gap: Spacing.sm, paddingRight: Spacing.xl },
     chip: {
         paddingHorizontal: Spacing.md,
-        paddingVertical: 7,
+        paddingVertical: 8,
         borderRadius: Radius.full,
         borderWidth: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: 36,
     },
-    chipText: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall },
+    chipText: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.bodySmall,
+        includeFontPadding: false,
+        textAlignVertical: 'center',
+        lineHeight: 18,
+    },
 
     // Count + Sort
     countSortRow: {
@@ -668,12 +677,19 @@ const makeStyles = (themeColors: ThemeColors, isDarkMode: boolean) => StyleSheet
     sortRow: { gap: 6 },
     sortChip: {
         paddingHorizontal: 10,
-        paddingVertical: 5,
+        paddingVertical: 6,
         borderRadius: Radius.full,
         borderWidth: 1,
         borderColor: 'transparent',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    sortChipText: { fontFamily: Fonts.medium, fontSize: 11 },
+    sortChipText: {
+        fontFamily: Fonts.medium,
+        fontSize: 11,
+        includeFontPadding: false,
+        textAlignVertical: 'center',
+    },
 
     // List (2-column grid)
     listContent: {

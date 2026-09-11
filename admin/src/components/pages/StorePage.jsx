@@ -544,17 +544,19 @@ export default function StorePage() {
 
                     {historyOrderId && (
                         <div
-                            style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
+                            className="modal-overlay"
+                            style={{ backdropFilter: "blur(4px)", zIndex: 1100 }}
                             onClick={() => setHistoryOrderId(null)}
                         >
                             <div
-                                style={{ backgroundColor: "var(--card-bg)", borderRadius: 12, padding: 20, width: 480, maxHeight: "70vh", overflowY: "auto", border: "1px solid var(--border-color)" }}
+                                className="modal"
+                                style={{ backgroundColor: "var(--bg-card)", borderRadius: "var(--radius-lg)", padding: 24, width: 500, maxWidth: "92%", maxHeight: "75vh", overflowY: "auto", border: "1px solid var(--border-color)", boxShadow: "var(--shadow-xl)" }}
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                                    <h3 style={{ margin: 0 }}>Status History</h3>
-                                    <button style={{ background: "transparent", border: "none", cursor: "pointer" }} onClick={() => setHistoryOrderId(null)}>
-                                        <X size={18} />
+                                <div className="modal-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, padding: 0, border: "none" }}>
+                                    <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>Status History</h3>
+                                    <button className="btn btn-sm btn-secondary" style={{ padding: 4 }} onClick={() => setHistoryOrderId(null)}>
+                                        <X size={16} />
                                     </button>
                                 </div>
                                 {historyLoading ? (
