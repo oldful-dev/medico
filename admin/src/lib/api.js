@@ -180,6 +180,19 @@ export const serviceAPI = {
     delete: (id, params) => api.delete(`/services/${id}`, { params }),
 };
 
+// ── Service Categories (generic, module-scoped) ──────
+// Shared by Home Essentials, Diagnostic & Fitness, Tours & Travel category
+// tabs — every call must be scoped with a `module` value (e.g.
+// 'HOME_ESSENTIALS') so pages never see each other's categories.
+export const serviceCategoryAPI = {
+    getAll: (module) => api.get('/service-categories', { params: { module } }),
+    create: (data) => api.post('/service-categories', data),
+    update: (id, data) => api.put(`/service-categories/${id}`, data),
+    toggle: (id) => api.put(`/service-categories/${id}/toggle`),
+    reorder: (data) => api.put('/service-categories/reorder', data),
+    delete: (id) => api.delete(`/service-categories/${id}`),
+};
+
 // ── Bookings ─────────────────────────────────────────
 export const bookingAPI = {
     getAll: (params) => api.get('/bookings', { params }),

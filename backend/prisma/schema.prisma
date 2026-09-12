@@ -1361,3 +1361,27 @@ model AdminSession {
   @@index([adminId, isActive])
   @@map("admin_sessions")
 }
+
+// Generic, reusable category tagging for Service rows across multiple admin
+// modules (Home Essentials, Diagnostic & Fitness, Tours & Travel, ...).
+// Deliberately NOT the Store's `Category` model above — that one has a hard
+// FK relation to `Product` and is scoped to the Wellness Store only. This
+// model has no FK to Service (Service.category is a free string already);
+// it only powers admin-side category CRUD (grouping/imagery/ordering) per
+// module. `module` + `slug` is unique per module, not globally, since two
+// modules may reasonably want the same slug (e.g. "featured").
+model ServiceCategory {
+  id        String   @id @default(uuid())
+  module    String
+  name      String
+  slug      String
+  imageUrl  String?
+  sortOrder Int      @default(0)
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([module, slug])
+  @@index([module, sortOrder])
+  @@map("service_categories")
+}
