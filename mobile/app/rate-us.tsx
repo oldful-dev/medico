@@ -1,21 +1,61 @@
 ﻿import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import * as StoreReview from 'expo-store-review';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+
+const ANDROID_PACKAGE = 'com.ayuxacare.app';
+// TODO: replace with the real numeric App Store ID once the iOS app is live.
+const IOS_APP_STORE_ID = '';
+// TODO: replace with the real Google Business Profile review link
+// (Google Maps listing → Share → "Ask for reviews" gives this URL).
+const GOOGLE_BUSINESS_REVIEW_URL = 'https://g.page/r/REPLACE_WITH_AYUXA_PLACE_ID/review';
+
+const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
+const APP_STORE_URL = IOS_APP_STORE_ID ? `https://apps.apple.com/app/id${IOS_APP_STORE_ID}` : '';
 
 export default function RateUsScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
-    const handleRateApp = () => {
-        // In a real app, this would link to the Google Play Store or App Store ID
-        // e.g., Linking.openURL('https://play.google.com/store/apps/details?id=com.ayuxacare.app')
-        console.log("Redirecting to Play Store...");
+    // Native in-app review sheet — user rates without ever leaving the app.
+    // Falls back to the store page link if unavailable (Expo Go, simulator,
+    // or the OS has hit its own quota for how often it can show the prompt).
+    const handleRateApp = async () => {
+        try {
+            const available = await StoreReview.isAvailableAsync();
+            if (available) {
+                await StoreReview.requestReview();
+                return;
+            }
+        } catch { /* fall through to store link */ }
+
+        if (Platform.OS === 'ios') {
+            if (APP_STORE_URL) Linking.openURL(APP_STORE_URL);
+        } else {
+            Linking.openURL(`market://details?id=${ANDROID_PACKAGE}`).catch(() =>
+                Linking.openURL(PLAY_STORE_URL)
+            );
+        }
+    };
+
+    const openPlayStore = () => {
+        Linking.openURL(`market://details?id=${ANDROID_PACKAGE}`).catch(() =>
+            Linking.openURL(PLAY_STORE_URL)
+        );
+    };
+
+    const openAppStore = () => {
+        if (APP_STORE_URL) Linking.openURL(APP_STORE_URL);
+    };
+
+    const openGoogleReview = () => {
+        Linking.openURL(GOOGLE_BUSINESS_REVIEW_URL);
     };
 
     return (
@@ -67,16 +107,39 @@ export default function RateUsScreen() {
 
                     <View style={styles.spacer} />
 
-                    {/* Rate Button */}
+                    {/* Primary — native in-app review sheet (falls back to store link) */}
                     <TouchableOpacity
                         id="button_rate"
                         style={styles.rateButton}
                         activeOpacity={0.8}
                         onPress={handleRateApp}
                     >
-                        <Ionicons name="logo-google-playstore" size={20} color={Colors.textWhite} style={{ marginRight: 8 }} />
+                        <Ionicons name="star" size={20} color={Colors.textWhite} style={{ marginRight: 8 }} />
                         <Text style={styles.rateButtonText}>{t('rate_us.rate_button')}</Text>
                     </TouchableOpacity>
+
+                    {/* Separate platform links */}
+                    <View style={styles.platformList}>
+                        <TouchableOpacity style={styles.platformButton} activeOpacity={0.75} onPress={openPlayStore}>
+                            <Ionicons name="logo-google-playstore" size={20} color="#01875F" style={{ marginRight: 10 }} />
+                            <Text style={styles.platformButtonText}>{t('rate_us.play_store')}</Text>
+                            <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                        </TouchableOpacity>
+
+                        {APP_STORE_URL ? (
+                            <TouchableOpacity style={styles.platformButton} activeOpacity={0.75} onPress={openAppStore}>
+                                <Ionicons name="logo-apple" size={20} color={Colors.textDark} style={{ marginRight: 10 }} />
+                                <Text style={styles.platformButtonText}>{t('rate_us.app_store')}</Text>
+                                <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                            </TouchableOpacity>
+                        ) : null}
+
+                        <TouchableOpacity style={styles.platformButton} activeOpacity={0.75} onPress={openGoogleReview}>
+                            <Ionicons name="logo-google" size={20} color="#4285F4" style={{ marginRight: 10 }} />
+                            <Text style={styles.platformButtonText}>{t('rate_us.google_reviews')}</Text>
+                            <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                        </TouchableOpacity>
+                    </View>
 
                 </ScrollView>
             </View>
@@ -191,5 +254,26 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.button,
         color: Colors.textWhite,
+    },
+    platformList: {
+        width: '100%',
+        maxWidth: 320,
+        marginTop: Spacing.lg,
+        gap: Spacing.sm,
+    },
+    platformButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.md,
+        paddingVertical: 14,
+        paddingHorizontal: Spacing.lg,
+        ...Shadow.card,
+    },
+    platformButtonText: {
+        flex: 1,
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
 });

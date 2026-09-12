@@ -588,6 +588,8 @@
     "raise_ticket_sub": "একটি সমর্থন অনুরোধ লগ এবং ট্র্যাক করুন",
     "faq_title": "এফএকিউ",
     "faq_sub": "প্রায়শই জিজ্ঞাসিত প্রশ্নাবলী",
+    "rate_us_title": "Ayuxa রেট করুন",
+    "rate_us_sub": "আপনার মতামত শেয়ার করুন এবং আমাদের রেট করুন",
     "faq_subtitle": "প্রায়শই জিজ্ঞাসিত প্রশ্নাবলী",
     "emergency_assistance": "জরুরি সহায়তা",
     "emergency_assistance_sub": "২৪/৭ জরুরি সাহায্য — কল করতে আলতো চাপুন",
@@ -1483,7 +1485,10 @@
     "reason_1": "প্রবীণ পরিচর্যা সেবা উন্নত করতে সাহায্য করে",
     "reason_2": "অন্য পরিবারদের বিশ্বস্ত সহায়তা খুঁজে পেতে সাহায্য করে",
     "reason_3": "উচ্চ সেবার মান বজায় রাখতে সাহায্য করে",
-    "rate_button": "Play Store-এ Ayuxa রেট করুন"
+    "rate_button": "Play Store-এ Ayuxa রেট করুন",
+    "play_store": "Google Play-এ রেট করুন",
+    "app_store": "App Store-এ রেট করুন",
+    "google_reviews": "Google-এ আমাদের রেট করুন"
   },
   "legal": {
     "failed_load": "ফাইল লোড ব্যর্থ",

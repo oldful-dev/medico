@@ -588,6 +588,8 @@
     "raise_ticket_sub": "सहायता अनुरोध लॉग और ट्रैक करें",
     "faq_title": "अक्सर पूछे जाने वाले प्रश्न",
     "faq_sub": "अक्सर पूछे जाने वाले प्रश्न",
+    "rate_us_title": "Ayuxa को रेट करें",
+    "rate_us_sub": "अपनी प्रतिक्रिया साझा करें और हमें रेट करें",
     "faq_subtitle": "अक्सर पूछे जाने वाले प्रश्न",
     "emergency_assistance": "आपातकालीन सहायता",
     "emergency_assistance_sub": "24/7 तत्काल सहायता - अभी कॉल करने के लिए टैप करें",
@@ -1576,7 +1578,10 @@
     "reason_1": "बुजुर्ग देखभाल सेवाएं बेहतर बनाने में मदद",
     "reason_2": "अन्य परिवारों को भरोसेमंद सहायता खोजने में मदद",
     "reason_3": "उच्च सेवा मानक बनाए रखने में मदद",
-    "rate_button": "Play Store पर रेट करें"
+    "rate_button": "Play Store पर रेट करें",
+    "play_store": "Google Play पर रेट करें",
+    "app_store": "App Store पर रेट करें",
+    "google_reviews": "Google पर हमें रेट करें"
   },
   "legal": {
     "failed_load": "लोड नहीं हुआ",

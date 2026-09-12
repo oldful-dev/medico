@@ -666,6 +666,9 @@ export default function AccountScreen() {
                     <MenuRow icon="help-circle-outline" iconBg={isDarkMode ? '#0A2010' : '#E8F5E9'} iconColor="#2E7D32"
                         title={t('account.faq_title')} subtitle={t('account.faq_sub')}
                         onPress={() => router.push('/help-support/faq' as any)} colors={colors} />
+                    <MenuRow icon="star-outline" iconBg={isDarkMode ? '#2D2400' : '#FFF9E0'} iconColor="#F9A825"
+                        title={t('account.rate_us_title')} subtitle={t('account.rate_us_sub')}
+                        onPress={() => router.push('/rate-us' as any)} colors={colors} />
 
                     {/* Emergency Assistance — full-width red CTA */}
                     <TouchableOpacity

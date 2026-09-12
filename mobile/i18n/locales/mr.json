@@ -588,6 +588,8 @@
     "raise_ticket_sub": "मदत विनंती नोंदवा आणि ट्रॅक करा",
     "faq_title": "नेहमी विचारले जाणारे प्रश्न",
     "faq_sub": "नेहमी विचारले जाणारे प्रश्न",
+    "rate_us_title": "Ayuxa रेट करा",
+    "rate_us_sub": "तुमचा अभिप्राय शेअर करा आणि आम्हाला रेट करा",
     "faq_subtitle": "नेहमी विचारले जाणारे प्रश्न",
     "emergency_assistance": "आणीबाणीची मदत",
     "emergency_assistance_sub": "२४/७ आणीबाणीची मदत — कॉल करण्यासाठी टॅप करा",
@@ -1576,7 +1578,10 @@
     "reason_1": "वृद्ध काळजी सेवा सुधारण्यास मदत",
     "reason_2": "इतर कुटुंबांना विश्वासार्ह मदत शोधण्यास मदत",
     "reason_3": "उच्च सेवा मानके राखण्यास मदत",
-    "rate_button": "Play Store वर Ayuxa रेट करा"
+    "rate_button": "Play Store वर Ayuxa रेट करा",
+    "play_store": "Google Play वर रेट करा",
+    "app_store": "App Store वर रेट करा",
+    "google_reviews": "Google वर आम्हाला रेट करा"
   },
   "legal": {
     "failed_load": "कागदपत्र लोड करता आले नाही",

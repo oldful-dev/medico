@@ -592,6 +592,8 @@
     "raise_ticket_sub": "Log and track a support request",
     "faq_title": "FAQ",
     "faq_sub": "Frequently asked questions",
+    "rate_us_title": "Rate Ayuxa",
+    "rate_us_sub": "Share your feedback and rate us",
     "faq_subtitle": "Frequently asked questions",
     "emergency_assistance": "Emergency Assistance",
     "emergency_assistance_sub": "24/7 urgent help — tap to call now",
@@ -853,7 +855,10 @@
     "reason_1": "Helps us improve elder care services",
     "reason_2": "Helps other families discover trusted support",
     "reason_3": "Helps us maintain high service standards",
-    "rate_button": "Rate Ayuxa on Play Store"
+    "rate_button": "Rate Ayuxa on Play Store",
+    "play_store": "Rate on Google Play",
+    "app_store": "Rate on the App Store",
+    "google_reviews": "Rate us on Google"
   },
   "search_screen": {
     "header_title": "Search",
