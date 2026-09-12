@@ -150,7 +150,6 @@ export default function DynamicServiceFormModal({
             setForm(buildEmptyForm(category, defaultSortOrder));
             setFormFields(DEFAULT_FORM_FIELDS);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, editingService, category, defaultSortOrder]);
 
     const handleImageUpload = async (e) => {
