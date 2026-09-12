@@ -760,6 +760,34 @@ export default function CheckoutScreen() {
             ? Math.round(amountWithTaxAndFee)
             : chargeAmount;
 
+        // ─── Blood Test Validation ──────────────────────────────────────────────
+        // Blood-test packages have no local record at all -- they only ever exist
+        // live on Redcliffe -- so the only way to catch a code that's since been
+        // pulled from the catalog is to ask Redcliffe again, right before payment,
+        // same as the wellness check below re-checks isEnabled right before payment.
+        if (isBloodTest) {
+            try {
+                const disabledItems: string[] = [];
+                await Promise.all(bloodTestItems.map(async (item) => {
+                    const code = item.details?.code || item.id;
+                    try {
+                        const pkg = await labService.getPackageDetails(code);
+                        if (!pkg) disabledItems.push(item.title);
+                    } catch {
+                        disabledItems.push(item.title);
+                    }
+                }));
+                if (disabledItems.length > 0) {
+                    alertCloseAction.current = () => router.back();
+                    triggerAlert(t('checkout.products_unavailable'), t('checkout.products_unavailable_msg'));
+                    setPayLoading(false);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Failed to validate blood test package status:', e);
+            }
+        }
+
         // ─── Wellness/Product Validation ───────────────────────────────────────
         if (isWellness) {
             // Check if all wellness products are still enabled
