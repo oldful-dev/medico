@@ -16,85 +16,6 @@ import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { type AddressData } from '@/components/AddressPickerSection';
 
-// Map icons manually to match assets
-const acRepairIcon = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
-const plumbingIcon = require('@/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png');
-const cleaningIcon = require('@/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png');
-const driverIcon = require('@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png');
-const billsIcon = require('@/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png');
-const bankWorkIcon = require('@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png');
-const groceryIcon = require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png');
-const anythingElseIcon = require('@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png');
-
-const ICON_MAPPING: Record<string, any> = {
-  'appliance-repair': acRepairIcon,
-  'plumbing-electrical': plumbingIcon,
-  'deep-cleaning': cleaningIcon,
-  'driving-cab': driverIcon,
-  'bill-payment': billsIcon,
-  'bank-paperwork': bankWorkIcon,
-  'grocery-run': groceryIcon,
-  'anything-else': anythingElseIcon,
-  'paper-legal': bankWorkIcon,
-  'sanitisation': cleaningIcon,
-  'tech-helper': acRepairIcon,
-};
-
-const DEFAULT_META: Record<string, { headline: string; subhead: string }> = {
-  'appliance-repair': {
-    headline: 'AC & Appliance Repair',
-    subhead: 'Book a reliable technician for AC, refrigerator, washing machine and other household appliance repairs.',
-  },
-  'plumbing-electrical': {
-    headline: 'Plumbing & Electrical',
-    subhead: 'Book a certified plumber or electrician for pipe leaks, wiring faults, and all other home repairs.',
-  },
-  'deep-cleaning': {
-    headline: 'Deep Cleaning & Pest Control',
-    subhead: 'Book professional deep cleaning or pest control for your home. Safe & certified.',
-  },
-  'driving-cab': {
-    headline: 'Driver Request',
-    subhead: '24/7 Driver for hospital visits, errands, or any destination. Safe & comfortable.',
-  },
-  'grocery-run': {
-    headline: 'Grocery Delivery',
-    subhead: 'Share your grocery list and our Ayuxa buddy will shop from your nearest store and deliver to you.',
-  },
-  'bill-payment': {
-    headline: 'Bill Payment',
-    subhead: 'Share your utility bill, our Ayuxa buddy will take care of everything.',
-  },
-  'bank-paperwork': {
-    headline: 'Bank Paperwork',
-    subhead: 'Get professional help with bank visits, passbook updates, KYC, and other paperwork.',
-  },
-  'paper-legal': {
-    headline: 'Paperwork & Legal',
-    subhead: 'Legal & paperwork assistance, pension, life certificate, and document verification.',
-  },
-  'anything-else': {
-    headline: 'Anything Else',
-    subhead: 'Need help with something not on our list? Tell us what you need and our Ayuxa buddy will handle it.',
-  },
-  'tech-helper': {
-    headline: 'Media & Tech Support',
-    subhead: 'Simplifying smart tech configuration, device pairing, and audio/visual setups.',
-  },
-  'sanitisation': {
-    headline: 'Washroom Sanitisation',
-    subhead: 'Crafting a spotless, revitalised space with uncompromising safety standards.',
-  },
-  'trip-travels': {
-    headline: 'Trip & Travels',
-    subhead: 'Travel planning, booking assistance, and full concierge support.',
-  },
-  'smart-upgrade': {
-    headline: 'Smart Upgrade',
-    subhead: 'Make your home elderly-friendly with smart safety and accessibility upgrades.',
-  },
-};
-
 interface HomeEssentialsBookingScreenProps {
   slug: string;
 }
@@ -110,11 +31,11 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   const { activeAddress } = useAddress();
   const dbService = getServiceBySlug(slug);
 
-  // Fallback metadata
-  const defaultMeta = DEFAULT_META[slug] || { headline: 'Home Essentials', subhead: 'Concierge Services' };
-  const translationKey = slug ? slug.replace(/-/g, '_') : '';
-  const headline = dbService?.headline || dbService?.name || (translationKey ? t(`services.${translationKey}`, defaultMeta.headline) : defaultMeta.headline);
-  const subhead = dbService?.subhead || dbService?.tagline || (translationKey ? t(`services.${translationKey}_subhead`, defaultMeta.subhead) : defaultMeta.subhead);
+  // Fully DB-driven — no hardcoded per-slug fallback text. If a Service row
+  // is missing headline/subhead (shouldn't happen once admin-managed), this
+  // falls through to a generic label rather than a stale hardcoded string.
+  const headline = dbService?.headline || dbService?.name || 'Home Essentials';
+  const subhead = dbService?.subhead || dbService?.tagline || 'Concierge Services';
   const checkoutGroup = dbService?.checkoutGroup || 'D';
 
   const {
@@ -378,7 +299,6 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       heroTitle={headline}
       heroSubtitle={t('service_detail.home_essentials', 'Home Essentials')}
       description={subhead}
-      heroImage={ICON_MAPPING[slug] || anythingElseIcon}
       heroIcon={dbService?.icon}
       pricingLabel={getPricingLabel()}
       pricingNote={checkoutGroup === 'D' ? undefined : t('service_detail.pricing_disclaimer', '*Pricing is subject to actual work assessment.')}

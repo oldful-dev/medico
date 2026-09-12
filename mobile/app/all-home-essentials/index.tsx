@@ -16,29 +16,10 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "@/services/api/apiClient";
 import { getAssetUrl } from "@/utils/getAssetUrl";
 
-// Home essentials icons
-const acRepairIcon = require("@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png");
-const plumbingIcon = require("@/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png");
-const cleaningIcon = require("@/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png");
-const driverIcon = require("@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png");
-const billsIcon = require("@/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png");
-const bankWorkIcon = require("@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png");
-const groceryIcon = require("@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png");
+// Generic fallback icon shown only if a Service row has no icon set —
+// every real Home Essential is expected to carry its own DB-driven icon
+// (emoji or GCS image) now that this screen is fully DB-driven.
 const anythingElseIcon = require("@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png");
-
-const ICON_MAPPING: Record<string, any> = {
-  "appliance-repair": acRepairIcon,
-  "plumbing-electrical": plumbingIcon,
-  "deep-cleaning": cleaningIcon,
-  "driving-cab": driverIcon,
-  "bill-payment": billsIcon,
-  "bank-paperwork": bankWorkIcon,
-  "grocery-run": groceryIcon,
-  "anything-else": anythingElseIcon,
-  "paper-legal": bankWorkIcon,
-  "sanitisation": cleaningIcon,
-  "tech-helper": acRepairIcon,
-};
 
 const isEmoji = (str?: string) => {
   if (!str) return false;
@@ -91,7 +72,7 @@ export default function AllHomeEssentialsScreen() {
           .map((s: any) => ({
             ...s,
             route: resolveSlugToRoute(s),
-            iconAsset: (s.icon && !isEmoji(s.icon)) ? { uri: getAssetUrl(s.icon) } : (ICON_MAPPING[s.slug] || anythingElseIcon),
+            iconAsset: (s.icon && !isEmoji(s.icon)) ? { uri: getAssetUrl(s.icon) } : anythingElseIcon,
           }));
         setServices(filtered);
       }

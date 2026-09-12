@@ -15,8 +15,10 @@ import {
 import { serviceAPI, mediaAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 import RouteSelector from "@/components/common/RouteSelector";
+import ServiceCategoryTab from "@/components/common/ServiceCategoryTab";
 
 export default function HomeEssentialsPage() {
+  const [activeTab, setActiveTab] = useState("services");
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -268,6 +270,26 @@ export default function HomeEssentialsPage() {
         <p>Configure details, copy matrix, pricing models, and checkout groups for mobile application services</p>
       </div>
 
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, borderBottom: "1px solid var(--border-color)" }}>
+        <button
+          className={`btn btn-sm ${activeTab === "services" ? "btn-primary" : "btn-secondary"}`}
+          onClick={() => setActiveTab("services")}
+        >
+          Services
+        </button>
+        <button
+          className={`btn btn-sm ${activeTab === "categories" ? "btn-primary" : "btn-secondary"}`}
+          onClick={() => setActiveTab("categories")}
+        >
+          Categories
+        </button>
+      </div>
+
+      {activeTab === "categories" ? (
+        <ServiceCategoryTab module="HOME_ESSENTIALS" />
+      ) : (
+      <>
       {/* Stats Counter Cards */}
       <div className="stats-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", marginBottom: 24 }}>
         <div className="card">
@@ -604,6 +626,8 @@ export default function HomeEssentialsPage() {
             </form>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
