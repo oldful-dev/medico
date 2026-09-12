@@ -23,6 +23,7 @@ import { BannerSlider } from '@/components/BannerSlider';
 import { bannerService, Banner } from '@/services/api/bannerService';
 import { meetupService } from '@/services/api/meetupService';
 import { GlobalLocationSheet } from '@/components/GlobalLocationSheet';
+import { serviceCatalogService, ServiceCategoryItem } from '@/services/api/serviceCatalogService';
 
 const logoSmall = require('@/assets/images/onlylogo.png');
 
@@ -296,6 +297,20 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
   const [expanded, setExpanded] = useState(false);
   const { services, preferredLanguage } = useUser();
 
+  // Only the Care & Diagnostics section groups by admin-created category —
+  // every other section keeps the flat grid exactly as before.
+  const isDiagnosticsFitness = section.id.toLowerCase() === 'ayuxa_services';
+  const [dfCategories, setDfCategories] = useState<ServiceCategoryItem[]>([]);
+
+  useEffect(() => {
+    if (!isDiagnosticsFitness) return;
+    let alive = true;
+    serviceCatalogService.getCategories('DIAGNOSTICS_FITNESS')
+      .then(res => { if (alive && res.success) setDfCategories((res.data || []).filter(c => c.isEnabled)); })
+      .catch(() => { /* categories are additive — a flat grid is still fine if this fails */ });
+    return () => { alive = false; };
+  }, [isDiagnosticsFitness]);
+
   // Find all active dynamic Diagnostics & Fitness services from database
   const dbDynamicServices = services
     .filter(
@@ -310,16 +325,17 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
       label: sv.name,
       icon: sv.icon || '🩺',
       route: sv.route || `/dynamic-service/${sv.slug}`,
-      enabled: true
+      enabled: true,
+      categoryId: sv.categoryId || null,
     }));
 
   const existingRoutes = new Set(section.services.map(s => resolveRoute(s.route, s.id)));
   const existingIds = new Set(section.services.map(s => s.id.toLowerCase()));
 
   const uniqueDynamicServices = dbDynamicServices.filter(
-    ds => !existingRoutes.has(resolveRoute(ds.route, ds.id)) && 
-          !existingIds.has(ds.id.toLowerCase()) && 
-          ds.id !== 'nurse-care' && 
+    ds => !existingRoutes.has(resolveRoute(ds.route, ds.id)) &&
+          !existingIds.has(ds.id.toLowerCase()) &&
+          ds.id !== 'nurse-care' &&
           ds.id !== 'nurse_care'
   );
 
@@ -329,11 +345,82 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
   const remainingItems = allServices.slice(6);
   const visibleItems = expanded ? allServices : primaryItems;
 
+  const renderTile = (item: (typeof allServices)[number]) => {
+    const translatedLabel = translateServiceLabel(item.id, item.label, t, preferredLanguage);
+    const [line1, line2] = translatedLabel.replace(/\\n/g, '\n').split('\n');
+    return (
+      <TouchableOpacity
+        key={item.id}
+        style={[s.serviceGridItem, { width: itemWidth, height: cardHeight }]}
+        onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
+      >
+        {skeleton ? (
+          <View style={[s.serviceGridImage, { width: itemWidth, height: imageHeight, backgroundColor: colors.bgCardMuted || '#E5E7EB' }]} />
+        ) : isEmoji(item.icon) ? (
+          <View style={[s.serviceGridImage, { width: itemWidth, height: imageHeight, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgCardMuted || '#F8FAFC' }]}>
+            <Text style={{ fontSize: 32 }}>{item.icon}</Text>
+          </View>
+        ) : (
+          <Image
+            source={{ uri: getAssetUrl(item.icon) }}
+            style={[s.serviceGridImage, { width: itemWidth, height: imageHeight }]}
+            resizeMode="cover"
+          />
+        )}
+        <View style={s.serviceGridLabelContainer}>
+          <Text style={s.serviceGridLabel}>{line1}</Text>
+          {line2 ? <Text style={s.serviceGridLabel}>{line2}</Text> : null}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // Grouped view: only when this is Diagnostics & Fitness AND at least one
+  // category with a matching service actually exists — otherwise fall
+  // through to the plain flat grid below (e.g. a fresh install with no
+  // categories yet still looks exactly as it did before this feature).
+  if (isDiagnosticsFitness && dfCategories.length > 0) {
+    const categorized = dfCategories
+      .map(cat => ({
+        category: cat,
+        items: visibleItems.filter(item => 'categoryId' in item && (item as any).categoryId === cat.id),
+      }))
+      .filter(group => group.items.length > 0);
+    const categorizedIds = new Set(categorized.flatMap(g => g.items.map(i => i.id)));
+    const uncategorized = visibleItems.filter(item => !categorizedIds.has(item.id));
+
+    if (categorized.length > 0) {
+      return (
+        <View style={s.servicesCard}>
+          <View style={s.sectionHeader}>
+            <Text style={s.sectionTitle}>{translateSectionTitle(section.id, section.title, t, preferredLanguage)}</Text>
+          </View>
+          {categorized.map(group => (
+            <View key={group.category.id} style={{ marginBottom: 16 }}>
+              <Text style={[s.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>{group.category.name}</Text>
+              <View style={s.serviceGrid}>{group.items.map(renderTile)}</View>
+            </View>
+          ))}
+          {uncategorized.length > 0 && (
+            <View>
+              <View style={s.serviceGrid}>{uncategorized.map(renderTile)}</View>
+            </View>
+          )}
+          {remainingItems.length > 0 && (
+            <TouchableOpacity onPress={() => setExpanded(!expanded)} style={s.viewMoreButton} activeOpacity={0.7}>
+              <Text style={s.viewMoreText}>{expanded ? t('common.view_less') : t('common.view_more')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      );
+    }
+  }
+
   return (
     <View style={s.servicesCard}>
       <View style={s.sectionHeader}>
         <Text style={s.sectionTitle}>{translateSectionTitle(section.id, section.title, t, preferredLanguage)}</Text>
-      </View> 
+      </View>
       <View style={s.serviceGrid}>
         {visibleItems.map(item => {
           const translatedLabel = translateServiceLabel(item.id, item.label, t, preferredLanguage);

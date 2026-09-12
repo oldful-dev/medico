@@ -28,7 +28,20 @@ export interface ServiceItem {
     basePrice?: number;
     isDynamic?: boolean;
     category?: string;
+    categoryId?: string | null;
     paymentMode?: string;
+}
+
+// Admin-created grouping within a module (e.g. "Health Checkups" under
+// Diagnostics & Fitness) — see backend ServiceCategory model.
+export interface ServiceCategoryItem {
+    id: string;
+    module: string;
+    name: string;
+    slug: string;
+    imageUrl?: string | null;
+    sortOrder: number;
+    isEnabled: boolean;
 }
 
 // ─── Service ──────────────────────────────────
@@ -52,5 +65,14 @@ export const serviceCatalogService = {
      */
     getServiceById: async (serviceId: string): Promise<ApiResponse<ServiceItem>> => {
         return apiClient.get<ServiceItem>(`/services/${serviceId}`);
+    },
+
+    /**
+     * GET /api/service-categories?module=DIAGNOSTICS_FITNESS
+     * Admin-created groupings for a module — used to render a section
+     * header + sub-grid for services carrying that categoryId.
+     */
+    getCategories: async (module: string): Promise<ApiResponse<ServiceCategoryItem[]>> => {
+        return apiClient.get<ServiceCategoryItem[]>(`/service-categories?module=${encodeURIComponent(module)}`);
     },
 };
