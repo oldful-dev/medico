@@ -2,7 +2,7 @@
 // Layout: ScrollView with form fields, profile photo, checkbox, save button
 // No business logic — pure presentation
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Alert, ActionSheetIOS, KeyboardAvoidingView, Linking } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, ActionSheetIOS, KeyboardAvoidingView, Linking, Modal } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FormInput } from '@/components/common';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { userService, cityService, ApiError, authService } from '@/services/api';
 import { mediaService } from '@/services/api/mediaService';
 import { OTPInput, type OTPInputRef } from '@/components/common';
@@ -74,6 +75,28 @@ export default function ProfileSetupScreen() {
     const [otpSent, setOtpSent] = useState(false);
     const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
     const otpRef = useRef<OTPInputRef>(null);
+
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx) —
+    // every validation/error message on this screen was silently going
+    // nowhere until this was wired to CustomAlertModal instead.
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string }>({
+        visible: false,
+        title: '',
+        message: '',
+    });
+    const triggerAlert = (title: string, message: string) => {
+        setAlertConfig({ visible: true, title, message });
+    };
+
+    // Android has no ActionSheetIOS equivalent — Alert.alert(...) was being
+    // used as a substitute list-picker, which is also silently dead for the
+    // same reason. This is a real (if minimal) options list instead.
+    const [optionPicker, setOptionPicker] = useState<{ visible: boolean; title: string; options: string[]; onSelect: (v: string) => void }>({
+        visible: false,
+        title: '',
+        options: [],
+        onSelect: () => {},
+    });
 
     const fetchGPSLocation = async ({ auto = false }: { auto?: boolean } = {}) => {
         console.log('[profile-setup] fetchGPSLocation({ auto:', auto, '})');
@@ -147,16 +170,16 @@ export default function ProfileSetupScreen() {
 
     const handleReqOTP = async () => {
         if (phoneInput.length !== 10) {
-            Alert.alert("Invalid Phone", "Please enter a 10-digit mobile number.");
+            triggerAlert(t('profile_setup.invalid_phone_title'), t('profile_setup.invalid_phone_msg'));
             return;
         }
         setIsVerifyingOtp(true);
         try {
             await authService.requestOTP({ phoneNumber: `+91${phoneInput}` });
             setOtpSent(true);
-            Alert.alert("OTP Sent", "Verification code has been sent to your mobile.");
+            triggerAlert(t('profile_setup.otp_sent_title'), t('profile_setup.otp_sent_msg'));
         } catch (error: any) {
-            Alert.alert("Error", error.message || "Failed to send OTP");
+            triggerAlert(t('common.error'), error.message || t('profile_setup.otp_send_failed'));
         } finally {
             setIsVerifyingOtp(false);
         }
@@ -168,9 +191,9 @@ export default function ProfileSetupScreen() {
             await authService.verifyOTP({ phoneNumber: `+91${phoneInput}`, otp });
             setIsPhoneVerified(true);
             setOtpSent(false);
-            Alert.alert("Verified", "Phone number verified successfully!");
+            triggerAlert(t('profile_setup.verified_title'), t('profile_setup.verified_msg'));
         } catch (error: any) {
-            Alert.alert("Error", error.message || "Invalid OTP");
+            triggerAlert(t('common.error'), error.message || t('profile_setup.invalid_otp'));
             otpRef.current?.clear();
         } finally {
             setIsLoading(false);
@@ -196,9 +219,7 @@ export default function ProfileSetupScreen() {
                 (idx) => { if (idx > 0) setGender(GENDER_OPTIONS[idx - 1]); }
             );
         } else {
-            Alert.alert('Select Gender', '', GENDER_OPTIONS.map(g => ({
-                text: g, onPress: () => setGender(g),
-            })).concat({ text: 'Cancel', onPress: () => { }, style: 'cancel' } as any));
+            setOptionPicker({ visible: true, title: t('profile_setup.select_gender_title'), options: GENDER_OPTIONS, onSelect: setGender });
         }
     };
 
@@ -209,9 +230,7 @@ export default function ProfileSetupScreen() {
                 (idx) => { if (idx > 0) setLanguage(LANGUAGE_OPTIONS[idx - 1]); }
             );
         } else {
-            Alert.alert('Select Language', '', LANGUAGE_OPTIONS.map(l => ({
-                text: l, onPress: () => setLanguage(l),
-            })).concat({ text: 'Cancel', onPress: () => { }, style: 'cancel' } as any));
+            setOptionPicker({ visible: true, title: t('profile_setup.select_language_title'), options: LANGUAGE_OPTIONS, onSelect: setLanguage });
         }
     };
 
@@ -224,20 +243,20 @@ export default function ProfileSetupScreen() {
 
     const handleSaveAndContinue = async () => {
         if (!name || name.trim().length < 3) {
-            Alert.alert("Full Name Required", "Please enter your full name (at least 3 characters).");
+            triggerAlert(t('profile_setup.name_required_title'), t('profile_setup.name_required_msg'));
             return;
         }
         if (!isPhoneVerified) {
-            Alert.alert("Phone Verification Required", "Please enter and verify your mobile number to complete registration.");
+            triggerAlert(t('profile_setup.phone_verification_required_title'), t('profile_setup.phone_verification_required_msg'));
             return;
         }
         if (!agreed) {
-            Alert.alert("Terms Required", "Please read and agree to the Policies and Terms to continue.");
+            triggerAlert(t('profile_setup.terms_required_title'), t('profile_setup.terms_required_msg'));
             return;
         }
         if (!cityId) {
             // Fallback to first city if still not loaded, though useEffect should handle this
-            Alert.alert("City Loading", "Still fetching city data. Please wait a second and try again.");
+            triggerAlert(t('profile_setup.city_loading_title'), t('profile_setup.city_loading_msg'));
             return;
         }
 
@@ -328,7 +347,7 @@ export default function ProfileSetupScreen() {
 
         } catch (error) {
             const apiError = error as ApiError;
-            Alert.alert("Registration Error", apiError.message || "Failed to create profile.");
+            triggerAlert(t('profile_setup.registration_error_title'), apiError.message || t('profile_setup.registration_error_msg'));
         } finally {
             setIsLoading(false);
         }
@@ -581,6 +600,49 @@ export default function ProfileSetupScreen() {
 
             </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
+
+        <CustomAlertModal
+            visible={alertConfig.visible}
+            title={alertConfig.title}
+            message={alertConfig.message}
+            buttonText={t('common.ok')}
+            onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+        />
+
+        <Modal
+            visible={optionPicker.visible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setOptionPicker(prev => ({ ...prev, visible: false }))}
+        >
+            <TouchableOpacity
+                style={styles.optionPickerOverlay}
+                activeOpacity={1}
+                onPress={() => setOptionPicker(prev => ({ ...prev, visible: false }))}
+            >
+                <View style={styles.optionPickerSheet}>
+                    <Text style={styles.optionPickerTitle}>{optionPicker.title}</Text>
+                    {optionPicker.options.map((opt) => (
+                        <TouchableOpacity
+                            key={opt}
+                            style={styles.optionPickerRow}
+                            onPress={() => {
+                                optionPicker.onSelect(opt);
+                                setOptionPicker(prev => ({ ...prev, visible: false }));
+                            }}
+                        >
+                            <Text style={styles.optionPickerRowText}>{opt}</Text>
+                        </TouchableOpacity>
+                    ))}
+                    <TouchableOpacity
+                        style={styles.optionPickerCancel}
+                        onPress={() => setOptionPicker(prev => ({ ...prev, visible: false }))}
+                    >
+                        <Text style={styles.optionPickerCancelText}>{t('profile_setup.cancel')}</Text>
+                    </TouchableOpacity>
+                </View>
+            </TouchableOpacity>
+        </Modal>
         </View>
     );
 }
@@ -816,5 +878,48 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontWeight: '500',
         fontSize: 14,
+    },
+
+    /* ─── Android Gender/Language option picker (ActionSheetIOS has no Android equivalent) ─── */
+    optionPickerOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    optionPickerSheet: {
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 28,
+    },
+    optionPickerTitle: {
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontSize: 16,
+        color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
+        textAlign: 'center',
+        marginBottom: 8,
+    },
+    optionPickerRow: {
+        paddingVertical: 14,
+        borderTopWidth: 1,
+        borderTopColor: isDarkMode ? '#333333' : '#EEEEEE',
+    },
+    optionPickerRowText: {
+        fontFamily: Platform.select({ ios: 'Poppins-Regular', android: 'Poppins_400Regular', default: 'System' }),
+        fontSize: 15,
+        color: isDarkMode ? '#E0E0E0' : '#2F2F2F',
+        textAlign: 'center',
+    },
+    optionPickerCancel: {
+        paddingVertical: 14,
+        marginTop: 8,
+    },
+    optionPickerCancelText: {
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontSize: 15,
+        color: '#EF4444',
+        textAlign: 'center',
     },
 });
