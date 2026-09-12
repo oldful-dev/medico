@@ -33,16 +33,20 @@ export function cleanNotificationText(text: string | null | undefined): string {
     if (!text) return '';
     let clean = text.trim();
 
-    // ─── SDUI / WhatsApp Backend Template Parser ───
+    // ─── SMS/WhatsApp Backend Template Parser ───
+    // Keys here must match backend/src/services/sms/templates.js exactly —
+    // NotificationLog.body is written as `[TEMPLATE_NAME] vars: [...]` by
+    // sms.service.js, so a name mismatch here means that raw debug string
+    // leaks straight to the user instead of being rendered as real copy.
     const templateMatch = clean.match(/(?:Template:\s*|\[)([A-Z0-9_]+)(?:\]|\b)/i);
     if (templateMatch) {
         const templateKey = templateMatch[1].toUpperCase();
         const knownTemplates = [
-            'OTP_USER', 'BOOKING_CONFIRMED', 'PAYMENT_RECEIVED', 'ORDER_CANCELLED', 
-            'PRESCRIPTION_RECEIVED', 'LAB_REPORT_READY', 'PLAN_EXPIRY_REMINDER', 'SOS_ALERT_CLIENT',
-            'FAMILY_OTP', 'SOS_ALERT_FAMILY', 'PLAN_EXPIRED_FAMILY', 'PLAN_EXPIRY_FAMILY', 
-            'HEALTH_CHECK_FAMILY', 'PRESCRIPTION_UPLOADED_FAMILY', 'WELCOME_USER', 'WELLNESS_REMINDER', 
-            'BIRTHDAY_WISHES', 'EMP_OTP', 'SHIFT_ASSIGNED', 'SOS_DISPATCH', 'SHIFT_CANCELLED', 'SOS_ALERT_OPS'
+            'OTP_USER', 'ORDER_CONFIRMED', 'PAYMENT_RECEIVED', 'BUDDY_ASSIGNED',
+            'WELLNESS_CHECKIN', 'MEDICINE_OUT_FOR_DELIVERY', 'LAB_REPORT_READY', 'WELCOME_USER',
+            'SOS_FAMILY', 'PLAN_EXPIRED_USER', 'ORDER_CANCELLED_USER', 'PLAN_CANCELLED_WITH_CONTACT',
+            'CAREGIVER_OTP', 'SOS_PARTNER', 'SHIFT_CANCELLED_PARTNER', 'SOS_ADMIN',
+            'ADMIN_LOGIN_OTP', 'PLAN_CANCELLED_ADMIN', 'ADMIN_NEW_ORDER',
         ];
         if (knownTemplates.includes(templateKey)) {
             let params: string[] = [];
@@ -72,44 +76,43 @@ export function cleanNotificationText(text: string | null | undefined): string {
 
             const getVar = (idx: number) => params[idx] || '';
 
+            // Wording mirrors each template's approved DLT text (templates.js) —
+            // var order matches the {#var#} order sendSMS() was called with.
             switch (templateKey) {
                 case 'OTP_USER':
-                case 'FAMILY_OTP':
-                case 'EMP_OTP':
+                case 'CAREGIVER_OTP':
+                case 'ADMIN_LOGIN_OTP':
                     return `Your verification code is ${getVar(0)}.`;
-                case 'BOOKING_CONFIRMED':
-                    return `Hi ${getVar(0) || 'there'}, your booking ${getVar(1) ? '(' + getVar(1) + ') ' : ''}has been confirmed successfully.`;
+                case 'ORDER_CONFIRMED':
+                    return `Dear ${getVar(0) || 'there'}, your order ${getVar(1) ? getVar(1) + ' ' : ''}is confirmed.`;
                 case 'PAYMENT_RECEIVED':
-                    return `Hi ${getVar(0) || 'there'}, payment of ₹${getVar(1) || '0'} has been received successfully.`;
-                case 'ORDER_CANCELLED':
-                    return `Hi ${getVar(0) || 'there'}, your booking ${getVar(1) ? '(' + getVar(1) + ') ' : ''}has been cancelled successfully.`;
-                case 'PRESCRIPTION_RECEIVED':
-                    return `Hi ${getVar(0) || 'there'}, your prescription has been received and is being processed.`;
+                    return `Dear ${getVar(0) || 'there'}, we've received your ₹${getVar(1) || '0'} payment. Receipt in app.`;
+                case 'BUDDY_ASSIGNED':
+                    return `Dear ${getVar(0) || 'there'}, your Ayuxa Buddy is now assigned to you.`;
+                case 'WELLNESS_CHECKIN':
+                    return `Dear ${getVar(0) || 'there'}, a quick check-in! Drink water, take a short walk.`;
+                case 'MEDICINE_OUT_FOR_DELIVERY':
+                    return `Dear ${getVar(0) || 'there'}, your medicine order ${getVar(1) ? getVar(1) + ' ' : ''}is out for delivery.`;
                 case 'LAB_REPORT_READY':
-                    return `Hi ${getVar(0) || 'there'}, your lab report is ready and available in the app.`;
-                case 'PLAN_EXPIRY_REMINDER':
-                case 'PLAN_EXPIRY_FAMILY':
-                    return `Hi ${getVar(0) || 'there'}, your Ayuxa care plan is expiring soon. Please renew to continue uninterrupted services.`;
-                case 'SOS_ALERT_CLIENT':
-                case 'SOS_ALERT_FAMILY':
-                case 'SOS_DISPATCH':
-                    return `Emergency SOS Alert: Support is on the way.`;
+                    return `Dear ${getVar(0) || 'there'}, your lab reports are ready. View in the Ayuxa app.`;
                 case 'WELCOME_USER':
-                    return `Welcome to Ayuxa! We are glad to help you and your family.`;
-                case 'WELLNESS_REMINDER':
-                    return `Hi ${getVar(0) || 'there'}, this is your friendly wellness reminder. Hope you are having a healthy day!`;
-                case 'BIRTHDAY_WISHES':
-                    return `Happy Birthday from Ayuxa! Use coupon code ${getVar(0) || ''} for a special discount on your next service.`;
-                case 'SHIFT_ASSIGNED':
-                    return `Hi ${getVar(0) || 'there'}, shift assigned for client ${getVar(1)} on ${getVar(3)} at ${getVar(4)}.`;
-                case 'SHIFT_CANCELLED':
-                    return `Hi ${getVar(0) || 'there'}, shift for client ${getVar(1)} on ${getVar(3)} has been cancelled.`;
-                case 'PLAN_EXPIRED_FAMILY':
-                    return `Hi ${getVar(0) || 'there'}, care plan for ${getVar(1)} has expired.`;
-                case 'HEALTH_CHECK_FAMILY':
-                    return `Weekly health update for ${getVar(0) || 'your family member'} is ready.`;
-                case 'PRESCRIPTION_UPLOADED_FAMILY':
-                    return `Hi ${getVar(0) || 'there'}, a prescription has been uploaded for your family member.`;
+                    return `Dear ${getVar(0) || 'there'}, welcome to Ayuxa! We are glad to help you and your family.`;
+                case 'SOS_FAMILY':
+                case 'SOS_ADMIN':
+                    return `SOS triggered by ${getVar(1) || 'a family member'} — please act immediately.`;
+                case 'SOS_PARTNER':
+                    return `Emergency dispatch: SOS triggered, please proceed immediately.`;
+                case 'PLAN_EXPIRED_USER':
+                    return `Dear ${getVar(0) || 'there'}, your care plan has expired.`;
+                case 'ORDER_CANCELLED_USER':
+                    return `Dear ${getVar(0) || 'there'}, your order ${getVar(1) ? getVar(1) + ' ' : ''}was cancelled. Refund in 3-5 days.`;
+                case 'PLAN_CANCELLED_WITH_CONTACT':
+                case 'PLAN_CANCELLED_ADMIN':
+                    return `Dear ${getVar(0) || 'there'}, your care plan was cancelled or has expired.`;
+                case 'SHIFT_CANCELLED_PARTNER':
+                    return `Dear ${getVar(0) || 'there'}, your shift with client ${getVar(1) || ''} has been cancelled.`;
+                case 'ADMIN_NEW_ORDER':
+                    return `New order received — please check the admin portal.`;
                 default:
                     break;
             }
