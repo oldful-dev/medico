@@ -82,7 +82,11 @@ async function main() {
         { name: 'Grocery Run', slug: 'grocery-run', icon: '🛒', tagline: 'Fresh groceries at your door', pricingText: '₹99 / run', basePrice: 99, route: '/grocery-run', sortOrder: 107, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
         { name: 'Anything Else', slug: 'anything-else', icon: '❓', tagline: 'Need help with something else?', pricingText: 'Contact Us', basePrice: 0, route: '/anything-else', sortOrder: 108, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
         { name: 'Paperwork & Legal', slug: 'paper-legal', icon: '📋', tagline: 'Legal & paperwork assistance', pricingText: 'From ₹999', basePrice: 999, route: '/paper-legal', sortOrder: 109, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Trip & Travels', slug: 'trip-travels', icon: '✈️', tagline: 'Travel planning & assistance', pricingText: 'Custom', basePrice: 0, route: '/trip-travels', sortOrder: 110, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        // category: TOURS_TRAVEL (not HOME_ESSENTIALS) — admin-services
+        // restructure moved Trip & Travels to its own Tours & Travel admin
+        // page; serviceType stays HOME_ESSENTIALS since other code still
+        // keys off it (see sduiSync.js comment), only `category` changed.
+        { name: 'Trip & Travels', slug: 'trip-travels', icon: '✈️', tagline: 'Travel planning & assistance', pricingText: 'Custom', basePrice: 0, route: '/trip-travels', sortOrder: 110, serviceType: 'HOME_ESSENTIALS', category: 'TOURS_TRAVEL', isEnabled: true },
         { name: 'Smart Upgrade', slug: 'smart-upgrade', icon: '✨', tagline: 'Make your home elderly-friendly', pricingText: 'Custom Quote', basePrice: 0, route: '/smart-upgrade', sortOrder: 111, serviceType: 'HOME_ESSENTIALS', isEnabled: true }
     ];
 

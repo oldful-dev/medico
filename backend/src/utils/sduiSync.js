@@ -22,6 +22,10 @@ const matchConfigToDb = (configId, configRoute, dbSlug, dbRoute) => {
         'bank': 'bank-paperwork',
         'grocery': 'grocery-run',
         'anything': 'anything-else',
+        // trip-travels' slug/route are unchanged by the admin-services
+        // restructure (only its `category` moved to TOURS_TRAVEL, for
+        // admin-page grouping) — this mapping stays valid as-is, and the
+        // essentials-grid exclusion above keeps it out of that section.
         'trip_travel': 'trip-travels',
         'paper_legal': 'paper-legal',
         'tech_helper': 'tech-helper',
@@ -240,7 +244,17 @@ const syncDbServicesToUIConfig = async () => {
             const isEssentials = section.id === 'essentials' || section.type === 'essentials_grid';
             
             if (isEssentials) {
-                const homeEssentialDbSvcs = dbServices.filter(s => s.serviceType === 'HOME_ESSENTIALS' && s.slug !== 'home-essentials');
+                // Trip & Travels keeps serviceType HOME_ESSENTIALS (other
+                // code — e.g. mobile/app/(tabs)/index.tsx's essentials grid
+                // filter — still keys off it), but its `category` was
+                // re-tagged to TOURS_TRAVEL as part of the admin-services
+                // restructure (it now has its own admin page + bespoke
+                // mobile screen at /trip-travels, reachable from Plans and
+                // the new Tours & Travel hub, not from the essentials
+                // grid). Excluding it by category here keeps this
+                // auto-rebuild from re-adding it into the essentials_grid
+                // section it was deliberately pulled out of.
+                const homeEssentialDbSvcs = dbServices.filter(s => s.serviceType === 'HOME_ESSENTIALS' && s.slug !== 'home-essentials' && s.category !== 'TOURS_TRAVEL');
                 const updatedServices = [];
                 
                 // 1. Sync existing items, and keep them if they are still in DB

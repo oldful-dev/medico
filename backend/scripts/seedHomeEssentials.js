@@ -14,7 +14,8 @@ async function main() {
         { name: 'Grocery Run', slug: 'grocery-run', icon: '🛒', tagline: 'Fresh groceries at your door', pricingText: '₹99 / run', basePrice: 99, route: '/grocery-run', sortOrder: 7, serviceType: 'HOME_ESSENTIALS' },
         { name: 'Anything Else', slug: 'anything-else', icon: '❓', tagline: 'Need help with something else?', pricingText: 'Contact Us', basePrice: 0, route: '/anything-else', sortOrder: 8, serviceType: 'HOME_ESSENTIALS' },
         { name: 'Paperwork & Legal', slug: 'paper-legal', icon: '📋', tagline: 'Legal & paperwork assistance', pricingText: 'From ₹999', basePrice: 999, route: '/paper-legal', sortOrder: 9, serviceType: 'HOME_ESSENTIALS' },
-        { name: 'Trip & Travels', slug: 'trip-travels', icon: '✈️', tagline: 'Travel planning & assistance', pricingText: 'Custom', basePrice: 0, route: '/trip-travels', sortOrder: 10, serviceType: 'HOME_ESSENTIALS' },
+        // category: TOURS_TRAVEL — see backend/prisma/seed.js for why serviceType stays HOME_ESSENTIALS.
+        { name: 'Trip & Travels', slug: 'trip-travels', icon: '✈️', tagline: 'Travel planning & assistance', pricingText: 'Custom', basePrice: 0, route: '/trip-travels', sortOrder: 10, serviceType: 'HOME_ESSENTIALS', category: 'TOURS_TRAVEL' },
         { name: 'Tech Helper', slug: 'tech-helper', icon: '💻', tagline: 'Technology assistance for seniors', pricingText: '₹399 / visit', basePrice: 399, route: '/tech-helper', sortOrder: 11, serviceType: 'HOME_ESSENTIALS' },
         { name: 'Smart Upgrade', slug: 'smart-upgrade', icon: '✨', tagline: 'Make your home elderly-friendly', pricingText: 'Custom Quote', basePrice: 0, route: '/smart-upgrade', sortOrder: 12, serviceType: 'HOME_ESSENTIALS' }
     ];

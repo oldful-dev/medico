@@ -121,7 +121,11 @@ export default function HomeEssentialsPage() {
       const res = await serviceAPI.getAll();
       const allServices = res.data?.data || [];
       const homeSvc = allServices
-        .filter(s => s.serviceType === "HOME_ESSENTIALS" && s.slug !== "home-essentials")
+        // Trips & Travels is still serviceType HOME_ESSENTIALS (that field
+        // is left alone — mobile filters key off it), but its `category`
+        // was re-tagged to TOURS_TRAVEL as part of the admin restructure
+        // so it now lives under the Tours & Travel admin page instead.
+        .filter(s => s.serviceType === "HOME_ESSENTIALS" && s.slug !== "home-essentials" && s.category !== "TOURS_TRAVEL")
         .sort((a, b) => a.sortOrder - b.sortOrder);
       setServices(homeSvc);
       setFilteredServices(homeSvc);
