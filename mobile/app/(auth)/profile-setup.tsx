@@ -188,7 +188,23 @@ export default function ProfileSetupScreen() {
     const handleVerifyOTP = async (otp: string) => {
         setIsLoading(true);
         try {
-            await authService.verifyOTP({ phoneNumber: `+91${phoneInput}`, otp });
+            const response = await authService.verifyOTP({ phoneNumber: `+91${phoneInput}`, otp });
+
+            // This phone already belongs to an existing account — verifyOTP
+            // already logged them in (tokens set, Firebase signed in) rather
+            // than just confirming the code. Continuing the registration form
+            // would only fail later with a raw "Duplicate value for field:
+            // phone" error, so send them straight into the app instead.
+            if (response.data && !response.data.isNewUser) {
+                if (response.data.accessToken && response.data.refreshToken && response.data.user) {
+                    await login(response.data.accessToken, response.data.refreshToken, response.data.user.id);
+                    router.replace('/(tabs)');
+                } else {
+                    router.replace('/(auth)/login');
+                }
+                return;
+            }
+
             setIsPhoneVerified(true);
             setOtpSent(false);
             triggerAlert(t('profile_setup.verified_title'), t('profile_setup.verified_msg'));
@@ -347,7 +363,15 @@ export default function ProfileSetupScreen() {
 
         } catch (error) {
             const apiError = error as ApiError;
-            triggerAlert(t('profile_setup.registration_error_title'), apiError.message || t('profile_setup.registration_error_msg'));
+            // Belt-and-braces: handleVerifyOTP already redirects an existing
+            // phone straight to login before the form is even reachable, but
+            // if that's ever bypassed, don't surface the raw Prisma
+            // "Duplicate value for field: phone" message.
+            if (apiError.statusCode === 409 && apiError.message?.toLowerCase().includes('phone')) {
+                triggerAlert(t('profile_setup.phone_already_registered_title'), t('profile_setup.phone_already_registered_msg'));
+            } else {
+                triggerAlert(t('profile_setup.registration_error_title'), apiError.message || t('profile_setup.registration_error_msg'));
+            }
         } finally {
             setIsLoading(false);
         }

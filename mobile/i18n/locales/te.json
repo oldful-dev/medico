@@ -176,6 +176,8 @@
     "select_gender_title": "లింగాన్ని ఎంచుకోండి",
     "select_language_title": "భాషను ఎంచుకోండి",
     "cancel": "రద్దు చేయి",
+    "phone_already_registered_title": "ఖాతా ఇప్పటికే ఉంది",
+    "phone_already_registered_msg": "ఈ ఫోన్ నంబర్ ఇప్పటికే నమోదు చేయబడింది. దయచేసి బదులుగా లాగిన్ చేయండి.",
     "login": "లాగిన్",
     "select_gender": "లింగాన్ని ఎంచుకోండి",
     "select_language": "భాషను ఎంచుకోండి",

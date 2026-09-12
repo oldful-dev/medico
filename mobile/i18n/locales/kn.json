@@ -176,6 +176,8 @@
     "select_gender_title": "ಲಿಂಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
     "select_language_title": "ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
     "cancel": "ರದ್ದುಮಾಡಿ",
+    "phone_already_registered_title": "ಖಾತೆ ಈಗಾಗಲೇ ಅಸ್ತಿತ್ವದಲ್ಲಿದೆ",
+    "phone_already_registered_msg": "ಈ ಫೋನ್ ಸಂಖ್ಯೆ ಈಗಾಗಲೇ ನೋಂದಾಯಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಬದಲಿಗೆ ಲಾಗಿನ್ ಮಾಡಿ.",
     "login": "ಲಾಗಿನ್",
     "select_gender": "ಲಿಂಗ ಆಯ್ಕೆಮಾಡಿ",
     "select_language": "ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ",

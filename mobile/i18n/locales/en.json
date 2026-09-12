@@ -180,6 +180,8 @@
     "select_gender_title": "Select Gender",
     "select_language_title": "Select Language",
     "cancel": "Cancel",
+    "phone_already_registered_title": "Account Already Exists",
+    "phone_already_registered_msg": "This phone number is already registered. Please log in instead.",
     "login": "Login",
     "select_gender": "Select Gender",
     "select_language": "Select Language",

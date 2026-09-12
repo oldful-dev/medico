@@ -176,6 +176,8 @@
     "select_gender_title": "লিঙ্গ নির্বাচন করুন",
     "select_language_title": "ভাষা নির্বাচন করুন",
     "cancel": "বাতিল",
+    "phone_already_registered_title": "অ্যাকাউন্ট ইতিমধ্যে বিদ্যমান",
+    "phone_already_registered_msg": "এই ফোন নম্বরটি ইতিমধ্যে নিবন্ধিত। অনুগ্রহ করে পরিবর্তে লগইন করুন।",
     "login": "লগইন",
     "select_gender": "লিঙ্গ নির্বাচন করুন",
     "select_language": "ভাষা নির্বাচন করুন",

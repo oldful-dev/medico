@@ -176,6 +176,8 @@
     "select_gender_title": "ലിംഗം തിരഞ്ഞെടുക്കുക",
     "select_language_title": "ഭാഷ തിരഞ്ഞെടുക്കുക",
     "cancel": "റദ്ദാക്കുക",
+    "phone_already_registered_title": "അക്കൗണ്ട് ഇതിനകം ഉണ്ട്",
+    "phone_already_registered_msg": "ഈ ഫോൺ നമ്പർ ഇതിനകം രജിസ്റ്റർ ചെയ്തിട്ടുണ്ട്. ദയവായി പകരം ലോഗിൻ ചെയ്യുക.",
     "login": "ലോഗിൻ",
     "select_gender": "ലിംഗം തിരഞ്ഞെടുക്കുക",
     "select_language": "ഭാഷ തിരഞ്ഞെടുക്കുക",

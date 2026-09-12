@@ -176,6 +176,8 @@
     "select_gender_title": "लिंग चुनें",
     "select_language_title": "भाषा चुनें",
     "cancel": "रद्द करें",
+    "phone_already_registered_title": "खाता पहले से मौजूद है",
+    "phone_already_registered_msg": "यह फ़ोन नंबर पहले से पंजीकृत है। कृपया इसके बजाय लॉग इन करें।",
     "login": "लॉग इन",
     "select_gender": "लिंग चुनें",
     "select_language": "भाषा चुनें",
