@@ -15,6 +15,7 @@ import { Fonts, Colors } from "@/constants/theme";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/services/api/apiClient";
 import { getAssetUrl } from "@/utils/getAssetUrl";
+import { serviceCatalogService, ServiceCategoryItem } from "@/services/api/serviceCatalogService";
 
 // Generic fallback icon shown only if a Service row has no icon set —
 // every real Home Essential is expected to carry its own DB-driven icon
@@ -33,11 +34,15 @@ export default function AllHomeEssentialsScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [services, setServices] = React.useState<any[]>([]);
+  const [categories, setCategories] = React.useState<ServiceCategoryItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isParentDisabled, setIsParentDisabled] = React.useState(false);
 
   React.useEffect(() => {
     fetchServices();
+    serviceCatalogService.getCategories('HOME_ESSENTIALS')
+      .then(res => { if (res.success) setCategories((res.data || []).filter(c => c.isEnabled)); })
+      .catch(() => { /* categories are additive — a flat list is still fine if this fails */ });
   }, []);
 
   const fetchServices = async () => {
@@ -132,38 +137,71 @@ export default function AllHomeEssentialsScreen() {
           </Text>
         ) : (
           <View style={styles.listContainer}>
-            {services.map((item, i) => {
-              const key = item.slug ? item.slug.replace(/-/g, "_") : "";
-              const displayHeadline = item.headline || item.name || (key ? t(`services.${key}`) : "");
-              const displaySubhead = item.subhead || item.tagline || (key ? t(`services.${key}_subhead`) : "");
+            {(() => {
+              const renderCard = (item: any, i: number) => {
+                const key = item.slug ? item.slug.replace(/-/g, "_") : "";
+                const displayHeadline = item.headline || item.name || (key ? t(`services.${key}`) : "");
+                const displaySubhead = item.subhead || item.tagline || (key ? t(`services.${key}_subhead`) : "");
 
-              return (
-                <TouchableOpacity
-                  key={item.id || `service-${i}`}
-                  style={styles.card}
-                  activeOpacity={0.7}
-                  onPress={() => router.push(item.route as any)}
-                >
-                  <View style={styles.iconContainer}>
-                    <Image
-                      source={item.iconAsset}
-                      style={styles.icon}
-                      resizeMode="contain"
+                return (
+                  <TouchableOpacity
+                    key={item.id || `service-${i}`}
+                    style={styles.card}
+                    activeOpacity={0.7}
+                    onPress={() => router.push(item.route as any)}
+                  >
+                    <View style={styles.iconContainer}>
+                      <Image
+                        source={item.iconAsset}
+                        style={styles.icon}
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <View style={styles.textContainer}>
+                      <Text style={styles.headline}>{displayHeadline}</Text>
+                      <Text style={styles.subhead}>{displaySubhead}</Text>
+                    </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={isDarkMode ? "#94A3B8" : "#9CA3AF"}
+                      style={styles.chevron}
                     />
-                  </View>
-                  <View style={styles.textContainer}>
-                    <Text style={styles.headline}>{displayHeadline}</Text>
-                    <Text style={styles.subhead}>{displaySubhead}</Text>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={isDarkMode ? "#94A3B8" : "#9CA3AF"}
-                    style={styles.chevron}
-                  />
-                </TouchableOpacity>
-              );
-            })}
+                  </TouchableOpacity>
+                );
+              };
+
+              // Group by admin-created category when at least one exists —
+              // otherwise fall through to the plain flat list exactly as before.
+              if (categories.length > 0) {
+                const grouped = categories
+                  .map(cat => ({ category: cat, items: services.filter(s => s.categoryId === cat.id) }))
+                  .filter(g => g.items.length > 0);
+                const groupedIds = new Set(grouped.flatMap(g => g.items.map((i: any) => i.id)));
+                const ungrouped = services.filter(s => !groupedIds.has(s.id));
+
+                if (grouped.length > 0) {
+                  return (
+                    <>
+                      {grouped.map(g => (
+                        <View key={g.category.id} style={{ marginBottom: 16 }}>
+                          <Text style={styles.categoryHeading}>{g.category.name}</Text>
+                          {g.items.map(renderCard)}
+                        </View>
+                      ))}
+                      {ungrouped.length > 0 && (
+                        <View>
+                          <Text style={styles.categoryHeading}>{t('common.other_services')}</Text>
+                          {ungrouped.map(renderCard)}
+                        </View>
+                      )}
+                    </>
+                  );
+                }
+              }
+
+              return services.map(renderCard);
+            })()}
           </View>
         )}
       </ScrollView>
@@ -198,6 +236,12 @@ const makeStyles = (isDarkMode: boolean, insets: any) =>
     },
     listContainer: {
       flexDirection: "column",
+    },
+    categoryHeading: {
+      fontFamily: Fonts.bold,
+      fontSize: 14,
+      color: isDarkMode ? "#F1F5F9" : "#034C2A",
+      marginBottom: 8,
     },
     card: {
       flexDirection: "row",

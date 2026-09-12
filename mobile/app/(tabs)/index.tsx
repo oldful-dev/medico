@@ -402,7 +402,8 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
             </View>
           ))}
           {uncategorized.length > 0 && (
-            <View>
+            <View style={{ marginBottom: 16 }}>
+              <Text style={[s.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>{t('common.other_services')}</Text>
               <View style={s.serviceGrid}>{uncategorized.map(renderTile)}</View>
             </View>
           )}
