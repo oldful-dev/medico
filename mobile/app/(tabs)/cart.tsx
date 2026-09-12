@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -9,9 +9,11 @@ import { useCart } from '@/context/CartContext';
 import { useUser } from '@/context/UserContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { storeService } from '@/services/api/storeService';
+import { labService } from '@/services/api/labService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 // ─── Category Mapping ────────────────────────────────────────
 type ServiceCategory = 'blood-test' | 'wellness' | 'service' | 'doctor' | 'nurse' | 'other';
@@ -105,6 +107,12 @@ export default function CartScreen() {
     const { profile } = useUser();
     const [showMixedCartInfo, setShowMixedCartInfo] = useState(false);
     const [disabledProductIds, setDisabledProductIds] = useState<Set<string>>(new Set());
+    const [alertConfig, setAlertConfig] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        onRemove?: () => void;
+    }>({ visible: false, title: '', message: '' });
 
     // Check for active subscription/plan
     const hasActivePlan = profile?.subscriptions?.some((s: any) => s.status === 'ACTIVE');
@@ -112,29 +120,46 @@ export default function CartScreen() {
 
     const TAB_BAR_HEIGHT = 83;
 
-    // Check product status on mount and when items change
+    // Check product/package status on mount and when items change. Wellness
+    // products are re-checked against our own DB (isEnabled); blood-test
+    // packages have no local record at all -- they only ever exist live on
+    // Redcliffe -- so the only way to know a cart entry is stale is to ask
+    // Redcliffe for that exact code and see if it still resolves.
     useEffect(() => {
-        const checkProductStatus = async () => {
+        const checkAvailability = async () => {
             const wellnessItems = items.filter(i => categorizeItem(i.serviceType) === 'wellness');
-            if (wellnessItems.length === 0) {
+            const bloodTestItems = items.filter(i => categorizeItem(i.serviceType) === 'blood-test');
+            if (wellnessItems.length === 0 && bloodTestItems.length === 0) {
                 setDisabledProductIds(new Set());
                 return;
             }
+            const disabledIds = new Set<string>();
             try {
-                const res = await storeService.getProducts({ limit: 1000 });
-                const disabledIds = new Set<string>();
-                wellnessItems.forEach(item => {
-                    const product = (res.data || []).find(p => p.id === item.id);
-                    if (!product || !product.isEnabled) {
-                        disabledIds.add(item.id);
-                    }
-                });
+                if (wellnessItems.length > 0) {
+                    const res = await storeService.getProducts({ limit: 1000 });
+                    wellnessItems.forEach(item => {
+                        const product = (res.data || []).find(p => p.id === item.id);
+                        if (!product || !product.isEnabled) {
+                            disabledIds.add(item.id);
+                        }
+                    });
+                }
+                if (bloodTestItems.length > 0) {
+                    await Promise.all(bloodTestItems.map(async (item) => {
+                        try {
+                            const pkg = await labService.getPackageDetails(item.id);
+                            if (!pkg) disabledIds.add(item.id);
+                        } catch {
+                            disabledIds.add(item.id); // 404 / removed from Redcliffe's catalog
+                        }
+                    }));
+                }
                 setDisabledProductIds(disabledIds);
             } catch (e) {
-                console.warn('Failed to check product status:', e);
+                console.warn('Failed to check item availability:', e);
             }
         };
-        checkProductStatus();
+        checkAvailability();
     }, [items]);
 
     // Group items by category
@@ -178,20 +203,19 @@ export default function CartScreen() {
         const categoryItems = groupedByCategory[category];
         const categorySelectedItems = categoryItems.filter(item => selectedItemIds.includes(item.id));
 
-        // Check if any wellness items are disabled
-        if (category === 'wellness') {
-            const disabledItems = categorySelectedItems.filter(item => disabledProductIds.has(item.id));
-            if (disabledItems.length > 0) {
-                Alert.alert(
-                    t('checkout.products_unavailable'),
-                    t('checkout.products_unavailable_msg'),
-                    [
-                        { text: t('common.remove'), onPress: () => disabledItems.forEach(i => removeItem(i.id)) },
-                        { text: t('common.keep'), style: 'cancel' },
-                    ]
-                );
-                return;
-            }
+        // Block checkout if any selected item in this category is no longer
+        // available (disabled wellness product, or a blood-test code that no
+        // longer resolves on Redcliffe) -- applies to every category now, not
+        // just wellness.
+        const disabledItems = categorySelectedItems.filter(item => disabledProductIds.has(item.id));
+        if (disabledItems.length > 0) {
+            setAlertConfig({
+                visible: true,
+                title: t('checkout.products_unavailable'),
+                message: t('checkout.products_unavailable_msg'),
+                onRemove: () => disabledItems.forEach(i => removeItem(i.id)),
+            });
+            return;
         }
 
         const categoryTotal = categorySelectedItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
@@ -246,17 +270,15 @@ export default function CartScreen() {
         const selectedItems = items.filter(i => selectedItemIds.includes(i.id));
         const selectedTotal = selectedItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
 
-        // Check for disabled wellness products among selected items
+        // Check for disabled/unavailable items (wellness or blood-test) among selected items
         const disabledSelected = selectedItems.filter(item => disabledProductIds.has(item.id));
         if (disabledSelected.length > 0) {
-            Alert.alert(
-                t('checkout.products_unavailable'),
-                t('checkout.products_unavailable_msg'),
-                [
-                    { text: t('common.remove'), onPress: () => disabledSelected.forEach(i => removeItem(i.id)) },
-                    { text: t('common.keep'), style: 'cancel' },
-                ]
-            );
+            setAlertConfig({
+                visible: true,
+                title: t('checkout.products_unavailable'),
+                message: t('checkout.products_unavailable_msg'),
+                onRemove: () => disabledSelected.forEach(i => removeItem(i.id)),
+            });
             return;
         }
 
@@ -368,41 +390,44 @@ export default function CartScreen() {
                                     const isDisabled = disabledProductIds.has(item.id);
                                     return (
                                         <View key={item.id} style={[styles.cartItem, isDisabled && styles.cartItemDisabled]}>
-                                            {isDisabled && (
-                                                <View style={styles.disabledOverlay}>
-                                                    <Ionicons name="alert-circle-outline" size={18} color="#EF4444" />
-                                                    <Text style={styles.disabledLabel}>{t('cart.no_longer_available')}</Text>
-                                                </View>
-                                            )}
-                                            <View style={[styles.itemContent, isDisabled && { opacity: 0.5 }]}>
+                                            <View style={[styles.itemContent, isDisabled && { opacity: 0.65 }]}>
                                                 <TouchableOpacity 
                                                     onPress={() => !isDisabled && toggleItemSelection(item.id)}
                                                     disabled={isDisabled}
                                                     style={{ marginRight: 8, justifyContent: 'center' }}
                                                 >
                                                     <Ionicons 
-                                                        name={selectedItemIds.includes(item.id) ? "checkmark-circle" : "ellipse-outline"} 
+                                                        name={!isDisabled && selectedItemIds.includes(item.id) ? "checkmark-circle" : "ellipse-outline"} 
                                                         size={20} 
-                                                        color={selectedItemIds.includes(item.id) ? config.color : colors.textMuted} 
+                                                        color={!isDisabled && selectedItemIds.includes(item.id) ? config.color : colors.textMuted} 
                                                     />
                                                 </TouchableOpacity>
-                                                <View style={[styles.itemIcon, { backgroundColor: `${config.color}08` }]}>
+                                                <View style={[styles.itemIcon, { backgroundColor: `${config.color}12` }]}>
                                                     <MaterialCommunityIcons name={icon as any} size={18} color={config.color} />
                                                 </View>
-                                                <View style={{ flex: 1 }}>
-                                                    <Text style={styles.itemTitle} numberOfLines={1}>{item.title}</Text>
-                                                    {item.details?.when && (
+                                                <View style={{ flex: 1, paddingRight: 6 }}>
+                                                    <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
+                                                    {isDisabled ? (
+                                                        <View style={styles.disabledBadge}>
+                                                            <Ionicons name="alert-circle" size={13} color="#EF4444" />
+                                                            <Text style={styles.disabledLabel}>{t('cart.no_longer_available')}</Text>
+                                                        </View>
+                                                    ) : item.details?.when ? (
                                                         <Text style={styles.itemMeta} numberOfLines={1}>
                                                             {item.details.when}
                                                         </Text>
-                                                    )}
+                                                    ) : null}
                                                 </View>
-                                                <TouchableOpacity onPress={() => removeItem(item.id)}>
+                                                <TouchableOpacity 
+                                                    onPress={() => removeItem(item.id)}
+                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                    style={{ padding: 4 }}
+                                                >
                                                     <Ionicons name="close-circle" size={20} color="#EF4444" />
                                                 </TouchableOpacity>
                                             </View>
                                             <View style={styles.itemPrice}>
-                                                <Text style={styles.itemPriceText}>
+                                                <Text style={[styles.itemPriceText, isDisabled && { color: colors.textMuted, textDecorationLine: 'line-through' }]}>
                                                     {itemTotal > 0 ? `₹${itemTotal.toLocaleString('en-IN')}` : 'TBD'}
                                                 </Text>
                                             </View>
@@ -463,6 +488,21 @@ export default function CartScreen() {
                     ))}
                 </View>
             </ScrollView>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName="alert-circle-outline"
+                buttonText={t('common.keep')}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                secondaryButtonText={t('common.remove')}
+                secondaryDestructive
+                onSecondaryPress={() => {
+                    alertConfig.onRemove?.();
+                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                }}
+            />
         </View>
     );
 }
@@ -628,22 +668,15 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     cartItemDisabled: {
         backgroundColor: colors.bgCardMuted,
     },
-    disabledOverlay: {
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
+    disabledBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-end',
-        paddingRight: Spacing.md,
-        zIndex: 10,
-        gap: 6,
+        marginTop: 4,
+        gap: 4,
     },
     disabledLabel: {
-        fontFamily: Fonts.semiBold,
-        fontSize: 12,
+        fontFamily: Fonts.medium,
+        fontSize: 11,
         color: '#EF4444',
     },
     itemContent: {

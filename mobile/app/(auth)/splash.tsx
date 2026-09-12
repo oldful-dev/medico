@@ -130,7 +130,6 @@ const FALLBACK_ISO_CERTIFICATIONS: IsoCertification[] = [{ label: 'ISO 9001-2015
                                 ) : null}
                             </View>
                         ))}
-                        <View style={styles.isoDivider} />
                     </View>
                 )}
 
@@ -212,12 +211,6 @@ const styles = StyleSheet.create({
         color: '#A8B7A9',
         textAlign: 'center',
         marginTop: 3,
-    },
-    isoDivider: {
-        marginTop: 20,
-        width: '88%',
-        height: 1,
-        backgroundColor: '#C9D6CC',
     },
 
     /* Mandala — Figma: left=-36.87, top=639.64 (bottom-left corner), rotated -6.79° */
