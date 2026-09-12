@@ -49,7 +49,7 @@ const getServiceById = async (req, res, next) => {
 // POST /api/services
 const createService = async (req, res, next) => {
     try {
-        const { name, slug, icon, tagline, description, pricingText, basePrice, route, sortOrder, isEnabled, serviceType, formFieldsJson, headline, subhead, checkoutGroup, isDynamic, category, paymentMode } = req.body;
+        const { name, slug, icon, tagline, description, pricingText, basePrice, route, sortOrder, isEnabled, serviceType, formFieldsJson, headline, subhead, checkoutGroup, isDynamic, category, categoryId, paymentMode } = req.body;
 
         let parsedBasePrice = basePrice;
         if (parsedBasePrice === undefined && pricingText) {
@@ -78,6 +78,7 @@ const createService = async (req, res, next) => {
                 checkoutGroup,
                 isDynamic: isDynamic !== undefined && isDynamic !== null ? (isDynamic === true || isDynamic === 'true') : undefined,
                 category,
+                categoryId: categoryId || null,
                 paymentMode: paymentMode || 'INQUIRY',
             },
         });

@@ -227,9 +227,11 @@ model Service {
   checkoutGroup  String      @default("D")
   isDynamic      Boolean     @default(false)
   category       String?
+  categoryId     String?
   paymentMode    String      @default("INQUIRY")
   bookings       Booking[]
 
+  @@index([categoryId])
   @@map("services")
 }
 

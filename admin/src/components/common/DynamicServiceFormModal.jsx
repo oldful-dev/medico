@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import {
     PlusCircle, Trash, ArrowUp, ArrowDown, Upload
 } from "lucide-react";
-import { serviceAPI, mediaAPI } from "@/lib/api";
+import { serviceAPI, serviceCategoryAPI, mediaAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 import RouteSelector from "@/components/common/RouteSelector";
 
@@ -62,6 +62,7 @@ const buildEmptyForm = (category, sortOrder) => ({
     sortOrder,
     isEnabled: true,
     category,
+    categoryId: "",
     isDynamic: true,
     serviceType: "OTHER",
     paymentMode: "INQUIRY",
@@ -100,6 +101,18 @@ export default function DynamicServiceFormModal({
     const [uploadingImage, setUploadingImage] = useState(false);
     const [form, setForm] = useState(buildEmptyForm(category, defaultSortOrder));
     const [formFields, setFormFields] = useState(DEFAULT_FORM_FIELDS);
+    const [serviceCategories, setServiceCategories] = useState([]);
+
+    // Categories are scoped per-module (Home Essentials/Diagnostic & Fitness/
+    // Tours & Travel each manage their own) — reload whenever the modal opens
+    // for a given module, so a category created moments ago in the other tab
+    // shows up here without a page refresh.
+    useEffect(() => {
+        if (!open) return;
+        serviceCategoryAPI.getAll(category)
+            .then(res => setServiceCategories((res.data?.data || []).filter(c => c.isEnabled)))
+            .catch(() => setServiceCategories([]));
+    }, [open, category]);
 
     // Blood test is the one diagnostic whose per-test Service Fee comes from the
     // Redcliffe Labs API, not from admin config — its price fields are read-only here.
@@ -123,6 +136,7 @@ export default function DynamicServiceFormModal({
                 sortOrder: editingService.sortOrder || 1,
                 isEnabled: editingService.isEnabled ?? true,
                 category: editingService.category || category,
+                categoryId: editingService.categoryId || "",
                 isDynamic: editingService.isDynamic !== undefined ? !!editingService.isDynamic : false,
                 serviceType: editingService.serviceType || "OTHER",
                 paymentMode: editingService.paymentMode || "INQUIRY",
@@ -275,6 +289,7 @@ export default function DynamicServiceFormModal({
                 route: routeVal,
                 basePrice: parseFloat(form.basePrice) || 0,
                 sortOrder: parseInt(form.sortOrder, 10) || 1,
+                categoryId: form.categoryId || null,
                 formFieldsJson: formFieldsJsonObj
             };
 
@@ -415,6 +430,26 @@ export default function DynamicServiceFormModal({
                                     </div>
                                 )}
                             </div>
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: "16px" }}>
+                                <label className="form-label">Group under Category (optional)</label>
+                                <select
+                                    className="form-input"
+                                    style={{ cursor: "pointer" }}
+                                    value={form.categoryId}
+                                    onChange={e => setForm({ ...form, categoryId: e.target.value })}
+                                >
+                                    <option value="">No category — show ungrouped</option>
+                                    {serviceCategories.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </select>
+                                {serviceCategories.length === 0 && (
+                                    <p className="text-xs text-muted" style={{ margin: "4px 0 0" }}>
+                                        No categories yet — create one in the Categories tab first if you want to group services.
+                                    </p>
+                                )}
                             </div>
 
                             <div className="form-grid-2">
