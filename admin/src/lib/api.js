@@ -330,6 +330,7 @@ export const auditAPI = {
 export const bannerAPI = {
     getHome: () => api.get('/banners/home'),  // Public
     getAll: (params) => api.get('/banners', { params }),
+    getPlacements: () => api.get('/banners/placements'),
     getById: (id) => api.get(`/banners/${id}`),
     create: (data) => api.post('/banners', data),
     update: (id, data) => api.put(`/banners/${id}`, data),

@@ -20,6 +20,38 @@ const getHomeBanners = async (req, res, next) => {
   }
 };
 
+// GET /api/banners/placement/:placement - Public, any screen. `category` is
+// just a free string placement key (e.g. HOME, WELLNESS, BLOOD_TEST) -- new
+// placements need no schema/route change, only a value typed into the admin
+// form and read on whichever mobile screen wants it.
+const getBannersByPlacement = async (req, res, next) => {
+  try {
+    const banners = await prisma.banner.findMany({
+      where: { category: req.params.placement.toUpperCase(), isActive: true },
+      orderBy: { order: 'asc' },
+    });
+    sendResponse(res, 200, banners);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/banners/placements - Admin only: distinct placement values in use,
+// so the admin form can suggest existing ones instead of admins retyping
+// "HOME" vs "Home" vs "home" and silently fragmenting a placement.
+const getBannerPlacements = async (req, res, next) => {
+  try {
+    const rows = await prisma.banner.findMany({
+      distinct: ['category'],
+      select: { category: true },
+      orderBy: { category: 'asc' },
+    });
+    sendResponse(res, 200, rows.map(r => r.category));
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET /api/banners/:id - Get single banner by ID
 const getBannerById = async (req, res, next) => {
   try {
@@ -219,6 +251,8 @@ const reorderBanners = async (req, res, next) => {
 
 module.exports = {
   getHomeBanners,
+  getBannersByPlacement,
+  getBannerPlacements,
   getBannerById,
   getAllBanners,
   createBanner,

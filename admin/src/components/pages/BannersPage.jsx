@@ -49,9 +49,13 @@ export default function BannersPage() {
 
     const [searchTerm, setSearchTerm] = useState("");
     const [filterActive, setFilterActive] = useState("ALL");
+    const [placements, setPlacements] = useState(["HOME", "WELLNESS"]);
 
     useEffect(() => {
         loadBanners();
+        bannerAPI.getPlacements()
+            .then(res => setPlacements(prev => [...new Set([...prev, ...(res.data?.data || [])])]))
+            .catch(() => {});
     }, []);
 
     async function loadBanners() {
@@ -721,16 +725,22 @@ export default function BannersPage() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="form-label">Category</label>
-                                                <select
+                                                <label className="form-label">Placement</label>
+                                                <input
+                                                    type="text"
+                                                    list="banner-placements"
                                                     value={form.category}
-                                                    onChange={(e) => setForm({ ...form, category: e.target.value })}
-                                                    className="form-select"
+                                                    onChange={(e) => setForm({ ...form, category: e.target.value.toUpperCase() })}
+                                                    className="form-input"
+                                                    placeholder="e.g. HOME, WELLNESS, BLOOD_TEST"
                                                     style={{ width: "100%", height: 40 }}
-                                                >
-                                                    <option value="HOME">Home Screen</option>
-                                                    <option value="WELLNESS">Wellness Store</option>
-                                                </select>
+                                                />
+                                                <datalist id="banner-placements">
+                                                    {placements.map(p => <option key={p} value={p} />)}
+                                                </datalist>
+                                                <p className="text-xs text-muted" style={{ marginTop: 4 }}>
+                                                    Any screen can pull banners for a placement string. Pick an existing one or type a new one — the mobile screen must call getBannersByPlacement with the same value.
+                                                </p>
                                             </div>
                                             <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: 4 }}>
                                                 <span className="form-label" style={{ margin: 0 }}>Publish Status</span>

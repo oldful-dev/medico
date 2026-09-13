@@ -13,12 +13,16 @@ const ctrl = require('../controllers/banner.controller');
 // unrelated operational routes CONTENT_ADMIN must not reach).
 const BANNER_ROLES = ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'CONTENT_ADMIN'];
 
-router.get('/',         authenticateAdmin, authorize(...BANNER_ROLES), ctrl.getAllBanners);
-router.post('/',        authenticateAdmin, authorize(...BANNER_ROLES), auditMiddleware('Banner'), ctrl.createBanner);
-router.post('/reorder', authenticateAdmin, authorize(...BANNER_ROLES), ctrl.reorderBanners);
+router.get('/',            authenticateAdmin, authorize(...BANNER_ROLES), ctrl.getAllBanners);
+router.get('/placements',  authenticateAdmin, authorize(...BANNER_ROLES), ctrl.getBannerPlacements);
+router.post('/',           authenticateAdmin, authorize(...BANNER_ROLES), auditMiddleware('Banner'), ctrl.createBanner);
+router.post('/reorder',    authenticateAdmin, authorize(...BANNER_ROLES), ctrl.reorderBanners);
 
 // Public routes (App)
 router.get('/home', ctrl.getHomeBanners);
+// Generic: any placement string an admin has typed into a banner's Category
+// field, e.g. /banners/placement/blood_test. Must stay above /:id.
+router.get('/placement/:placement', ctrl.getBannersByPlacement);
 
 // Param routes (after specific routes)
 router.get('/:id',           ctrl.getBannerById);

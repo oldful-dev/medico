@@ -81,6 +81,25 @@ class BannerService {
   }
 
   /**
+   * Get active banners for any placement (e.g. 'BLOOD_TEST', 'TOURS_TRAVEL')
+   * -- the Category field an admin sets on a banner in /banners. New
+   * placements need no new endpoint/method, just a matching string typed
+   * into the admin form and this call on whichever screen wants it.
+   */
+  async getBannersByPlacement(placement: string): Promise<Banner[]> {
+    try {
+      const response = await apiClient.get<Banner[]>(`/banners/placement/${encodeURIComponent(placement)}`);
+      if (response.success && Array.isArray(response.data)) {
+        return response.data.sort((a, b) => a.order - b.order);
+      }
+      return [];
+    } catch (error) {
+      console.error(`Failed to fetch '${placement}' banners:`, error);
+      return [];
+    }
+  }
+
+  /**
    * Get banner by ID
    */
   async getBannerById(id: string): Promise<Banner | null> {
