@@ -16,6 +16,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { usePlacementBanners } from '@/hooks/use-placement-banners';
+import { BannerSlider } from '@/components/BannerSlider';
 import { userService, ApiError } from '@/services/api/userService';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import * as ImagePicker from 'expo-image-picker';
@@ -100,6 +102,7 @@ export default function AccountScreen() {
     const { handleApiError } = useApiWithSessionRedirect();
     const colors = useThemeColors();
     const styles = makeStyles(colors);
+    const accountBanners = usePlacementBanners('ACCOUNT');
 
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const { preferredLanguage, setPreferredLanguage } = useUser();
@@ -360,6 +363,8 @@ export default function AccountScreen() {
                 extraScrollHeight={20}
                 keyboardShouldPersistTaps="handled"
             >
+
+                <BannerSlider banners={accountBanners} colors={colors} />
 
                 {/* ═══════════════════════════════════════
                     PROFILE HEADER CARD

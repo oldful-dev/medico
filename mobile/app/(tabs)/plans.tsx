@@ -23,6 +23,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { getText } from '@/i18n/utils/getText';
 import { renderBenefitSvg } from '@/utils/benefitIconMap';
+import { BannerSlider } from '@/components/BannerSlider';
+import { usePlacementBanners } from '@/hooks/use-placement-banners';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 48; // 24px margin each side
@@ -826,6 +828,7 @@ export default function PlansScreen() {
     const { benefits } = useAppConfig();
     const S = makeStyles(colors, isDarkMode);
     const { t } = useTranslation();
+    const plansBanners = usePlacementBanners('PLANS');
 
     const [userActiveSubscriptions, setUserActiveSubscriptions] = useState<any[]>([]);
     const [initiating, setInitiating] = useState<string | null>(null);
@@ -976,6 +979,7 @@ export default function PlansScreen() {
                 showsVerticalScrollIndicator={false}
             >
 
+                <BannerSlider banners={plansBanners} colors={colors} />
 
                 {/* ─── Section 1: Ayuxa Care Plans ─── */}
                 <PlanSection

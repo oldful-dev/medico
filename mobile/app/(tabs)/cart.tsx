@@ -11,6 +11,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { storeService } from '@/services/api/storeService';
 import { labService } from '@/services/api/labService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { usePlacementBanners } from '@/hooks/use-placement-banners';
+import { BannerSlider } from '@/components/BannerSlider';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
@@ -96,7 +98,8 @@ export default function CartScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const styles = makeStyles(colors, isDarkMode);
-    const { 
+    const cartBanners = usePlacementBanners('CART');
+    const {
         items, removeItem, clearCategory, selectedItemIds, toggleItemSelection, 
         selectItemsOfCategory, isItemSelected 
     } = useCart();
@@ -313,6 +316,8 @@ export default function CartScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={[styles.scroll, { paddingBottom: 20 + TAB_BAR_HEIGHT }]}
             >
+                <BannerSlider banners={cartBanners} colors={colors} />
+
                 {/* ── Active Plan Benefit Banner ── */}
                 {hasActivePlan && (
                     <View style={styles.benefitBanner}>
