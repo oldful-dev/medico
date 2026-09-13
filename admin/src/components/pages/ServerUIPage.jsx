@@ -22,7 +22,7 @@ import {
   History,
   X
 } from "lucide-react";
-import { appConfigAPI, mediaAPI, bannerAPI } from "@/lib/api";
+import { appConfigAPI, mediaAPI, bannerAPI, serviceAPI, serviceCategoryAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 import RouteSelector from "@/components/common/RouteSelector";
 
@@ -50,6 +50,55 @@ export default function ServerUIPage() {
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [uploadingTarget, setUploadingTarget] = useState(null); // { type: "service", sIdx, svIdx } or { type: "banner", bIdx } or { type: "sos_icon" } or { type: "sos_illustration" }
   const iconFileInputRef = useRef(null);
+
+  // Read-only cross-reference data: this page edits raw home_config JSON
+  // (label/route/icon/enabled per tile) and has no concept of category —
+  // that lives entirely in the Service/ServiceCategory tables managed by
+  // Home Essentials / Diagnostic & Fitness / Tours & Travel's own pages.
+  // Loaded once so each config item below can show which category (if any)
+  // its underlying Service row belongs to, and that row's real DB status,
+  // without this editor becoming a second place to edit that data.
+  const [dbServices, setDbServices] = useState([]);
+  const [dbCategoriesByModule, setDbCategoriesByModule] = useState({});
+
+  useEffect(() => {
+    serviceAPI.getAll()
+      .then(res => setDbServices(res.data?.data || []))
+      .catch(() => setDbServices([]));
+    Promise.all(
+      ["HOME_ESSENTIALS", "DIAGNOSTICS_FITNESS", "TOURS_TRAVEL"].map(m =>
+        serviceCategoryAPI.getAll(m).then(res => [m, res.data?.data || []]).catch(() => [m, []])
+      )
+    ).then(entries => setDbCategoriesByModule(Object.fromEntries(entries)));
+  }, []);
+
+  // Mirrors backend/src/utils/sduiSync.js's matchConfigToDb — a config item's
+  // `id`/`route` is matched to a Service row's `slug`/`route` the same way,
+  // so what this page shows agrees with what the sync job actually matches.
+  const findDbServiceForItem = (item) => {
+    const cleanId = (item.id || "").toLowerCase().replace(/_/g, "-");
+    const cleanItemRoute = (item.route || "").toLowerCase().replace(/^\//, "");
+    return dbServices.find(s => {
+      const cleanSlug = (s.slug || "").toLowerCase().replace(/_/g, "-");
+      const cleanSvcRoute = (s.route || "").toLowerCase().replace(/^\//, "");
+      return cleanId === cleanSlug ||
+        (cleanItemRoute && cleanItemRoute === cleanSlug) ||
+        (cleanItemRoute && cleanSvcRoute && cleanItemRoute === cleanSvcRoute);
+    });
+  };
+
+  const getCategoryBadge = (item) => {
+    const dbSvc = findDbServiceForItem(item);
+    if (!dbSvc) return null;
+    const svcModule = dbSvc.category; // e.g. HOME_ESSENTIALS / DIAGNOSTICS_FITNESS / TOURS_TRAVEL
+    const categories = dbCategoriesByModule[svcModule] || [];
+    const cat = dbSvc.categoryId ? categories.find(c => c.id === dbSvc.categoryId) : null;
+    return {
+      categoryName: cat?.name || null,
+      dbEnabled: dbSvc.isEnabled,
+      isManaged: ["HOME_ESSENTIALS", "DIAGNOSTICS_FITNESS", "TOURS_TRAVEL"].includes(svcModule),
+    };
+  };
 
   const isEmoji = (str) => {
     if (!str) return false;
@@ -1093,20 +1142,23 @@ export default function ServerUIPage() {
                             </h5>
                             
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                              {(section.services || []).map((service, svIdx) => (
-                                <div key={service.id} style={{ 
-                                  display: "flex", 
-                                  alignItems: "center", 
-                                  gap: 12, 
-                                  backgroundColor: "var(--bg-muted)", 
-                                  padding: 8, 
+                              {(section.services || []).map((service, svIdx) => {
+                                const badge = getCategoryBadge(service);
+                                return (
+                                <div key={service.id} style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 6,
+                                  backgroundColor: "var(--bg-muted)",
+                                  padding: 8,
                                   borderRadius: 6,
                                   border: "1px solid var(--border-color)"
                                 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                   <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-                                    <input 
-                                      type="checkbox" 
-                                      checked={!!service.enabled} 
+                                    <input
+                                      type="checkbox"
+                                      checked={!!service.enabled}
                                       onChange={(e) => updateService(sIdx, svIdx, "enabled", e.target.checked)}
                                     />
                                   </label>
@@ -1167,18 +1219,40 @@ export default function ServerUIPage() {
                                       </div>
                                     </div>
                                     <div>
-                                      <input 
-                                        type="number" 
-                                        placeholder="Order" 
-                                        className="form-input" 
-                                        value={service.sort_order || 0} 
+                                      <input
+                                        type="number"
+                                        placeholder="Order"
+                                        className="form-input"
+                                        value={service.sort_order || 0}
                                         onChange={(e) => updateService(sIdx, svIdx, "sort_order", parseInt(e.target.value) || 0)}
                                         style={{ height: 28, fontSize: 11, padding: "2px 6px" }}
                                       />
                                     </div>
                                   </div>
                                 </div>
-                              ))}
+
+                                {/* Read-only: category + real DB status from the
+                                    Service/ServiceCategory tables, so this matches
+                                    what Home Essentials/Diagnostic & Fitness/Tours &
+                                    Travel show — edit those there, not here. */}
+                                {badge && badge.isManaged && (
+                                  <div style={{ display: "flex", gap: 6, alignItems: "center", paddingLeft: 24 }}>
+                                    {badge.categoryName ? (
+                                      <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: "rgba(59,130,246,0.12)", color: "#2563EB", fontWeight: 600 }}>
+                                        {badge.categoryName}
+                                      </span>
+                                    ) : (
+                                      <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: "var(--bg-muted)", color: "var(--text-muted)", border: "1px solid var(--border-color)" }}>
+                                        Ungrouped
+                                      </span>
+                                    )}
+                                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: badge.dbEnabled ? "rgba(16,185,129,0.12)" : "rgba(100,116,139,0.12)", color: badge.dbEnabled ? "#059669" : "#64748B", fontWeight: 600 }}>
+                                      DB: {badge.dbEnabled ? "Live" : "Disabled"}
+                                    </span>
+                                  </div>
+                                )}
+                                </div>
+                              );})}
                             </div>
                           </div>
                         </div>
