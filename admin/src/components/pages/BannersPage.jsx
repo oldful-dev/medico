@@ -726,29 +726,25 @@ export default function BannersPage() {
                                             </div>
                                             <div>
                                                 <label className="form-label">Placement</label>
-                                                {placements.length > 0 && (
-                                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
-                                                        {placements.map(p => (
-                                                            <label key={p} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, cursor: "pointer" }}>
-                                                                <input
-                                                                    type="radio"
-                                                                    name="banner-placement"
-                                                                    checked={form.category === p}
-                                                                    onChange={() => setForm({ ...form, category: p })}
-                                                                />
-                                                                {p}
-                                                            </label>
-                                                        ))}
-                                                    </div>
+                                                <select
+                                                    value={placements.includes(form.category) ? form.category : "__custom__"}
+                                                    onChange={(e) => e.target.value !== "__custom__" && setForm({ ...form, category: e.target.value })}
+                                                    className="form-select"
+                                                    style={{ width: "100%", height: 40, marginBottom: 8 }}
+                                                >
+                                                    {placements.map(p => <option key={p} value={p}>{p}</option>)}
+                                                    <option value="__custom__">Custom / new placement…</option>
+                                                </select>
+                                                {!placements.includes(form.category) && (
+                                                    <input
+                                                        type="text"
+                                                        value={form.category}
+                                                        onChange={(e) => setForm({ ...form, category: e.target.value.toUpperCase() })}
+                                                        className="form-input"
+                                                        placeholder="e.g. BLOOD_TEST"
+                                                        style={{ width: "100%", height: 40 }}
+                                                    />
                                                 )}
-                                                <input
-                                                    type="text"
-                                                    value={form.category}
-                                                    onChange={(e) => setForm({ ...form, category: e.target.value.toUpperCase() })}
-                                                    className="form-input"
-                                                    placeholder="or type a new placement, e.g. BLOOD_TEST"
-                                                    style={{ width: "100%", height: 40 }}
-                                                />
                                                 <p className="text-xs text-muted" style={{ marginTop: 4 }}>
                                                     Any screen can pull banners for a placement string. Pick an existing one or type a new one — the mobile screen must call getBannersByPlacement with the same value.
                                                 </p>
