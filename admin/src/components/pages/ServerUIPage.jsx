@@ -78,11 +78,16 @@ export default function ServerUIPage() {
   const findDbServiceForItem = (item) => {
     const cleanId = (item.id || "").toLowerCase().replace(/_/g, "-");
     const cleanItemRoute = (item.route || "").toLowerCase().replace(/^\//, "");
+    // Prefer an exact id/slug match first — two dynamic services can share a
+    // route (e.g. two rows both routed through /dynamic-service/test), so
+    // matching by route alone risks picking the wrong one. Only fall back to
+    // route matching when no slug match exists at all.
+    const bySlug = dbServices.find(s => cleanId === (s.slug || "").toLowerCase().replace(/_/g, "-"));
+    if (bySlug) return bySlug;
     return dbServices.find(s => {
       const cleanSlug = (s.slug || "").toLowerCase().replace(/_/g, "-");
       const cleanSvcRoute = (s.route || "").toLowerCase().replace(/^\//, "");
-      return cleanId === cleanSlug ||
-        (cleanItemRoute && cleanItemRoute === cleanSlug) ||
+      return (cleanItemRoute && cleanItemRoute === cleanSlug) ||
         (cleanItemRoute && cleanSvcRoute && cleanItemRoute === cleanSvcRoute);
     });
   };

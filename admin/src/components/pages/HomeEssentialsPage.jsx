@@ -120,6 +120,7 @@ export default function HomeEssentialsPage() {
     sortOrder: 1,
     isEnabled: true,
     categoryId: "",
+    category: "HOME_ESSENTIALS",
     serviceType: "HOME_ESSENTIALS"
   });
 
@@ -181,6 +182,7 @@ export default function HomeEssentialsPage() {
       sortOrder: services.length + 1,
       isEnabled: true,
       categoryId: "",
+      category: "HOME_ESSENTIALS",
       serviceType: "HOME_ESSENTIALS"
     });
     setShowModal(true);
@@ -201,6 +203,7 @@ export default function HomeEssentialsPage() {
       sortOrder: s.sortOrder || 1,
       isEnabled: s.isEnabled ?? true,
       categoryId: s.categoryId || "",
+      category: "HOME_ESSENTIALS",
       serviceType: "HOME_ESSENTIALS"
     });
     setShowModal(true);
