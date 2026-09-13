@@ -3311,6 +3311,7 @@
     "upload_bill_photos": "బిల్లు కాపీలను అప్‌లోడ్ చేయండి",
     "upload_optional_photos": "ఫోటోలను అప్‌లోడ్ చేయండి (ఐచ్ఛికం)",
     "image_upload_subtitle": "10MB వరకు JPG, PNG",
+    "document_upload_subtitle": "10MB వరకు PDF",
     "pricing_disclaimer": "*ధర అనేది వాస్తవ పని అంచనాకు లోబడి ఉంటుంది.",
     "address_required_desc": "దయచేసి చెల్లుబాటు అయ్యే చిరునామాను అందించండి."
   },

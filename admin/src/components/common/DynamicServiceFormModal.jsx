@@ -748,6 +748,9 @@ export default function DynamicServiceFormModal({
                                                      <option value="checkbox">Checkboxes (Multi-select)</option>
                                                      <option value="datetime">Date & Time Picker</option>
                                                      <option value="image_upload">Photo Upload Box</option>
+                                                     <option value="number_input">Number Input</option>
+                                                     <option value="phone_input">Phone Number Input</option>
+                                                     <option value="file_upload">Document Upload (PDF)</option>
                                                      <option value="toggle">Toggle / Switch</option>
                                                      <option value="info_banner">Header / Info Banner</option>
                                                      <option value="benefits">Service Benefits List</option>

@@ -3356,6 +3356,7 @@
     "upload_bill_photos": "Upload Bill Copies",
     "upload_optional_photos": "Upload Photos (Optional)",
     "image_upload_subtitle": "JPG, PNG up to 10MB",
+    "document_upload_subtitle": "PDF up to 10MB",
     "pricing_disclaimer": "*Pricing is subject to actual work assessment.",
     "address_required_desc": "Please provide a valid address."
   },

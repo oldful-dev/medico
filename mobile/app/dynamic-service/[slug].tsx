@@ -14,6 +14,7 @@ import { bookingService } from '@/services/api/bookingService';
 import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
+import DocumentUploadBox from '@/components/common/DocumentUploadBox';
 import { Ionicons } from '@expo/vector-icons';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { safeScrollToPosition } from '@/utils/scrollUtils';
@@ -283,7 +284,7 @@ export default function DynamicServiceScreen() {
       // Upload files for custom image_upload fields
       const finalAnswers = { ...formAnswers };
       for (const field of dynamicFields) {
-        if (field.type === 'image_upload' && Array.isArray(formAnswers[field.id]) && formAnswers[field.id].length > 0) {
+        if ((field.type === 'image_upload' || field.type === 'file_upload') && Array.isArray(formAnswers[field.id]) && formAnswers[field.id].length > 0) {
           const uploadedUrls = await mediaService.uploadMultipleMedia(formAnswers[field.id], slug);
           finalAnswers[field.id] = uploadedUrls;
         }
@@ -540,6 +541,50 @@ export default function DynamicServiceScreen() {
                 />
               )}
 
+              {field.type === 'number_input' && (
+                <TextInput
+                  style={[styles.input, { color: isDark ? '#F3F4F6' : '#1F2937' }]}
+                  placeholder={field.placeholder || t('common.enter_here', 'Enter here...')}
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="numeric"
+                  value={formAnswers[field.id] || ''}
+                  // Numeric keyboard alone doesn't block pasted non-digit text on
+                  // every platform, so strip on change. Decimals are allowed (a
+                  // single leading "-" and one ".") since these fields are also
+                  // used for measurements like weight — not just whole counts.
+                  onChangeText={(val) => {
+                    let cleaned = val.replace(/[^0-9.-]/g, '');
+                    cleaned = cleaned.replace(/(?!^)-/g, '');
+                    const firstDot = cleaned.indexOf('.');
+                    if (firstDot !== -1) {
+                      cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
+                    }
+                    handleFieldChange(field.id, cleaned);
+                  }}
+                />
+              )}
+
+              {field.type === 'phone_input' && (
+                <TextInput
+                  style={[styles.input, { color: isDark ? '#F3F4F6' : '#1F2937' }]}
+                  placeholder={field.placeholder || t('common.enter_phone', 'Enter 10-digit phone number')}
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="phone-pad"
+                  maxLength={15}
+                  value={formAnswers[field.id] || ''}
+                  onChangeText={(val) => handleFieldChange(field.id, val)}
+                />
+              )}
+
+              {field.type === 'file_upload' && (
+                <DocumentUploadBox
+                  title={field.placeholder || t('service_detail.upload_document', 'Upload Document (Optional)')}
+                  subtitle={t('service_detail.document_upload_subtitle', 'PDF up to 10MB')}
+                  onFilesChange={(files) => handleFieldChange(field.id, files)}
+                  maxFiles={1}
+                />
+              )}
+
               {field.type === 'toggle' && (
                 <View style={styles.toggleRow}>
                   <Text style={styles.optionLabel}>{field.placeholder || field.label}</Text>
@@ -670,6 +715,46 @@ export default function DynamicServiceScreen() {
                     subtitle={t('service_detail.image_upload_subtitle', 'JPG, PNG up to 10MB')}
                     onImagesChange={(images) => handleFieldChange(field.id, images)}
                     maxImages={3}
+                  />
+                )}
+
+                {field.type === 'number_input' && (
+                  <TextInput
+                    style={[styles.input, { color: isDark ? '#F3F4F6' : '#1F2937' }]}
+                    placeholder={field.placeholder || t('common.enter_here', 'Enter here...')}
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                    value={formAnswers[field.id] || ''}
+                    onChangeText={(val) => {
+                      let cleaned = val.replace(/[^0-9.-]/g, '');
+                      cleaned = cleaned.replace(/(?!^)-/g, '');
+                      const firstDot = cleaned.indexOf('.');
+                      if (firstDot !== -1) {
+                        cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
+                      }
+                      handleFieldChange(field.id, cleaned);
+                    }}
+                  />
+                )}
+
+                {field.type === 'phone_input' && (
+                  <TextInput
+                    style={[styles.input, { color: isDark ? '#F3F4F6' : '#1F2937' }]}
+                    placeholder={field.placeholder || t('common.enter_phone', 'Enter 10-digit phone number')}
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="phone-pad"
+                    maxLength={15}
+                    value={formAnswers[field.id] || ''}
+                    onChangeText={(val) => handleFieldChange(field.id, val)}
+                  />
+                )}
+
+                {field.type === 'file_upload' && (
+                  <DocumentUploadBox
+                    title={field.placeholder || t('service_detail.upload_document', 'Upload Document (Optional)')}
+                    subtitle={t('service_detail.document_upload_subtitle', 'PDF up to 10MB')}
+                    onFilesChange={(files) => handleFieldChange(field.id, files)}
+                    maxFiles={1}
                   />
                 )}
 

@@ -3311,6 +3311,7 @@
     "upload_bill_photos": "ബിൽ കോപ്പികൾ അപ്‌ലോഡ് ചെയ്യുക",
     "upload_optional_photos": "ഫോട്ടോകൾ അപ്‌ലോഡ് ചെയ്യുക (ഓപ്ഷണൽ)",
     "image_upload_subtitle": "10MB വരെയുള്ള JPG, PNG",
+    "document_upload_subtitle": "10MB വരെയുള്ള PDF",
     "pricing_disclaimer": "*വിലനിർണ്ണയം യഥാർത്ഥ ജോലി വിലയിരുത്തലിന് വിധേയമാണ്.",
     "address_required_desc": "ദയവായി സാധുവായ ഒരു വിലാസം നൽകുക."
   },

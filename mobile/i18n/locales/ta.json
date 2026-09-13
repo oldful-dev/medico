@@ -3311,6 +3311,7 @@
     "upload_bill_photos": "பில் நகல்களைப் பதிவேற்றவும்",
     "upload_optional_photos": "புகைப்படங்களை பதிவேற்றவும் (விருப்பத்தேர்வு)",
     "image_upload_subtitle": "10MB வரையிலான JPG, PNG",
+    "document_upload_subtitle": "10MB வரையிலான PDF",
     "pricing_disclaimer": "*விலை நிர்ணயம் உண்மையான வேலை மதிப்பீட்டிற்கு உட்பட்டது.",
     "address_required_desc": "தயவுசெய்து சரியான முகவரியை வழங்கவும்."
   },

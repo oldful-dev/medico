@@ -3311,6 +3311,7 @@
     "upload_bill_photos": "বিলের কপি আপলোড করুন",
     "upload_optional_photos": "ছবি আপলোড করুন (ঐচ্ছিক)",
     "image_upload_subtitle": "10MB পর্যন্ত JPG, PNG",
+    "document_upload_subtitle": "10MB পর্যন্ত PDF",
     "pricing_disclaimer": "*মূল্য নির্ধারণ প্রকৃত কাজের মূল্যায়নের সাপেক্ষে।",
     "address_required_desc": "দয়া করে একটি বৈধ ঠিকানা দিন।"
   },

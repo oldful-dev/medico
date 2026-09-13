@@ -3311,6 +3311,7 @@
     "upload_bill_photos": "बिलांच्या प्रती अपलोड करा",
     "upload_optional_photos": "फोटो अपलोड करा (पर्यायी)",
     "image_upload_subtitle": "10MB पर्यंतचे JPG, PNG",
+    "document_upload_subtitle": "10MB पर्यंतचे PDF",
     "pricing_disclaimer": "*किंमत वास्तविक कामाच्या मूल्यांकनावर अवलंबून आहे.",
     "address_required_desc": "कृपया वैध पत्ता प्रदान करा."
   },
