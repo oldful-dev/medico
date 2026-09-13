@@ -242,8 +242,80 @@ const syncDbServicesToUIConfig = async () => {
 
         for (const section of (config.sections || [])) {
             const isEssentials = section.id === 'essentials' || section.type === 'essentials_grid';
-            
-            if (isEssentials) {
+            const isToursTravel = section.id === 'tours_travel';
+
+            if (isToursTravel) {
+                // Same auto-add/keep-in-sync logic as the essentials branch
+                // below, filtered by category instead of serviceType — this
+                // picks up Trips & Travels (already tagged TOURS_TRAVEL) and
+                // any future dynamic Tours & Travel service. The static
+                // "Meetups" config item has no matching Service row, so it's
+                // just carried through untouched by the "keep existing items"
+                // loop below (its `dbSvc` lookup finds nothing → no-op).
+                const toursTravelDbSvcs = dbServices.filter(s => s.category === 'TOURS_TRAVEL');
+                const updatedServices = [];
+
+                // 1. Sync existing items, keep them if still in DB or static (no DB match)
+                for (const item of (section.services || [])) {
+                    const dbSvc = toursTravelDbSvcs.find(s => matchConfigToDb(item.id, item.route, s.slug, s.route));
+                    if (dbSvc) {
+                        if (!dbSvc.isEnabled && item.enabled) {
+                            item.enabled = false;
+                            changed = true;
+                        }
+                        if (item.label !== (dbSvc.headline || dbSvc.name)) {
+                            item.label = dbSvc.headline || dbSvc.name;
+                            changed = true;
+                        }
+                        if (item.route !== (dbSvc.route || `/${dbSvc.slug}`)) {
+                            item.route = dbSvc.route || `/${dbSvc.slug}`;
+                            changed = true;
+                        }
+                        if (item.icon !== dbSvc.icon) {
+                            item.icon = dbSvc.icon;
+                            changed = true;
+                        }
+                        if (item.sort_order !== dbSvc.sortOrder) {
+                            item.sort_order = dbSvc.sortOrder;
+                            changed = true;
+                        }
+                        updatedServices.push(item);
+                    } else {
+                        // No matching DB service — either a static entry (e.g.
+                        // Meetups) or one that was deleted from DB. We can't
+                        // tell those apart here, so keep it: deleting a static
+                        // link item would be wrong, and DB-service items are
+                        // re-added below anyway if still present.
+                        updatedServices.push(item);
+                    }
+                }
+
+                // 2. Add new DB services that aren't in config yet
+                for (const dbSvc of toursTravelDbSvcs) {
+                    const exists = section.services.some(item => matchConfigToDb(item.id, item.route, dbSvc.slug, dbSvc.route));
+                    if (!exists) {
+                        updatedServices.push({
+                            id: dbSvc.slug.replace(/-/g, '_'),
+                            label: dbSvc.headline || dbSvc.name,
+                            icon: dbSvc.icon || 'default.png',
+                            route: dbSvc.route || `/${dbSvc.slug}`,
+                            enabled: dbSvc.isEnabled,
+                            sort_order: dbSvc.sortOrder || 1
+                        });
+                        changed = true;
+                    }
+                }
+
+                updatedServices.sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+
+                const currentIds = (section.services || []).map(s => `${s.id}:${s.sort_order}`).join(',');
+                const newIds = updatedServices.map(s => `${s.id}:${s.sort_order}`).join(',');
+                if (currentIds !== newIds) {
+                    changed = true;
+                }
+
+                section.services = updatedServices;
+            } else if (isEssentials) {
                 // Trip & Travels keeps serviceType HOME_ESSENTIALS (other
                 // code — e.g. mobile/app/(tabs)/index.tsx's essentials grid
                 // filter — still keys off it), but its `category` was

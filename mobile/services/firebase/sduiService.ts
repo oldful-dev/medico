@@ -178,6 +178,21 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
                 { id: 'driver',       label: 'Driver\nRequest',             icon: '60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png', route: '/driving-cab',         enabled: true, sort_order: 8 },
             ],
         },
+        {
+            // Static "Meetups" link only — Trips & Travels (a `Service` row
+            // already tagged category=TOURS_TRAVEL) and any future dynamic
+            // Tours & Travel service are auto-added here by sduiSync.js's
+            // isToursTravel branch, mirroring how Home Essentials services
+            // aren't hardcoded either.
+            id: 'tours_travel',
+            title: 'Tours & Travel',
+            type: 'service_grid',
+            enabled: true,
+            sort_order: 4,
+            services: [
+                { id: 'meetups', label: 'Local\nMeetups', icon: '🧑‍🤝‍🧑', route: '/meetup', enabled: true, sort_order: 1 },
+            ],
+        },
     ],
     trust_badges: [
         { id: 'support',    label: '24/7 Support',        icon: 'cea3b8dc2ce488942e83a8a4cd0dbe1e6173764b.png', enabled: true, sort_order: 1 },

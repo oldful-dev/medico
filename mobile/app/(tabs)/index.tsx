@@ -297,27 +297,33 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
   const [expanded, setExpanded] = useState(false);
   const { services, preferredLanguage } = useUser();
 
-  // Only the Care & Diagnostics section groups by admin-created category —
-  // every other section keeps the flat grid exactly as before.
-  const isDiagnosticsFitness = section.id.toLowerCase() === 'ayuxa_services';
-  const [dfCategories, setDfCategories] = useState<ServiceCategoryItem[]>([]);
+  // Sections that group their tiles by admin-created category — keyed by
+  // section id → the module string categories/dynamic services are tagged
+  // with. Every other section keeps the flat grid exactly as before.
+  const CATEGORY_GROUPED_MODULES: Record<string, string> = {
+    'ayuxa_services': 'DIAGNOSTICS_FITNESS',
+    'tours_travel': 'TOURS_TRAVEL',
+  };
+  const groupingModule = CATEGORY_GROUPED_MODULES[section.id.toLowerCase()];
+  const isCategoryGrouped = !!groupingModule;
+  const [groupCategories, setGroupCategories] = useState<ServiceCategoryItem[]>([]);
 
   useEffect(() => {
-    if (!isDiagnosticsFitness) return;
+    if (!groupingModule) return;
     let alive = true;
-    serviceCatalogService.getCategories('DIAGNOSTICS_FITNESS')
-      .then(res => { if (alive && res.success) setDfCategories((res.data || []).filter(c => c.isEnabled)); })
+    serviceCatalogService.getCategories(groupingModule)
+      .then(res => { if (alive && res.success) setGroupCategories((res.data || []).filter(c => c.isEnabled)); })
       .catch(() => { /* categories are additive — a flat grid is still fine if this fails */ });
     return () => { alive = false; };
-  }, [isDiagnosticsFitness]);
+  }, [groupingModule]);
 
-  // Find all active dynamic Diagnostics & Fitness services from database
+  // Find all active dynamic services from database matching this section's module
   const dbDynamicServices = services
     .filter(
       sv =>
         sv.isDynamic &&
         sv.isEnabled &&
-        sv.category === "DIAGNOSTICS_FITNESS"
+        sv.category === groupingModule
     )
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map(sv => ({
@@ -375,12 +381,12 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
     );
   };
 
-  // Grouped view: only when this is Diagnostics & Fitness AND at least one
-  // category with a matching service actually exists — otherwise fall
+  // Grouped view: only when this section is category-grouped AND at least
+  // one category with a matching service actually exists — otherwise fall
   // through to the plain flat grid below (e.g. a fresh install with no
   // categories yet still looks exactly as it did before this feature).
-  if (isDiagnosticsFitness && dfCategories.length > 0) {
-    const categorized = dfCategories
+  if (isCategoryGrouped && groupCategories.length > 0) {
+    const categorized = groupCategories
       .map(cat => ({
         category: cat,
         items: visibleItems.filter(item => 'categoryId' in item && (item as any).categoryId === cat.id),

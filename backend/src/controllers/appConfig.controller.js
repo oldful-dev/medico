@@ -723,6 +723,19 @@ const DEFAULT_HOME_CONFIG = {
         // 8. Driver Request
         { id: "driver",       label: "Driver\nRequest",             icon: "60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png", route: "/driving-cab",         enabled: true, sort_order: 8 }
       ]
+    },
+    {
+      // Static "Meetups" link only — Trips & Travels and any future dynamic
+      // Tours & Travel service (category=TOURS_TRAVEL) are auto-added here
+      // by sduiSync.js's isToursTravel branch, same as Home Essentials.
+      id: "tours_travel",
+      title: "Tours & Travel",
+      type: "service_grid",
+      enabled: true,
+      sort_order: 4,
+      services: [
+        { id: "meetups", label: "Local\nMeetups", icon: "🧑‍🤝‍🧑", route: "/meetup", enabled: true, sort_order: 1 }
+      ]
     }
   ],
   "trust_badges": [
