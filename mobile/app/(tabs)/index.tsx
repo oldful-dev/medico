@@ -303,6 +303,7 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
   const CATEGORY_GROUPED_MODULES: Record<string, string> = {
     'ayuxa_services': 'DIAGNOSTICS_FITNESS',
     'tours_travel': 'TOURS_TRAVEL',
+    'essentials': 'HOME_ESSENTIALS',
   };
   const groupingModule = CATEGORY_GROUPED_MODULES[section.id.toLowerCase()];
   const isCategoryGrouped = !!groupingModule;
@@ -386,10 +387,19 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
   // through to the plain flat grid below (e.g. a fresh install with no
   // categories yet still looks exactly as it did before this feature).
   if (isCategoryGrouped && groupCategories.length > 0) {
+    // Config-sourced items (already synced into home_config) carry
+    // `category_id`; DB-sourced dynamic items not yet synced carry
+    // `categoryId` — see sduiSync.js's categoryGroupedModule branch, which
+    // mirrors a Service row's categoryId onto the config item as
+    // category_id once it syncs. Check both so grouping doesn't silently
+    // break the moment a service moves from "live in DB only" to "synced
+    // into config" (which happens automatically and is the common case).
+    const itemCategoryId = (item: any): string | null =>
+      item.category_id ?? item.categoryId ?? null;
     const categorized = groupCategories
       .map(cat => ({
         category: cat,
-        items: visibleItems.filter(item => 'categoryId' in item && (item as any).categoryId === cat.id),
+        items: visibleItems.filter(item => itemCategoryId(item) === cat.id),
       }))
       .filter(group => group.items.length > 0);
     const categorizedIds = new Set(categorized.flatMap(g => g.items.map(i => i.id)));

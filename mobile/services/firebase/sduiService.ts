@@ -42,6 +42,14 @@ export interface HomeService {
     enabled: boolean;
     /** Controls render order within the section */
     sort_order?: number;
+    /**
+     * ServiceCategory id this item is grouped under (mirrored from the
+     * backing Service row by backend/src/utils/sduiSync.js), for sections
+     * that group their tile grid by category — see ServiceGrid's
+     * CATEGORY_GROUPED_MODULES in app/(tabs)/index.tsx. Absent/null means
+     * ungrouped.
+     */
+    category_id?: string | null;
 }
 
 /** A named group of services (e.g. "Ayuxa Services", "Home Essentials"). */

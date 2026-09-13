@@ -240,24 +240,41 @@ const syncDbServicesToUIConfig = async () => {
         const dbServices = await prisma.service.findMany();
         let changed = false;
 
+        // Modules that support admin-created ServiceCategory grouping on the
+        // mobile home-screen tile grid — see mobile/app/(tabs)/index.tsx's
+        // CATEGORY_GROUPED_MODULES map, which must stay in sync with this list.
+        const CATEGORY_GROUPED_SECTIONS = {
+            tours_travel: 'TOURS_TRAVEL',
+            ayuxa_services: 'DIAGNOSTICS_FITNESS',
+        };
+
         for (const section of (config.sections || [])) {
             const isEssentials = section.id === 'essentials' || section.type === 'essentials_grid';
-            const isToursTravel = section.id === 'tours_travel';
+            const categoryGroupedModule = CATEGORY_GROUPED_SECTIONS[section.id];
 
-            if (isToursTravel) {
+            if (categoryGroupedModule) {
                 // Same auto-add/keep-in-sync logic as the essentials branch
                 // below, filtered by category instead of serviceType — this
-                // picks up Trips & Travels (already tagged TOURS_TRAVEL) and
-                // any future dynamic Tours & Travel service. The static
-                // "Meetups" config item has no matching Service row, so it's
-                // just carried through untouched by the "keep existing items"
-                // loop below (its `dbSvc` lookup finds nothing → no-op).
-                const toursTravelDbSvcs = dbServices.filter(s => s.category === 'TOURS_TRAVEL');
+                // picks up every dynamic service tagged with this module
+                // (e.g. Trips & Travels, DIAGNOSTICS_FITNESS dynamic
+                // services). A static link-only config item (e.g. "Meetups")
+                // has no matching Service row, so it's just carried through
+                // untouched by the "keep existing items" loop below (its
+                // `dbSvc` lookup finds nothing → no-op).
+                //
+                // category_id is mirrored onto the config item (in ADDITION
+                // to label/route/icon/enabled/sort_order) because the mobile
+                // app's category-grouping UI reads it directly off the
+                // config item, not off the live DB — grouping would
+                // otherwise silently break the moment a service syncs into
+                // config, since a plain config item has no category link of
+                // its own by default.
+                const moduleDbSvcs = dbServices.filter(s => s.category === categoryGroupedModule);
                 const updatedServices = [];
 
                 // 1. Sync existing items, keep them if still in DB or static (no DB match)
                 for (const item of (section.services || [])) {
-                    const dbSvc = toursTravelDbSvcs.find(s => matchConfigToDb(item.id, item.route, s.slug, s.route));
+                    const dbSvc = moduleDbSvcs.find(s => matchConfigToDb(item.id, item.route, s.slug, s.route));
                     if (dbSvc) {
                         if (!dbSvc.isEnabled && item.enabled) {
                             item.enabled = false;
@@ -279,6 +296,10 @@ const syncDbServicesToUIConfig = async () => {
                             item.sort_order = dbSvc.sortOrder;
                             changed = true;
                         }
+                        if (item.category_id !== (dbSvc.categoryId || null)) {
+                            item.category_id = dbSvc.categoryId || null;
+                            changed = true;
+                        }
                         updatedServices.push(item);
                     } else {
                         // No matching DB service — either a static entry (e.g.
@@ -291,7 +312,7 @@ const syncDbServicesToUIConfig = async () => {
                 }
 
                 // 2. Add new DB services that aren't in config yet
-                for (const dbSvc of toursTravelDbSvcs) {
+                for (const dbSvc of moduleDbSvcs) {
                     const exists = section.services.some(item => matchConfigToDb(item.id, item.route, dbSvc.slug, dbSvc.route));
                     if (!exists) {
                         updatedServices.push({
@@ -300,7 +321,8 @@ const syncDbServicesToUIConfig = async () => {
                             icon: dbSvc.icon || 'default.png',
                             route: dbSvc.route || `/${dbSvc.slug}`,
                             enabled: dbSvc.isEnabled,
-                            sort_order: dbSvc.sortOrder || 1
+                            sort_order: dbSvc.sortOrder || 1,
+                            category_id: dbSvc.categoryId || null,
                         });
                         changed = true;
                     }
@@ -355,13 +377,22 @@ const syncDbServicesToUIConfig = async () => {
                             item.sort_order = dbSvc.sortOrder;
                             changed = true;
                         }
+                        // Mirrored so mobile's category-grouping UI can read
+                        // it directly off the config item — see the
+                        // categoryGroupedModule branch above for the same
+                        // reasoning; Home Essentials groups on the
+                        // home-screen tile grid the same way.
+                        if (item.category_id !== (dbSvc.categoryId || null)) {
+                            item.category_id = dbSvc.categoryId || null;
+                            changed = true;
+                        }
                         updatedServices.push(item);
                     } else {
                         // Deleted from DB
                         changed = true;
                     }
                 }
-                
+
                 // 2. Add new DB services that aren't in config yet
                 for (const dbSvc of homeEssentialDbSvcs) {
                     const exists = section.services.some(item => matchConfigToDb(item.id, item.route, dbSvc.slug, dbSvc.route));
@@ -372,7 +403,8 @@ const syncDbServicesToUIConfig = async () => {
                             icon: dbSvc.icon || 'default.png',
                             route: dbSvc.route || `/${dbSvc.slug}`,
                             enabled: dbSvc.isEnabled,
-                            sort_order: dbSvc.sortOrder || 1
+                            sort_order: dbSvc.sortOrder || 1,
+                            category_id: dbSvc.categoryId || null,
                         });
                         changed = true;
                     }
