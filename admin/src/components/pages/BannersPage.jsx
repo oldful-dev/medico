@@ -726,18 +726,29 @@ export default function BannersPage() {
                                             </div>
                                             <div>
                                                 <label className="form-label">Placement</label>
+                                                {placements.length > 0 && (
+                                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
+                                                        {placements.map(p => (
+                                                            <label key={p} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, cursor: "pointer" }}>
+                                                                <input
+                                                                    type="radio"
+                                                                    name="banner-placement"
+                                                                    checked={form.category === p}
+                                                                    onChange={() => setForm({ ...form, category: p })}
+                                                                />
+                                                                {p}
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                )}
                                                 <input
                                                     type="text"
-                                                    list="banner-placements"
                                                     value={form.category}
                                                     onChange={(e) => setForm({ ...form, category: e.target.value.toUpperCase() })}
                                                     className="form-input"
-                                                    placeholder="e.g. HOME, WELLNESS, BLOOD_TEST"
+                                                    placeholder="or type a new placement, e.g. BLOOD_TEST"
                                                     style={{ width: "100%", height: 40 }}
                                                 />
-                                                <datalist id="banner-placements">
-                                                    {placements.map(p => <option key={p} value={p} />)}
-                                                </datalist>
                                                 <p className="text-xs text-muted" style={{ marginTop: 4 }}>
                                                     Any screen can pull banners for a placement string. Pick an existing one or type a new one — the mobile screen must call getBannersByPlacement with the same value.
                                                 </p>
