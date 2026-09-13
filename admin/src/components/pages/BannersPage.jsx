@@ -49,7 +49,10 @@ export default function BannersPage() {
 
     const [searchTerm, setSearchTerm] = useState("");
     const [filterActive, setFilterActive] = useState("ALL");
-    const [placements, setPlacements] = useState(["HOME", "WELLNESS"]);
+    // Seeded with every placement a mobile screen already calls
+    // getBannersByPlacement/getHomeBanners/getWellnessBanners for, so they
+    // show up here even before any banner has been created for them yet.
+    const [placements, setPlacements] = useState(["HOME", "WELLNESS", "PLANS", "ACCOUNT", "CART"]);
 
     useEffect(() => {
         loadBanners();
