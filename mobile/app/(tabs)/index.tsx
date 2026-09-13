@@ -300,10 +300,12 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
   // Sections that group their tiles by admin-created category — keyed by
   // section id → the module string categories/dynamic services are tagged
   // with. Every other section keeps the flat grid exactly as before.
+  // (Home Essentials/"essentials" is NOT here — that section always renders
+  // via EssentialsGrid below, which has its own matching grouping logic;
+  // ServiceGrid never runs for it.)
   const CATEGORY_GROUPED_MODULES: Record<string, string> = {
     'ayuxa_services': 'DIAGNOSTICS_FITNESS',
     'tours_travel': 'TOURS_TRAVEL',
-    'essentials': 'HOME_ESSENTIALS',
   };
   const groupingModule = CATEGORY_GROUPED_MODULES[section.id.toLowerCase()];
   const isCategoryGrouped = !!groupingModule;
@@ -522,6 +524,18 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors, skeleton }: Es
   const s = makeStyles(colors);
   const { services, preferredLanguage } = useUser();
 
+  // Category grouping, mirroring ServiceGrid's approach — see
+  // backend/src/utils/sduiSync.js's essentials branch, which mirrors a
+  // Service row's categoryId onto its config item as `category_id`.
+  const [groupCategories, setGroupCategories] = useState<ServiceCategoryItem[]>([]);
+  useEffect(() => {
+    let alive = true;
+    serviceCatalogService.getCategories('HOME_ESSENTIALS')
+      .then(res => { if (alive && res.success) setGroupCategories((res.data || []).filter(c => c.isEnabled)); })
+      .catch(() => { /* categories are additive — flat grid is still fine if this fails */ });
+    return () => { alive = false; };
+  }, []);
+
   const enabledRoutesOrSlugs = new Set(
     (section.services || []).map(s => {
       const r = (s.route || '').toLowerCase().trim();
@@ -562,19 +576,59 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors, skeleton }: Es
       label: label,
       route: route,
       iconAsset: (icon && !isEmoji(icon)) ? { uri: getAssetUrl(icon) } : (ICON_MAPPING[slug] || ICON_MAPPING[layoutService.id] || anythingElseIcon),
+      categoryId: layoutService.category_id ?? dbS?.categoryId ?? null,
     };
   }).filter((item): item is NonNullable<typeof item> => item !== null);
 
   const items = rawItems.slice(0, section.max_items || 8);
 
-  const rows: any[][] = [];
-  for (let i = 0; i < items.length; i += 4) {
-    const row = items.slice(i, i + 4);
-    while (row.length < 4) {
-      row.push({ isDummy: true, id: `dummy-${row.length}` } as any);
+  const buildRows = (list: typeof items) => {
+    const rows: any[][] = [];
+    for (let i = 0; i < list.length; i += 4) {
+      const row = list.slice(i, i + 4);
+      while (row.length < 4) {
+        row.push({ isDummy: true, id: `dummy-${rows.length}-${row.length}` } as any);
+      }
+      rows.push(row);
     }
-    rows.push(row);
-  }
+    return rows;
+  };
+
+  const renderRow = (row: any[], rowIdx: number) => (
+    <View key={rowIdx} style={s.essentialsRow}>
+      {row.map(item => {
+        if (item.isDummy) {
+          return <View key={item.id} style={{ width: itemWidth, height: 0 }} />;
+        }
+        const displayLabel = translateServiceLabel(item.id, item.label, t, preferredLanguage);
+        const [line1, line2] = displayLabel.replace(/\\n/g, '\n').split('\n');
+        return (
+          <TouchableOpacity
+            key={item.id}
+            style={[s.essentialItem, { width: itemWidth, height: cardHeight }]}
+            onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
+          >
+            <View style={s.essentialIconCircle}>
+              {skeleton ? (
+                <View style={[s.essentialIcon, { backgroundColor: colors.bgCardMuted || '#E5E7EB', borderRadius: 8 }]} />
+              ) : (
+                <Image source={item.iconAsset} style={s.essentialIcon} resizeMode="contain" />
+              )}
+            </View>
+            <Text style={s.essentialLabel}>{line1}</Text>
+            {line2 ? <Text style={s.essentialLabel}>{line2}</Text> : null}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+
+  const categorized = groupCategories
+    .map(cat => ({ category: cat, items: items.filter(i => i.categoryId === cat.id) }))
+    .filter(g => g.items.length > 0);
+  const categorizedIds = new Set(categorized.flatMap(g => g.items.map(i => i.id)));
+  const uncategorized = items.filter(i => !categorizedIds.has(i.id));
+  const isGrouped = categorized.length > 0;
 
   return (
     <View style={s.essentialsCard}>
@@ -586,34 +640,24 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors, skeleton }: Es
           </TouchableOpacity>
         )}
       </View>
-      {rows.map((row, rowIdx) => (
-        <View key={rowIdx} style={s.essentialsRow}>
-          {row.map(item => {
-            if (item.isDummy) {
-              return <View key={item.id} style={{ width: itemWidth, height: 0 }} />;
-            }
-            const displayLabel = translateServiceLabel(item.id, item.label, t, preferredLanguage);
-            const [line1, line2] = displayLabel.replace(/\\n/g, '\n').split('\n');
-            return (
-              <TouchableOpacity
-                key={item.id}
-                style={[s.essentialItem, { width: itemWidth, height: cardHeight }]}
-                onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
-              >
-                <View style={s.essentialIconCircle}>
-                  {skeleton ? (
-                    <View style={[s.essentialIcon, { backgroundColor: colors.bgCardMuted || '#E5E7EB', borderRadius: 8 }]} />
-                  ) : (
-                    <Image source={item.iconAsset} style={s.essentialIcon} resizeMode="contain" />
-                  )}
-                </View>
-                <Text style={s.essentialLabel}>{line1}</Text>
-                {line2 ? <Text style={s.essentialLabel}>{line2}</Text> : null}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      ))}
+      {isGrouped ? (
+        <>
+          {categorized.map(group => (
+            <View key={group.category.id} style={{ marginBottom: 12 }}>
+              <Text style={[s.essentialsTitle, { fontSize: 13, marginBottom: 8 }]}>{group.category.name}</Text>
+              {buildRows(group.items).map(renderRow)}
+            </View>
+          ))}
+          {uncategorized.length > 0 && (
+            <View>
+              <Text style={[s.essentialsTitle, { fontSize: 13, marginBottom: 8 }]}>{t('common.other_services')}</Text>
+              {buildRows(uncategorized).map(renderRow)}
+            </View>
+          )}
+        </>
+      ) : (
+        buildRows(items).map(renderRow)
+      )}
     </View>
   );
 }
