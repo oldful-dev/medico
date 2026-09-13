@@ -405,6 +405,22 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
     const categorizedIds = new Set(categorized.flatMap(g => g.items.map(i => i.id)));
     const uncategorized = visibleItems.filter(item => !categorizedIds.has(item.id));
 
+    // serviceGrid uses justifyContent: 'space-between', which spreads a
+    // short row's items to the row's far edges instead of packing them
+    // together from the left. The flat-grid path below already pads its
+    // (single, full) list to a multiple of 3 with invisible spacers to work
+    // around this — each category group/uncategorized list here is its own
+    // separate row and needs the same padding independently, or a
+    // 1-2-item group visibly spreads apart instead of sitting together.
+    const renderPaddedGrid = (items: typeof visibleItems) => (
+      <View style={s.serviceGrid}>
+        {items.map(renderTile)}
+        {Array.from({ length: (3 - (items.length % 3)) % 3 }).map((_, idx) => (
+          <View key={`dummy-${idx}`} style={{ width: itemWidth, height: 0 }} />
+        ))}
+      </View>
+    );
+
     if (categorized.length > 0) {
       return (
         <View style={s.servicesCard}>
@@ -414,13 +430,13 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
           {categorized.map(group => (
             <View key={group.category.id} style={{ marginBottom: 16 }}>
               <Text style={[s.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>{group.category.name}</Text>
-              <View style={s.serviceGrid}>{group.items.map(renderTile)}</View>
+              {renderPaddedGrid(group.items)}
             </View>
           ))}
           {uncategorized.length > 0 && (
             <View style={{ marginBottom: 16 }}>
               <Text style={[s.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>{t('common.other_services')}</Text>
-              <View style={s.serviceGrid}>{uncategorized.map(renderTile)}</View>
+              {renderPaddedGrid(uncategorized)}
             </View>
           )}
           {remainingItems.length > 0 && (
