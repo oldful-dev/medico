@@ -12,7 +12,7 @@ import {
   Upload,
   Loader2
 } from "lucide-react";
-import { serviceAPI, mediaAPI } from "@/lib/api";
+import { serviceAPI, serviceCategoryAPI, mediaAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 import RouteSelector from "@/components/common/RouteSelector";
 import ServiceCategoryTab from "@/components/common/ServiceCategoryTab";
@@ -28,6 +28,13 @@ export default function HomeEssentialsPage() {
   
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const iconFileInputRef = useRef(null);
+  const [serviceCategories, setServiceCategories] = useState([]);
+
+  useEffect(() => {
+    serviceCategoryAPI.getAll("HOME_ESSENTIALS")
+      .then(res => setServiceCategories((res.data?.data || []).filter(c => c.isEnabled)))
+      .catch(() => setServiceCategories([]));
+  }, []);
 
   const isEmoji = (str) => {
     if (!str) return false;
@@ -112,6 +119,7 @@ export default function HomeEssentialsPage() {
     pricingText: "Submit Request",
     sortOrder: 1,
     isEnabled: true,
+    categoryId: "",
     serviceType: "HOME_ESSENTIALS"
   });
 
@@ -172,6 +180,7 @@ export default function HomeEssentialsPage() {
       pricingText: "Submit Request",
       sortOrder: services.length + 1,
       isEnabled: true,
+      categoryId: "",
       serviceType: "HOME_ESSENTIALS"
     });
     setShowModal(true);
@@ -191,6 +200,7 @@ export default function HomeEssentialsPage() {
       pricingText: s.pricingText || "",
       sortOrder: s.sortOrder || 1,
       isEnabled: s.isEnabled ?? true,
+      categoryId: s.categoryId || "",
       serviceType: "HOME_ESSENTIALS"
     });
     setShowModal(true);
@@ -235,7 +245,8 @@ export default function HomeEssentialsPage() {
       const payload = {
         ...form,
         basePrice: parseFloat(form.basePrice) || 0,
-        sortOrder: parseInt(form.sortOrder, 10) || 1
+        sortOrder: parseInt(form.sortOrder, 10) || 1,
+        categoryId: form.categoryId || null
       };
 
       if (editingService) {
@@ -518,12 +529,31 @@ export default function HomeEssentialsPage() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Mobile Route *</label>
-                    <RouteSelector 
+                    <RouteSelector
                       value={form.route}
                       onChange={val => setForm({ ...form, route: val })}
                       placeholder="e.g. /appliance-repair"
                     />
                   </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Group under Category (optional)</label>
+                  <select
+                    className="form-input"
+                    value={form.categoryId}
+                    onChange={e => setForm({ ...form, categoryId: e.target.value })}
+                  >
+                    <option value="">No category — show ungrouped</option>
+                    {serviceCategories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  {serviceCategories.length === 0 && (
+                    <p className="text-xs text-muted" style={{ margin: "4px 0 0" }}>
+                      No categories yet — create one in the Categories tab first if you want to group services.
+                    </p>
+                  )}
                 </div>
 
                 {/* Section: Copy Matrix */}
