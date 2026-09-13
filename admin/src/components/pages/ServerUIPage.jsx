@@ -1488,108 +1488,174 @@ export default function ServerUIPage() {
                         );
                       }
 
-                      // Section 2: Diagnostics & Fitness Grid
+                      // Section 2: Diagnostics & Fitness / Tours & Travel Grid
                       if (section.type === "service_grid") {
+                        const svcLabel = (svc) => {
+                          try {
+                            const parsed = JSON.parse(svc.label);
+                            return (parsed.en || svc.id).replace(/\n/g, " ").replace(/\\n/g, " ");
+                          } catch (e) {
+                            return (svc.label || svc.id).replace(/\n/g, " ").replace(/\\n/g, " ");
+                          }
+                        };
+                        const renderTile = (svc) => (
+                          <div key={svc.id} style={{
+                            padding: 10,
+                            borderRadius: 12,
+                            backgroundColor: "#F9FAFB",
+                            border: "1px solid #F3F4F6",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: 6
+                          }}>
+                            <div style={{
+                              width: 32,
+                              height: 32,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 20,
+                              overflow: "hidden"
+                            }}>
+                              {svc.icon && !isEmoji(svc.icon) ? (
+                                <img src={getImageUrl(svc.icon)} alt={svc.id} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 4 }} />
+                              ) : (
+                                svc.icon || "📦"
+                              )}
+                            </div>
+                            <span style={{ fontSize: 9, fontWeight: 600, color: "#4B5563", textAlign: "center" }}>
+                              {svcLabel(svc)}
+                            </span>
+                          </div>
+                        );
+
+                        const enabledSvcs = (section.services || []).filter(sv => sv.enabled).slice(0, section.max_items || 6);
+                        // Same grouping the real app now does — see mobile's
+                        // ServiceGrid CATEGORY_GROUPED_MODULES — so this
+                        // preview matches what customers actually see instead
+                        // of always showing one flat grid.
+                        const previewModule = section.id === "tours_travel" ? "TOURS_TRAVEL" : section.id === "ayuxa_services" ? "DIAGNOSTICS_FITNESS" : null;
+                        const previewCats = previewModule ? (dbCategoriesByModule[previewModule] || []) : [];
+                        const categorized = previewCats
+                          .map(cat => ({ category: cat, items: enabledSvcs.filter(sv => getCategoryBadge(sv)?.categoryName === cat.name) }))
+                          .filter(g => g.items.length > 0);
+                        const categorizedIds = new Set(categorized.flatMap(g => g.items.map(i => i.id)));
+                        const uncategorized = enabledSvcs.filter(sv => !categorizedIds.has(sv.id));
+
                         return (
                           <div key={section.id} style={{ backgroundColor: "#FFF", borderRadius: 16, padding: 14, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{section.title}</span>
                               <span style={{ fontSize: 10, color: "#02743F", fontWeight: 600 }}>View All</span>
                             </div>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-                              {section.services?.filter(sv => sv.enabled).slice(0, section.max_items || 6).map(svc => (
-                                <div key={svc.id} style={{ 
-                                  padding: 10, 
-                                  borderRadius: 12, 
-                                  backgroundColor: "#F9FAFB", 
-                                  border: "1px solid #F3F4F6",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  alignItems: "center",
-                                  gap: 6
-                                }}>
-                                  <div style={{ 
-                                    width: 32, 
-                                    height: 32, 
-                                    display: "flex", 
-                                    alignItems: "center", 
-                                    justifyContent: "center",
-                                    fontSize: 20,
-                                    overflow: "hidden"
-                                  }}>
-                                    {svc.icon && !isEmoji(svc.icon) ? (
-                                      <img src={getImageUrl(svc.icon)} alt={svc.id} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 4 }} />
-                                    ) : (
-                                      svc.icon || "📦"
-                                    )}
+                            {categorized.length > 0 ? (
+                              <>
+                                {categorized.map(group => (
+                                  <div key={group.category.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: "#1F2937" }}>{group.category.name}</span>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                                      {group.items.map(renderTile)}
+                                    </div>
                                   </div>
-                                  <span style={{ fontSize: 9, fontWeight: 600, color: "#4B5563", textAlign: "center" }}>
-                                    {(() => {
-                                      let lbl = svc.label;
-                                      try {
-                                        const parsed = JSON.parse(svc.label);
-                                        lbl = parsed.en || svc.id;
-                                      } catch (e) {
-                                        lbl = svc.label || svc.id;
-                                      }
-                                      return lbl.replace(/\n/g, " ").replace(/\\n/g, " ");
-                                    })()}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
+                                ))}
+                                {uncategorized.length > 0 && (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: "#1F2937" }}>Other Services</span>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                                      {uncategorized.map(renderTile)}
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                                {enabledSvcs.map(renderTile)}
+                              </div>
+                            )}
                           </div>
                         );
                       }
 
                       // Section 3: Essentials Grid
                       if (section.type === "essentials_grid") {
+                        const svcLabel = (svc) => {
+                          try {
+                            const parsed = JSON.parse(svc.label);
+                            return (parsed.en || svc.id).replace(/\n/g, " ").replace(/\\n/g, " ");
+                          } catch (e) {
+                            return (svc.label || svc.id).replace(/\n/g, " ").replace(/\\n/g, " ");
+                          }
+                        };
+                        const renderTile = (svc) => (
+                          <div key={svc.id} style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: 4
+                          }}>
+                            <div style={{
+                              width: 44,
+                              height: 44,
+                              borderRadius: 10,
+                              backgroundColor: "#F3F4F6",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 16,
+                              overflow: "hidden"
+                            }}>
+                              {svc.icon && !isEmoji(svc.icon) ? (
+                                <img src={getImageUrl(svc.icon)} alt={svc.id} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              ) : (
+                                svc.icon || "🛠️"
+                              )}
+                            </div>
+                            <span style={{ fontSize: 8, color: "#4B5563", fontWeight: 600, textAlign: "center" }}>
+                              {svcLabel(svc)}
+                            </span>
+                          </div>
+                        );
+
+                        const enabledSvcs = (section.services || []).filter(sv => sv.enabled).slice(0, section.max_items || 8);
+                        // Same grouping mobile's EssentialsGrid now does.
+                        const previewCats = dbCategoriesByModule["HOME_ESSENTIALS"] || [];
+                        const categorized = previewCats
+                          .map(cat => ({ category: cat, items: enabledSvcs.filter(sv => getCategoryBadge(sv)?.categoryName === cat.name) }))
+                          .filter(g => g.items.length > 0);
+                        const categorizedIds = new Set(categorized.flatMap(g => g.items.map(i => i.id)));
+                        const uncategorized = enabledSvcs.filter(sv => !categorizedIds.has(sv.id));
+
                         return (
                           <div key={section.id} style={{ backgroundColor: "#FFF", borderRadius: 16, padding: 14, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{section.title}</span>
                               <span style={{ fontSize: 10, color: "#02743F", fontWeight: 600 }}>View All</span>
                             </div>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-                              {section.services?.filter(sv => sv.enabled).slice(0, section.max_items || 8).map(svc => (
-                                <div key={svc.id} style={{ 
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  alignItems: "center",
-                                  gap: 4
-                                }}>
-                                  <div style={{ 
-                                    width: 44, 
-                                    height: 44, 
-                                    borderRadius: 10, 
-                                    backgroundColor: "#F3F4F6",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: 16,
-                                    overflow: "hidden"
-                                  }}>
-                                    {svc.icon && !isEmoji(svc.icon) ? (
-                                      <img src={getImageUrl(svc.icon)} alt={svc.id} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                    ) : (
-                                      svc.icon || "🛠️"
-                                    )}
+                            {categorized.length > 0 ? (
+                              <>
+                                {categorized.map(group => (
+                                  <div key={group.category.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    <span style={{ fontSize: 10, fontWeight: 700, color: "#1F2937" }}>{group.category.name}</span>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                                      {group.items.map(renderTile)}
+                                    </div>
                                   </div>
-                                  <span style={{ fontSize: 8, color: "#4B5563", fontWeight: 600, textAlign: "center" }}>
-                                    {(() => {
-                                      let lbl = svc.label;
-                                      try {
-                                        const parsed = JSON.parse(svc.label);
-                                        lbl = parsed.en || svc.id;
-                                      } catch (e) {
-                                        lbl = svc.label || svc.id;
-                                      }
-                                      return lbl.replace(/\n/g, " ").replace(/\\n/g, " ");
-                                    })()}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
+                                ))}
+                                {uncategorized.length > 0 && (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    <span style={{ fontSize: 10, fontWeight: 700, color: "#1F2937" }}>Other Services</span>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                                      {uncategorized.map(renderTile)}
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                                {enabledSvcs.map(renderTile)}
+                              </div>
+                            )}
                           </div>
                         );
                       }
