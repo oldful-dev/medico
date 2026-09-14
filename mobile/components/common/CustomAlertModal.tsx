@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, FontSize, Radius, Shadow } from '@/constants/theme';
 
@@ -8,6 +8,8 @@ interface CustomAlertModalProps {
     title: string;
     message: string;
     iconName?: keyof typeof Ionicons.prototype.props.name;
+    /** Optional image shown above the icon (spec 6.5 "upload an image, if required") */
+    imageUrl?: string | null;
     buttonText?: string;
     onClose: () => void;
     /** Optional secondary button (e.g. Cancel / Destructive action) */
@@ -22,6 +24,7 @@ export function CustomAlertModal({
     title,
     message,
     iconName = 'lock-closed',
+    imageUrl,
     buttonText = 'OK',
     onClose,
     secondaryButtonText,
@@ -39,9 +42,13 @@ export function CustomAlertModal({
         >
             <View style={styles.overlay}>
                 <View style={styles.dialog}>
-                    <View style={styles.iconContainer}>
-                        <Ionicons name={iconName as any} size={32} color={Colors.primary} />
-                    </View>
+                    {imageUrl ? (
+                        <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+                    ) : (
+                        <View style={styles.iconContainer}>
+                            <Ionicons name={iconName as any} size={32} color={Colors.primary} />
+                        </View>
+                    )}
                     <Text style={styles.title}>{title}</Text>
                     <Text style={styles.message}>{message}</Text>
 
@@ -100,6 +107,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#E8F5EC',
         justifyContent: 'center',
         alignItems: 'center',
+        marginBottom: 16,
+    },
+    image: {
+        width: '100%',
+        height: 140,
+        borderRadius: Radius.lg || 12,
         marginBottom: 16,
     },
     title: {

@@ -20,6 +20,7 @@ const {
     sendPaymentReceipt,
     sendDataExport,
     sendPlanExpiryReminder,
+    sendBirthdayWish,
     sendSupportTicketToAdmin,
     sendUserReplyNotifyAdmin,
     sendSOSAlertAdmin,
@@ -43,6 +44,7 @@ module.exports = {
     sendPaymentReceipt,
     sendDataExport,
     sendPlanExpiryReminder,
+    sendBirthdayWish,
 
     // Support
     sendSupportTicketToAdmin,

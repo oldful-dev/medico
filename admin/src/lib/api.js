@@ -339,6 +339,15 @@ export const bannerAPI = {
     delete: (id) => api.delete(`/banners/${id}`),
 };
 
+// ── App Messages — Wish & Information popups (spec 6.2/6.3/6.4) ─────
+export const appMessageAPI = {
+    getAll: () => api.get('/app-messages'),
+    getEngagement: (id) => api.get(`/app-messages/${id}/engagement`),
+    create: (data) => api.post('/app-messages', data),
+    update: (id, data) => api.put(`/app-messages/${id}`, data),
+    delete: (id) => api.delete(`/app-messages/${id}`),
+};
+
 export const faqAPI = {
     getPublished: () => api.get('/faqs/published'),  // Public
     getAll: (params) => api.get('/faqs', { params }),

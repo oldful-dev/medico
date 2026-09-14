@@ -10,6 +10,7 @@ const { sendPlanExpiryFamily, sendHealthCheckFamily, sendPaymentReceived, sendSO
 const { calculateExpiryDate } = require('../utils/helpers');
 const { sendSMS } = require('../services/sms');
 const { recordStatusTransition } = require('../utils/statusTransitions');
+const { sendBirthdayWish } = require('../services/email');
 
 const initCronJobs = () => {
     // ─── 1. Plan Expiry Reminder (Daily at 9 AM) ─────────
@@ -375,7 +376,44 @@ const initCronJobs = () => {
         }
     });
 
-    // ─── 9. Stale Session Reaper (Daily at 3 AM) ──────────
+    // ─── 9. Birthday Wishes Email (Daily at 7 AM) ─────────
+    // Spec 6.1 "Wish & Information > Birthday Wishes": send an automated
+    // birthday email from Ayuxa on the customer's actual birthday (month+day
+    // match against dateOfBirth). The in-app popup is handled client-side
+    // (mobile compares dateOfBirth to today on app open, once per year).
+    cron.schedule('0 7 * * *', async () => {
+        logger.info('⏰ CRON: Running birthday wishes email...');
+        try {
+            const today = new Date();
+            const todayMonth = today.getMonth();
+            const todayDate = today.getDate();
+
+            const users = await prisma.user.findMany({
+                where: { status: 'ACTIVE', dateOfBirth: { not: null }, email: { not: null } },
+                select: { id: true, name: true, email: true, dateOfBirth: true },
+            });
+
+            const birthdayUsers = users.filter(u => {
+                const dob = new Date(u.dateOfBirth);
+                return dob.getMonth() === todayMonth && dob.getDate() === todayDate;
+            });
+
+            let sent = 0;
+            for (const user of birthdayUsers) {
+                try {
+                    await sendBirthdayWish({ to: user.email, name: user.name, userId: user.id });
+                    sent++;
+                } catch (err) {
+                    logger.warn(`[CRON] Birthday wish failed for ${user.email}: ${err.message}`);
+                }
+            }
+            logger.info(`⏰ CRON: Sent ${sent} birthday wish emails`);
+        } catch (error) {
+            logger.error('CRON birthday wishes error:', error);
+        }
+    });
+
+    // ─── 10. Stale Session Reaper (Daily at 3 AM) ─────────
     // Logout doesn't always fire (app killed, uninstalled, token expired), so
     // sessions idle > 30 days are treated as dead and marked inactive.
     cron.schedule('0 3 * * *', async () => {

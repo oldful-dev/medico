@@ -64,6 +64,17 @@ const sendPlanExpiryReminder = ({ to, name, planName, daysLeft, expiryDate, user
         isMarketing: false,
     });
 
+// Goodwill, not transactional — respects emailMarketingEnabled so a user who
+// opted out of marketing/goodwill email doesn't get this either.
+const sendBirthdayWish = ({ to, name, userId }) =>
+    sendEmail({
+        to,
+        subject: EMAIL_TEMPLATES.BIRTHDAY_WISH.subject(),
+        html: EMAIL_TEMPLATES.BIRTHDAY_WISH.html({ name }),
+        userId,
+        isMarketing: true,
+    });
+
 // ─── Support ──────────────────────────────────
 
 const sendSupportTicketToAdmin = ({ ticketCode, subject, userName, userUniqueId, category, priority, description }) =>
@@ -141,6 +152,7 @@ module.exports = {
     sendPaymentReceipt,
     sendDataExport,
     sendPlanExpiryReminder,
+    sendBirthdayWish,
     sendSupportTicketToAdmin,
     sendUserReplyNotifyAdmin,
     sendSOSAlertAdmin,

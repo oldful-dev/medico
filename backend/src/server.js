@@ -55,6 +55,7 @@ const mediaRoutes = require('./routes/media.routes');
 const webhookRoutes = require('./routes/webhook.routes');
 const labRoutes = require('./routes/lab.routes');
 const bannerRoutes = require('./routes/banner.routes');
+const appMessageRoutes = require('./routes/appMessage.routes');
 const faqRoutes = require('./routes/faq.routes');
 const locationRoutes = require('./routes/location.routes');
 const remoteConfigRoutes = require('./routes/remoteConfig.routes');
@@ -275,6 +276,9 @@ app.use('/api/waitlist', waitlistRoutes);
 
 // Banners (public + admin)
 app.use('/api/banners', bannerRoutes);
+
+// App Messages — Wish & Information popups (public + admin)
+app.use('/api/app-messages', appMessageRoutes);
 
 // FAQs (public + admin)
 app.use('/api/faqs', faqRoutes);

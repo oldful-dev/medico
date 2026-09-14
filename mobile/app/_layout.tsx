@@ -11,13 +11,14 @@ import JailMonkey from 'jail-monkey';
 import { usePreventScreenCapture } from 'expo-screen-capture';
 import { useTranslation } from 'react-i18next';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
+import { appMessageService, AppMessage } from '@/services/api/appMessageService';
 import 'react-native-reanimated';
 import '@/i18n/i18n';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useInAppUpdate } from '@/hooks/use-in-app-update';
 import { AuthProvider } from '@/context/AuthContext';
-import { UserProvider } from '@/context/UserContext';
+import { UserProvider, useUser } from '@/context/UserContext';
 import { AddressProvider } from '@/context/AddressContext';
 import { BookingProvider } from '@/context/BookingContext';
 import { CartProvider } from '@/context/CartContext';
@@ -122,10 +123,19 @@ export default function RootLayout() {
 // already acknowledged it shouldn't be nagged every time they open the app.
 const ROOTED_WARNING_SEEN_KEY = 'ayuxa_rooted_warning_seen';
 
+// Spec 6.1 "Wish & Information > Birthday Wishes": popup once per birthday
+// year, never again for that same birthday once dismissed. Key is scoped to
+// the year so next year's birthday shows again automatically — no reset job
+// needed, unlike a permanent seen-flag.
+const birthdayWishSeenKey = (year: number) => `ayuxa_birthday_wish_seen_${year}`;
+
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
   const { t } = useTranslation();
+  const { profile } = useUser();
   const [showRootedWarning, setShowRootedWarning] = useState(false);
+  const [showBirthdayWish, setShowBirthdayWish] = useState(false);
+  const [activeAppMessage, setActiveAppMessage] = useState<AppMessage | null>(null);
 
   // Google Play In-App Updates (Android). All UI is Play Core's own.
   useInAppUpdate();
@@ -151,6 +161,60 @@ function RootLayoutContent() {
   const dismissRootedWarning = () => {
     setShowRootedWarning(false);
     AsyncStorage.setItem(ROOTED_WARNING_SEEN_KEY, 'true').catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!profile?.dateOfBirth) return;
+    (async () => {
+      try {
+        const dob = new Date(profile.dateOfBirth as string);
+        const today = new Date();
+        const isBirthdayToday = dob.getMonth() === today.getMonth() && dob.getDate() === today.getDate();
+        if (!isBirthdayToday) return;
+
+        const key = birthdayWishSeenKey(today.getFullYear());
+        const alreadySeen = await AsyncStorage.getItem(key);
+        if (!alreadySeen) setShowBirthdayWish(true);
+      } catch {
+        // Never block app usage over a popup.
+      }
+    })();
+  }, [profile?.dateOfBirth]);
+
+  const dismissBirthdayWish = () => {
+    setShowBirthdayWish(false);
+    AsyncStorage.setItem(birthdayWishSeenKey(new Date().getFullYear()), 'true').catch(() => {});
+  };
+
+  // Spec 6.4: dismissal state is tracked server-side per (customer, message,
+  // version) — not AsyncStorage — so /active already accounts for the 24h
+  // re-show cooldown and permanent dismissal. Only fetch once logged in
+  // (endpoint requires auth); profile.id changing (e.g. login/logout) re-checks.
+  useEffect(() => {
+    if (!profile?.id) return;
+    (async () => {
+      try {
+        const res = await appMessageService.getActive();
+        const message = res.success ? res.data : null;
+        if (message) setActiveAppMessage(message);
+      } catch {
+        // Never block app usage over a popup.
+      }
+    })();
+  }, [profile?.id]);
+
+  // Spec 6.3: OK/Agree -> acknowledge (never shown again). Dismiss -> dismiss
+  // (re-shown once after 24h, then never). Both are recorded server-side.
+  const acknowledgeAppMessage = () => {
+    const message = activeAppMessage;
+    setActiveAppMessage(null);
+    if (message) appMessageService.acknowledge(message.id).catch(() => {});
+  };
+
+  const dismissAppMessage = () => {
+    const message = activeAppMessage;
+    setActiveAppMessage(null);
+    if (message) appMessageService.dismiss(message.id).catch(() => {});
   };
 
   return (
@@ -242,6 +306,25 @@ function RootLayoutContent() {
         iconName="shield-outline"
         buttonText={t('common.ok')}
         onClose={dismissRootedWarning}
+      />
+      <CustomAlertModal
+        visible={showBirthdayWish}
+        title={t('birthday.title', 'Happy Birthday! 🎂')}
+        message={t('birthday.message', `Wishing you a wonderful day, ${profile?.name || ''}! The Ayuxa team is grateful to be part of your care journey.`)}
+        iconName="gift-outline"
+        buttonText={t('common.ok')}
+        onClose={dismissBirthdayWish}
+      />
+      <CustomAlertModal
+        visible={!!activeAppMessage}
+        title={activeAppMessage?.title || ''}
+        message={activeAppMessage?.body || ''}
+        iconName="megaphone-outline"
+        imageUrl={activeAppMessage?.imageUrl}
+        buttonText={activeAppMessage?.requiresAgreement ? t('common.agree', 'Agree') : t('common.ok')}
+        onClose={acknowledgeAppMessage}
+        secondaryButtonText={t('common.dismiss', 'Dismiss')}
+        onSecondaryPress={dismissAppMessage}
       />
     </NavigationThemeProvider>
   );

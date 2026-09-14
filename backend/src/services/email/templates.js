@@ -211,6 +211,18 @@ const EMAIL_TEMPLATES = {
         `),
     },
 
+    BIRTHDAY_WISH: {
+        subject: () => `Happy Birthday from Ayuxa! 🎂`,
+        html: (vars) => layout(`
+            <h2 style="margin:0 0 8px;color:${PRIMARY};font-size:20px;">Happy Birthday, ${vars.name}! 🎉🎂</h2>
+            <p style="margin:0 0 20px;color:#555;font-size:15px;line-height:1.6;">
+                The entire team at Ayuxa wishes you a wonderful birthday filled with health, happiness, and the people you love most.
+                Thank you for trusting us with your care.
+            </p>
+            <p style="margin:0;color:#777;font-size:13px;">With warm wishes,<br/>Team Ayuxa</p>
+        `),
+    },
+
     PLAN_EXPIRY_REMINDER: {
         subject: (vars) => `Your ${vars.planName} plan expires in ${vars.daysLeft} day${vars.daysLeft === 1 ? '' : 's'}`,
         html: (vars) => layout(`
