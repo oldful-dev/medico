@@ -161,7 +161,34 @@ export default function DynamicServiceScreen() {
   const hideLocationCard = false;
   const showPhotoUpload = hasConfiguredFields ? false : (isDiagnosticsDynamic ? false : (checkoutGroup === 'A' || checkoutGroup === 'B'));
 
+  // The one radio/dropdown field (if any) carrying priced options — mirrors
+  // backend resolveOptionPrice's matching (checkout.controller.js): by id
+  // first, then a case-insensitive label match. Selection is forwarded to
+  // /service-checkout as selectedOption so calculateCheckout resolves the
+  // authoritative price server-side instead of duplicating that logic here.
+  const getSelectedPricedOption = () => {
+    for (const field of dynamicFields) {
+      if (field.type !== 'radio' && field.type !== 'dropdown') continue;
+      const options = field.options || [];
+      if (!options.some((o: any) => typeof o.price === 'number')) continue;
+      const selected = formAnswers[field.id];
+      if (selected === undefined || selected === null) return undefined;
+      return String(selected);
+    }
+    return undefined;
+  };
+
   const getAmount = () => {
+    const selected = getSelectedPricedOption();
+    if (selected !== undefined) {
+      for (const field of dynamicFields) {
+        const options = field.options || [];
+        const byId = options.find((o: any) => o.id === selected);
+        if (byId && typeof byId.price === 'number') return byId.price;
+        const byLabel = options.find((o: any) => typeof o.label === 'string' && o.label.toLowerCase().includes(selected.toLowerCase()));
+        if (byLabel && typeof byLabel.price === 'number') return byLabel.price;
+      }
+    }
     return dbService?.basePrice || 0;
   };
 
@@ -353,6 +380,7 @@ export default function DynamicServiceScreen() {
             isDynamic: 'true',
             hideLocation: hideLocationCard ? 'true' : 'false',
             serviceSlug: slug,
+            ...(getSelectedPricedOption() !== undefined && { selectedOption: getSelectedPricedOption() }),
             ...(params.subscriptionId && { subscriptionId: params.subscriptionId })
           }
         });

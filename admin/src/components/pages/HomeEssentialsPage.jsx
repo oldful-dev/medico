@@ -1,22 +1,17 @@
 "use client";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { 
-  Plus, 
-  Edit2, 
-  Trash2, 
-  ToggleLeft, 
-  ToggleRight, 
-  Search, 
-  Sliders,
-  DollarSign,
-  Upload,
-  Loader2
+import { useState, useEffect, useCallback } from "react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  Search,
 } from "lucide-react";
-import { serviceAPI, serviceCategoryAPI, mediaAPI } from "@/lib/api";
+import { serviceAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
-import RouteSelector from "@/components/common/RouteSelector";
 import ServiceCategoryTab from "@/components/common/ServiceCategoryTab";
-import FileUploadField from "@/components/common/FileUploadField";
+import DynamicServiceFormModal from "@/components/common/DynamicServiceFormModal";
 
 export default function HomeEssentialsPage() {
   const [activeTab, setActiveTab] = useState("services");
@@ -26,16 +21,6 @@ export default function HomeEssentialsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
-  
-  const [uploadingIcon, setUploadingIcon] = useState(false);
-  const iconFileInputRef = useRef(null);
-  const [serviceCategories, setServiceCategories] = useState([]);
-
-  useEffect(() => {
-    serviceCategoryAPI.getAll("HOME_ESSENTIALS")
-      .then(res => setServiceCategories((res.data?.data || []).filter(c => c.isEnabled)))
-      .catch(() => setServiceCategories([]));
-  }, []);
 
   const isEmoji = (str) => {
     if (!str) return false;
@@ -50,80 +35,6 @@ export default function HomeEssentialsPage() {
     }
     return `https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/${imageName}`;
   };
-
-  const handleIconUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      showToast("Only image files are allowed", "error");
-      return;
-    }
-    
-    setUploadingIcon(true);
-    try {
-      const res = await mediaAPI.getSignedUrl({
-        fileName: file.name,
-        contentType: file.type,
-        folder: "mobile/assets/images"
-      });
-
-      if (!res.data.success) throw new Error("Failed to get signed URL");
-      const { gcsUri, signedUrl, storagePath, fileUrl } = res.data.data;
-
-      const uploadRes = await fetch(signedUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': file.type,
-          'Content-Length': file.size.toString(),
-        },
-        body: file,
-        credentials: 'omit',
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error("GCS Upload failed");
-      }
-
-      const confirmRes = await mediaAPI.confirm({
-        storagePath,
-        fileUrl,
-        gcsUri,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        folder: "mobile/assets/images"
-      });
-
-      if (confirmRes.data.success) {
-        const fileNameGCS = storagePath.split("/").pop();
-        setForm(prev => ({ ...prev, icon: fileNameGCS }));
-        showToast("Icon uploaded successfully", "success");
-      }
-    } catch (err) {
-      console.error(err);
-      showToast("Failed to upload image to GCS", "error");
-    } finally {
-      setUploadingIcon(false);
-    }
-  };
-
-  // Form states
-  const [form, setForm] = useState({
-    name: "",
-    slug: "",
-    icon: "🛠️",
-    route: "",
-    headline: "",
-    subhead: "",
-    checkoutGroup: "D",
-    basePrice: 0,
-    pricingText: "Submit Request",
-    sortOrder: 1,
-    isEnabled: true,
-    categoryId: "",
-    category: "HOME_ESSENTIALS",
-    serviceType: "HOME_ESSENTIALS"
-  });
 
   const loadServices = useCallback(async () => {
     try {
@@ -170,43 +81,11 @@ export default function HomeEssentialsPage() {
 
   const openAdd = () => {
     setEditingService(null);
-    setForm({
-      name: "",
-      slug: "",
-      icon: "🛠️",
-      route: "",
-      headline: "",
-      subhead: "",
-      checkoutGroup: "D",
-      basePrice: 0,
-      pricingText: "Submit Request",
-      sortOrder: services.length + 1,
-      isEnabled: true,
-      categoryId: "",
-      category: "HOME_ESSENTIALS",
-      serviceType: "HOME_ESSENTIALS"
-    });
     setShowModal(true);
   };
 
   const openEdit = (s) => {
     setEditingService(s);
-    setForm({
-      name: s.name || "",
-      slug: s.slug || "",
-      icon: s.icon || "🛠️",
-      route: s.route || "",
-      headline: s.headline || "",
-      subhead: s.subhead || "",
-      checkoutGroup: s.checkoutGroup || "D",
-      basePrice: s.basePrice !== null && s.basePrice !== undefined ? s.basePrice : 0,
-      pricingText: s.pricingText || "",
-      sortOrder: s.sortOrder || 1,
-      isEnabled: s.isEnabled ?? true,
-      categoryId: s.categoryId || "",
-      category: "HOME_ESSENTIALS",
-      serviceType: "HOME_ESSENTIALS"
-    });
     setShowModal(true);
   };
 
@@ -240,31 +119,6 @@ export default function HomeEssentialsPage() {
       const errMsg = e.response?.data?.message || "Failed to delete service. Active bookings might exist.";
       showToast(errMsg, "error");
       loadServices();
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        ...form,
-        basePrice: parseFloat(form.basePrice) || 0,
-        sortOrder: parseInt(form.sortOrder, 10) || 1,
-        categoryId: form.categoryId || null
-      };
-
-      if (editingService) {
-        await serviceAPI.update(editingService.id, payload);
-        showToast("Service updated successfully", "success");
-      } else {
-        await serviceAPI.create(payload);
-        showToast("Service created successfully", "success");
-      }
-      setShowModal(false);
-      loadServices();
-    } catch (e) {
-      console.error(e);
-      showToast(e.response?.data?.message || "Operation failed", "error");
     }
   };
 
@@ -395,9 +249,9 @@ export default function HomeEssentialsPage() {
                         {isEmoji(s.icon) ? (
                           <span style={{ fontSize: 20 }}>{s.icon || "🛠️"}</span>
                         ) : (
-                          <img 
-                            src={getImageUrl(s.icon)} 
-                            alt={s.name} 
+                          <img
+                            src={getImageUrl(s.icon)}
+                            alt={s.name}
                             style={{ width: 24, height: 24, objectFit: "contain" }}
                             onError={(e) => {
                               e.target.onerror = null;
@@ -428,8 +282,16 @@ export default function HomeEssentialsPage() {
                     </td>
                     <td>
                       <div>
-                        <div style={{ fontWeight: 600 }}>₹{s.basePrice ?? 0}</div>
-                        <div className="text-sm text-muted">{s.pricingText || "No text"}</div>
+                        <div style={{ fontWeight: 600 }}>
+                          {s.checkoutGroup === "D" && (!s.basePrice || s.basePrice === 0)
+                            ? <span className="badge badge-warning" style={{ fontWeight: 600 }}>Request-based</span>
+                            : `₹${s.basePrice ?? 0}`}
+                        </div>
+                        <div className="text-sm text-muted">
+                          {s.formFieldsJson?.sections?.[0]?.fields?.some(f => (f.options || []).some(o => typeof o.price === 'number'))
+                            ? "Variable — see pricing options"
+                            : (s.pricingText || "No text")}
+                        </div>
                       </div>
                     </td>
                     <td>
@@ -442,7 +304,7 @@ export default function HomeEssentialsPage() {
                         <button className="btn btn-sm btn-secondary" onClick={() => openEdit(s)}>
                           <Edit2 size={14} /> Edit
                         </button>
-                        <button 
+                        <button
                           className={`btn btn-sm ${s.isEnabled ? 'btn-warning' : 'btn-success'}`}
                           onClick={() => handleToggle(s)}
                         >
@@ -461,223 +323,14 @@ export default function HomeEssentialsPage() {
         </div>
       </div>
 
-      {/* Add / Edit Modal Overlay */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" style={{ maxWidth: 580 }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingService ? "Edit Service" : "Add Service"}</h3>
-              <button onClick={() => setShowModal(false)} className="btn btn-sm btn-secondary">✕</button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
-                {/* Section: Identifiers */}
-                <div style={{ fontWeight: 700, color: "var(--accent-primary-light)", borderBottom: "1px dashed var(--border-color)", paddingBottom: 6, marginBottom: 12 }}>
-                  Service Details
-                </div>
-                <div className="form-row">
-                  <div className="form-group" style={{ flex: 2 }}>
-                    <label className="form-label">Service Name *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      required
-                      placeholder="e.g. AC & Appliance Repair"
-                      value={form.name}
-                      onChange={e => setForm({ ...form, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <label className="form-label">Icon / Emoji</label>
-                    {isEmoji(form.icon) ? (
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <input
-                          type="text"
-                          className="form-input"
-                          style={{ textAlign: "center", margin: 0 }}
-                          maxLength={100}
-                          placeholder="🛠️ or image.png"
-                          value={form.icon}
-                          onChange={e => setForm({ ...form, icon: e.target.value })}
-                        />
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          onClick={() => iconFileInputRef.current?.click()}
-                          disabled={uploadingIcon}
-                          style={{ padding: "8px 12px", height: 40 }}
-                        >
-                          {uploadingIcon ? "..." : "Upload"}
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <div style={{ flex: 1 }}>
-                          <FileUploadField
-                            value={getImageUrl(form.icon)}
-                            fileName={form.icon}
-                            folder="mobile/assets/images"
-                            onChange={(url) => setForm(prev => ({ ...prev, icon: url ? url : "🛠️" }))}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      ref={iconFileInputRef}
-                      onChange={handleIconUpload}
-                      style={{ display: "none" }}
-                      accept="image/*"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Unique Slug *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      required
-                      placeholder="e.g. appliance-repair"
-                      value={form.slug}
-                      onChange={e => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") })}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Mobile Route *</label>
-                    <RouteSelector
-                      value={form.route}
-                      onChange={val => setForm({ ...form, route: val })}
-                      placeholder="e.g. /appliance-repair"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Group under Category (optional)</label>
-                  <select
-                    className="form-input"
-                    value={form.categoryId}
-                    onChange={e => setForm({ ...form, categoryId: e.target.value })}
-                  >
-                    <option value="">No category — show ungrouped</option>
-                    {serviceCategories.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  {serviceCategories.length === 0 && (
-                    <p className="text-xs text-muted" style={{ margin: "4px 0 0" }}>
-                      No categories yet — create one in the Categories tab first if you want to group services.
-                    </p>
-                  )}
-                </div>
-
-                {/* Section: Copy Matrix */}
-                <div style={{ fontWeight: 700, color: "var(--accent-primary-light)", borderBottom: "1px dashed var(--border-color)", paddingBottom: 6, marginBottom: 12, marginTop: 16 }}>
-                  Copy Matrix (App Screen View)
-                </div>
-                <div className="form-group">
-                  <label className="form-label">App Headline *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    required
-                    placeholder="Headline displayed on service cards"
-                    value={form.headline}
-                    onChange={e => setForm({ ...form, headline: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">App Subhead *</label>
-                  <textarea
-                    className="form-input"
-                    required
-                    rows={2}
-                    placeholder="Short descriptive card text under the headline"
-                    value={form.subhead}
-                    onChange={e => setForm({ ...form, subhead: e.target.value })}
-                  />
-                </div>
-
-                {/* Section: Checkout Rules & Pricing */}
-                <div style={{ fontWeight: 700, color: "var(--accent-primary-light)", borderBottom: "1px dashed var(--border-color)", paddingBottom: 6, marginBottom: 12, marginTop: 16 }}>
-                  Checkout & Pricing Matrix
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Checkout Group *</label>
-                  <select
-                    className="form-input"
-                    required
-                    value={form.checkoutGroup}
-                    onChange={e => setForm({ ...form, checkoutGroup: e.target.value })}
-                  >
-                    <option value="A">Group A: Standard Booking (₹299 + Date + Address + Photo)</option>
-                    <option value="B">Group B: Utility/Bill (₹299 + Photo upload; No Address)</option>
-                    <option value="C">Group C: Tech Support (Online video Call vs Home Visit selection)</option>
-                    <option value="D">Group D: Zero Payment (Requests/Inquiry bypass; Direct Submit)</option>
-                  </select>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Base Price (INR) *</label>
-                    <input
-                      type="number"
-                      min={0}
-                      className="form-input"
-                      required
-                      placeholder="e.g. 299"
-                      value={form.basePrice}
-                      onChange={e => setForm({ ...form, basePrice: e.target.value })}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Display Pricing Text *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      required
-                      placeholder="e.g. ₹299 Service Charge + Bill"
-                      value={form.pricingText}
-                      onChange={e => setForm({ ...form, pricingText: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row" style={{ alignItems: "center" }}>
-                  <div className="form-group">
-                    <label className="form-label">Sort Order (App Grid Position)</label>
-                    <input
-                      type="number"
-                      min={1}
-                      className="form-input"
-                      required
-                      value={form.sortOrder}
-                      onChange={e => setForm({ ...form, sortOrder: parseInt(e.target.value, 10) || 1 })}
-                    />
-                  </div>
-                  <div className="form-group" style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 20 }}>
-                    <input
-                      type="checkbox"
-                      id="isEnabledCheckbox"
-                      checked={form.isEnabled}
-                      onChange={e => setForm({ ...form, isEnabled: e.target.checked })}
-                    />
-                    <label htmlFor="isEnabledCheckbox" style={{ fontWeight: 600, cursor: "pointer", margin: 0 }}>Is Active (Live on App)</label>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">
-                  {editingService ? "Save Changes" : "Create Service"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <DynamicServiceFormModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSaved={loadServices}
+        editingService={editingService}
+        category="HOME_ESSENTIALS"
+        defaultSortOrder={services.length + 1}
+      />
       </>
       )}
     </div>

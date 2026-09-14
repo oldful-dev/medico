@@ -64,7 +64,12 @@ export default function TripTravelsScreen() {
     };
     const closeAlert = () => setAlertConfig(prev => ({ ...prev, visible: false }));
 
-    const { cityId, serviceId, isLoading: isLoadingInit } = useServiceInitialization('trip-travels');
+    const { cityId, serviceId, servicePrice, dbService, isLoading: isLoadingInit } = useServiceInitialization('trip-travels');
+    // This screen keeps its own custom form (destination/dates/travellers/
+    // purpose) — it never becomes a generic dynamic-service page — but now
+    // respects the Service record's paymentMode so admin can make Trip &
+    // Travels a real paid booking instead of always being a free inquiry.
+    const isPaidTrip = dbService?.paymentMode === 'PAID';
 
     const formattedDate = travelDates
         ? travelDates.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -79,23 +84,41 @@ export default function TripTravelsScreen() {
         if (!purposeOfTravel)     { triggerAlert(t('common.required'), t('trip_travels.purpose_required')); return; }
         if (!cityId || !serviceId) { triggerAlert(t('common.error'), t('booking.init_incomplete')); return; }
 
-        try {
-            setIsBooking(true);
-            const res = await bookingService.createBooking({
-                serviceId,
-                cityId,
-                scheduledDate: travelDates.toISOString(),
-                addressLine: destination,
-                formDataJson: {
-                    type: 'TRIP',
-                    destination,
-                    travelDates: formattedDate,
-                    numTravellers: parseInt(numTravellers),
-                    purposeOfTravel,
-                    specialRequirements: specialRequirements.trim() || null,
-                    additionalDetails: additionalDetails.trim() || null,
+        const bookingPayloadObj = {
+            serviceId,
+            cityId,
+            scheduledDate: travelDates.toISOString(),
+            addressLine: destination,
+            formDataJson: {
+                type: 'TRIP',
+                destination,
+                travelDates: formattedDate,
+                numTravellers: parseInt(numTravellers),
+                purposeOfTravel,
+                specialRequirements: specialRequirements.trim() || null,
+                additionalDetails: additionalDetails.trim() || null,
+            },
+        };
+
+        if (isPaidTrip) {
+            // Admin set this service to PAID — hand off to the shared
+            // checkout screen instead of submitting a free inquiry.
+            router.push({
+                pathname: '/service-checkout',
+                params: {
+                    bookingPayload: JSON.stringify(bookingPayloadObj),
+                    amount: String(servicePrice || 0),
+                    label: t('trip_travels.header'),
+                    paymentMode: 'PAID',
+                    serviceSlug: 'trip-travels',
                 },
             });
+            return;
+        }
+
+        try {
+            setIsBooking(true);
+            const res = await bookingService.createBooking(bookingPayloadObj);
             if (res.success && res.data) {
                 router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
             } else {
@@ -135,7 +158,7 @@ export default function TripTravelsScreen() {
                 </View>
                 <Text style={dynamicStyles.heroTitle}>{t('trip_travels.hero_title')}</Text>
                 <Text style={dynamicStyles.heroSubtitle}>
-                    {t('trip_travels.hero_subtitle')}
+                    {isPaidTrip ? `₹${servicePrice}` : t('trip_travels.hero_subtitle')}
                 </Text>
             </View>
 
@@ -259,7 +282,9 @@ export default function TripTravelsScreen() {
                         ) : (
                             <>
                                 <Ionicons name="paper-plane-outline" size={18} color={WHITE} style={{ marginRight: 8 }} />
-                                <Text style={dynamicStyles.submitBtnText}>{t('trip_travels.submit')}</Text>
+                                <Text style={dynamicStyles.submitBtnText}>
+                                    {isPaidTrip ? `${t('common.pay', 'Pay')} ₹${servicePrice}` : t('trip_travels.submit')}
+                                </Text>
                             </>
                         )}
                     </TouchableOpacity>

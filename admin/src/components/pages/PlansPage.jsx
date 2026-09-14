@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, Pause, Play, XCircle, Save, X } from "lucide-react";
+import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, Pause, Play, XCircle, Save, X, Search } from "lucide-react";
 import { planAPI, subscriptionAPI } from "@/lib/api";
 import { showToast, formatDate, formatCurrency } from "@/lib/hooks";
 
@@ -358,6 +358,7 @@ export default function PlansPage() {
     const [editing, setEditing]       = useState(null);
     const [form, setForm]             = useState(blankPlan());
     const [subFilter, setSubFilter]   = useState('ALL');
+    const [subSearch, setSubSearch]   = useState('');
 
     useEffect(() => { loadPlans(); }, []);
     useEffect(() => { if (activeTab === 'subscriptions') loadSubs(); }, [activeTab]);
@@ -372,7 +373,9 @@ export default function PlansPage() {
         catch (e) { console.error(e); }
     }
 
-    const filteredSubs = subFilter === 'ALL' ? subs : subs.filter(s => s.status === subFilter);
+    const filteredSubs = subs
+        .filter(s => subFilter === 'ALL' || s.status === subFilter)
+        .filter(s => !subSearch.trim() || (s.user?.name || '').toLowerCase().includes(subSearch.trim().toLowerCase()));
 
     function openAdd() {
         setEditing(null);
@@ -497,12 +500,28 @@ export default function PlansPage() {
             {/* ─── Subscriptions Tab ─── */}
             {activeTab === "subscriptions" && (
                 <div className="card">
-                    <div className="card-header"><h3>All Subscriptions</h3></div>
-                    <div className="filter-bar" style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        {['ALL', 'ACTIVE', 'PAUSED', 'EXPIRING', 'EXPIRED', 'CANCELLED'].map(status => (
-                            <button key={status} onClick={() => setSubFilter(status)}
-                                className={`btn btn-sm ${subFilter === status ? 'btn-primary' : 'btn-secondary'}`}>{status}</button>
-                        ))}
+                    <div className="card-header">
+                        <h3>All Subscriptions</h3>
+                        <span className="text-sm text-muted">{filteredSubs.length} of {subs.length}</span>
+                    </div>
+                    <div className="filter-bar" style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {['ALL', 'ACTIVE', 'PAUSED', 'EXPIRING', 'EXPIRED', 'CANCELLED'].map(status => (
+                                <button key={status} onClick={() => setSubFilter(status)}
+                                    className={`btn btn-sm ${subFilter === status ? 'btn-primary' : 'btn-secondary'}`}>{status}</button>
+                            ))}
+                        </div>
+                        <div style={{ position: 'relative', minWidth: 240 }}>
+                            <Search size={15} className="text-muted" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                            <input
+                                type="text"
+                                className="form-input"
+                                style={{ paddingLeft: 32, margin: 0, height: 36 }}
+                                placeholder="Search members by name..."
+                                value={subSearch}
+                                onChange={e => setSubSearch(e.target.value)}
+                            />
+                        </div>
                     </div>
                     <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
                         <table className="data-table">
@@ -529,7 +548,8 @@ export default function PlansPage() {
                                 ))}
                                 {filteredSubs.length === 0 && (
                                     <tr><td colSpan={9} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>
-                                        No subscriptions{subFilter !== 'ALL' ? ` with status ${subFilter}` : ''}.
+                                        No subscriptions{subFilter !== 'ALL' ? ` with status ${subFilter}` : ''}
+                                        {subSearch.trim() ? ` matching "${subSearch.trim()}"` : ''}.
                                     </td></tr>
                                 )}
                             </tbody>

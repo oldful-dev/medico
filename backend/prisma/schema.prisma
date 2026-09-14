@@ -48,6 +48,7 @@ model City {
   notificationLogs NotificationLog[]
   sosAlerts        SOSAlert[]
   users            User[]
+  appMessages      AppMessage[]
 
   @@map("cities")
 }
@@ -81,6 +82,7 @@ model User {
   addresses             Address[]
   bookings              Booking[]
   emergencyContacts     EmergencyContact[]
+  appMessageDismissals  AppMessageDismissal[]
   familyMembers         FamilyMember[]
   healthReports         HealthReport[]
   insuranceApps         InsuranceApplication[]
@@ -1046,6 +1048,19 @@ model ServiceCharge {
   scope       String  @default("SERVICE") @map("scope") // SERVICE | CATEGORY | SERVICE_TYPE
   serviceId   String? @map("service_id")
 
+  // Request-based services (no fixed price — vendor quotes on inquiry, e.g.
+  // Caregiver Support, Scan & ECG) keep serviceFee at 0 like today, but this
+  // flag lets the admin UI show "Request-based" instead of a misleading ₹0.
+  isRequestBased Boolean @default(false) @map("is_request_based")
+
+  // Some services (Fitness, Tech Help) are offered online, offline (in
+  // person), or both, at different provider rates. When set, these override
+  // serviceFee for that delivery mode; serviceFee stays the single-mode
+  // default for everything else. Null on both = mode distinction doesn't
+  // apply to this row.
+  onlineServiceFee  Float? @map("online_service_fee")
+  offlineServiceFee Float? @map("offline_service_fee")
+
   @@map("service_charges")
 }
 
@@ -1078,6 +1093,75 @@ model Banner {
 
   @@index([isActive, order])
   @@map("banners")
+}
+
+// Spec 6.2 "Wish & Information > Information, Promotional & Important
+// Messages" — an admin-authored popup shown once per customer on app open.
+// Exactly one message is active at a time (isActive), the admin flips it off
+// (or a newly-activated one implicitly wins) to retire it; type is a soft tag
+// like Banner.category, not a real enum, matching this codebase's convention.
+//
+// Spec 6.3/6.4: requiresAgreement marks a T&C-style message that needs an
+// explicit Agree (not OK) and tracks acceptance per `version` — bumping the
+// version on edit (e.g. new T&C text) makes every prior AppMessageDismissal
+// row stop counting, so everyone is prompted to re-agree. Plain messages
+// leave version at its default; it's meaningless for them.
+// Spec 6.5 "Admin Controls" additions:
+//   imageUrl        — optional popup image (uploaded via the same GCS flow
+//                      as every other admin image field, e.g. FileUploadField).
+//   targetCityId    — null means all cities, matching sendCampaign's existing
+//                      cityId-or-all pattern (notification.controller.js) —
+//                      no new segmentation concept invented.
+//   startsAt/endsAt — optional validity window; /active excludes the message
+//                      outside this window automatically, independent of the
+//                      manual isActive toggle.
+model AppMessage {
+  id                String    @id @default(uuid())
+  title             String    @db.VarChar(80)
+  body              String    @db.Text
+  type              String    @default("ANNOUNCEMENT") @db.VarChar(20) // ANNOUNCEMENT | SERVICE_UPDATE | PROMOTIONAL | POLICY_UPDATE | OTHER
+  imageUrl          String?
+  targetCityId      String?   @map("target_city_id")
+  startsAt          DateTime? @map("starts_at")
+  endsAt            DateTime? @map("ends_at")
+  isActive          Boolean   @default(false)
+  requiresAgreement Boolean   @default(false)
+  version           String    @default("1") @db.VarChar(20)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  targetCity City?                 @relation(fields: [targetCityId], references: [id])
+  dismissals AppMessageDismissal[]
+
+  @@index([isActive])
+  @@map("app_messages")
+}
+
+// Spec 6.4/6.5 "Dismissal Rules" / "Track viewed/accepted/dismissed/completed"
+// — tracked per (customer, message, version), not on-device, so it survives
+// reinstall/device change and the admin can see engagement. One row per
+// user+message+version; re-created fresh if the message's version changes
+// (see AppMessage.version).
+//
+//   status transitions:
+//     (no row)       -- fetched via /active -->  VIEWED (seen, no action yet)
+//     VIEWED          -- first Dismiss -->        DISMISSED_ONCE
+//     DISMISSED_ONCE -- 24h later, Dismiss -->    DISMISSED_FINAL (never shown again)
+//     VIEWED/(no row) -- OK / Agree -->           ACKNOWLEDGED ("Completed", never shown again)
+model AppMessageDismissal {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  appMessageId    String   @map("app_message_id")
+  messageVersion  String   @map("message_version") @db.VarChar(20)
+  status          String   @default("VIEWED") @db.VarChar(20) // VIEWED | DISMISSED_ONCE | DISMISSED_FINAL | ACKNOWLEDGED
+  firstDismissedAt DateTime @default(now()) @map("first_dismissed_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appMessage AppMessage @relation(fields: [appMessageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, appMessageId, messageVersion])
+  @@map("app_message_dismissals")
 }
 
 enum AdminRole {

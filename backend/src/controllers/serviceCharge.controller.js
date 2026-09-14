@@ -24,7 +24,7 @@ const getServiceCharges = async (req, res, next) => {
         const matchedServices = serviceIds.length
             ? await prisma.service.findMany({
                 where: { id: { in: serviceIds } },
-                select: { id: true, name: true, slug: true, category: true, serviceType: true, basePrice: true, pricingText: true },
+                select: { id: true, name: true, slug: true, category: true, serviceType: true, basePrice: true, pricingText: true, formFieldsJson: true },
             })
             : [];
         const serviceById = new Map(matchedServices.map(s => [s.id, s]));
@@ -100,7 +100,10 @@ const createServiceCharge = async (req, res, next) => {
             surgeCharge,
             taxPercentage,
             isSubscriptionEligible,
-            isActive
+            isActive,
+            isRequestBased,
+            onlineServiceFee,
+            offlineServiceFee
         } = req.body;
 
         const existing = await prisma.serviceCharge.findUnique({
@@ -113,7 +116,7 @@ const createServiceCharge = async (req, res, next) => {
         const charge = await prisma.serviceCharge.create({
             data: {
                 serviceCategory,
-                serviceFee: parseFloat(serviceFee || 0),
+                serviceFee: isRequestBased ? 0 : parseFloat(serviceFee || 0),
                 bookingFee: parseFloat(bookingFee || 0),
                 platformFee: parseFloat(platformFee || 0),
                 convenienceFee: parseFloat(convenienceFee || 0),
@@ -124,6 +127,9 @@ const createServiceCharge = async (req, res, next) => {
                 taxPercentage: parseFloat(taxPercentage || 0),
                 isSubscriptionEligible: isSubscriptionEligible !== undefined ? isSubscriptionEligible : true,
                 isActive: isActive !== undefined ? isActive : true,
+                isRequestBased: !!isRequestBased,
+                onlineServiceFee: onlineServiceFee !== undefined && onlineServiceFee !== '' ? parseFloat(onlineServiceFee) : null,
+                offlineServiceFee: offlineServiceFee !== undefined && offlineServiceFee !== '' ? parseFloat(offlineServiceFee) : null,
             },
         });
 
@@ -169,6 +175,9 @@ const updateServiceCharge = async (req, res, next) => {
             taxPercentage,
             isSubscriptionEligible,
             isActive,
+            isRequestBased,
+            onlineServiceFee,
+            offlineServiceFee,
             changeReason
         } = req.body;
 
@@ -180,7 +189,12 @@ const updateServiceCharge = async (req, res, next) => {
         }
 
         const data = {};
-        if (serviceFee !== undefined) data.serviceFee = parseFloat(serviceFee) || 0;
+        if (isRequestBased !== undefined) {
+            data.isRequestBased = !!isRequestBased;
+            data.serviceFee = isRequestBased ? 0 : parseFloat(serviceFee ?? existing.serviceFee) || 0;
+        } else if (serviceFee !== undefined) {
+            data.serviceFee = parseFloat(serviceFee) || 0;
+        }
         if (bookingFee !== undefined) data.bookingFee = parseFloat(bookingFee) || 0;
         if (platformFee !== undefined) data.platformFee = parseFloat(platformFee) || 0;
         if (convenienceFee !== undefined) data.convenienceFee = parseFloat(convenienceFee) || 0;
@@ -190,6 +204,8 @@ const updateServiceCharge = async (req, res, next) => {
         if (surgeCharge !== undefined) data.surgeCharge = parseFloat(surgeCharge) || 0;
         if (taxPercentage !== undefined) data.taxPercentage = parseFloat(taxPercentage) || 0;
         if (isSubscriptionEligible !== undefined) data.isSubscriptionEligible = isSubscriptionEligible;
+        if (onlineServiceFee !== undefined) data.onlineServiceFee = onlineServiceFee === '' || onlineServiceFee === null ? null : parseFloat(onlineServiceFee);
+        if (offlineServiceFee !== undefined) data.offlineServiceFee = offlineServiceFee === '' || offlineServiceFee === null ? null : parseFloat(offlineServiceFee);
         if (isActive !== undefined) data.isActive = isActive;
 
         const charge = await prisma.serviceCharge.update({
