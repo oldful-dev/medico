@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import {
     PlusCircle, Trash, ArrowUp, ArrowDown, Upload
 } from "lucide-react";
-import { serviceAPI, serviceCategoryAPI, mediaAPI } from "@/lib/api";
+import { serviceAPI, serviceCategoryAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 import RouteSelector from "@/components/common/RouteSelector";
+import FileUploadField from "@/components/common/FileUploadField";
 
 const isEmoji = (str) => {
     if (!str) return false;
@@ -98,7 +99,6 @@ export default function DynamicServiceFormModal({
     defaultSortOrder = 1,
 }) {
     const [iconType, setIconType] = useState("emoji");
-    const [uploadingImage, setUploadingImage] = useState(false);
     const [form, setForm] = useState(buildEmptyForm(category, defaultSortOrder));
     const [formFields, setFormFields] = useState(DEFAULT_FORM_FIELDS);
     const [serviceCategories, setServiceCategories] = useState([]);
@@ -165,34 +165,6 @@ export default function DynamicServiceFormModal({
             setFormFields(DEFAULT_FORM_FIELDS);
         }
     }, [open, editingService, category, defaultSortOrder]);
-
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        if (!file.type.startsWith('image/')) {
-            showToast("Only image files are allowed", "error");
-            return;
-        }
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('folder', 'mobile/assets/images');
-        try {
-            setUploadingImage(true);
-            const res = await mediaAPI.upload(formData);
-            if (res.data?.success && res.data?.data?.fileUrl) {
-                const uploadedUrl = res.data.data.fileUrl;
-                setForm(prev => ({ ...prev, icon: uploadedUrl }));
-                showToast("Icon image uploaded successfully", "success");
-            } else {
-                throw new Error("Invalid response structure");
-            }
-        } catch (err) {
-            console.error(err);
-            showToast(err.response?.data?.message || "Upload failed", "error");
-        } finally {
-            setUploadingImage(false);
-        }
-    };
 
     const addFormField = () => {
         const nextId = `field_${Date.now()}`;
@@ -407,26 +379,11 @@ export default function DynamicServiceFormModal({
                                 ) : (
                                     <div className="form-group" style={{ marginBottom: 0 }}>
                                         <label className="form-label">Service Icon Image (GCS) *</label>
-                                        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                                            {form.icon && !isEmoji(form.icon) ? (
-                                                <div style={{ position: "relative", width: "50px", height: "50px", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border-color)" }}>
-                                                    <img src={form.icon} alt="Service Icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                                </div>
-                                            ) : (
-                                                <div style={{ width: "50px", height: "50px", borderRadius: "8px", border: "1px dashed var(--border-color)", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.15)" }}>
-                                                    <Upload size={16} className="text-muted" />
-                                                </div>
-                                            )}
-                                            <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer", margin: 0 }}>
-                                                {uploadingImage ? "Uploading..." : "Choose Image"}
-                                                <input type="file" hidden accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} />
-                                            </label>
-                                            {form.icon && !isEmoji(form.icon) && (
-                                                <span className="text-xs text-muted" style={{ wordBreak: "break-all" }}>
-                                                    Uploaded: {form.icon.split('/').pop()}
-                                                </span>
-                                            )}
-                                        </div>
+                                        <FileUploadField
+                                            value={form.icon && !isEmoji(form.icon) ? form.icon : ""}
+                                            onChange={(url) => setForm(prev => ({ ...prev, icon: url }))}
+                                            folder="service-icons"
+                                        />
                                     </div>
                                 )}
                             </div>

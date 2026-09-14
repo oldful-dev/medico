@@ -17,6 +17,7 @@ export default function WebsiteSettingsPage() {
     const [configId, setConfigId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [justUpdatedLogoIndex, setJustUpdatedLogoIndex] = useState(null);
     // Full formData shape is preserved even though this page only edits a
     // subset — saves must round-trip the whole blob so Company Settings'
     // fields (contact/notifications) aren't clobbered on write.
@@ -289,12 +290,19 @@ export default function WebsiteSettingsPage() {
         try {
             showToast("Uploading partner logo to GCS...", "info");
             const res = await mediaAPI.upload(fd);
-            const url = res.data?.data?.url || res.data?.url;
+            // uploadMedia (backend) returns the asset row, whose URL field is
+            // `fileUrl` — not `url`. This was always undefined, so a partner
+            // logo upload never actually attached a URL (silently fell into
+            // the "no URL returned" branch below), which is why the new file
+            // never showed up until something else forced a reload.
+            const url = res.data?.data?.fileUrl || res.data?.fileUrl;
 
             if (url) {
                 const updated = [...(formData.partners_list || [])];
                 updated[index] = { ...updated[index], logoUrl: url };
                 setFormData({ ...formData, partners_list: updated });
+                setJustUpdatedLogoIndex(index);
+                setTimeout(() => setJustUpdatedLogoIndex(curr => (curr === index ? null : curr)), 4000);
                 showToast("Partner logo uploaded successfully!", "success");
             } else {
                 showToast("Upload succeeded but no URL returned", "error");
@@ -574,7 +582,7 @@ export default function WebsiteSettingsPage() {
                                 {(formData.partners_list || []).map((partner, index) => (
                                     <div key={index} style={{ display: "flex", gap: 12, alignItems: "center", padding: 14, background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
                                         <div style={{ display: "flex", gap: 10, alignItems: "center", flex: 2 }}>
-                                            <div style={{ position: "relative", width: 44, height: 44, background: partner.color || "var(--bg-card)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px solid var(--border-color)", cursor: "pointer" }} onClick={() => document.getElementById(`partner-file-${index}`).click()}>
+                                            <div style={{ position: "relative", width: 44, height: 44, background: partner.color || "var(--bg-card)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: justUpdatedLogoIndex === index ? "2px solid var(--accent-primary-light, #10b981)" : "1px solid var(--border-color)", cursor: "pointer", transition: "border-color 0.3s" }} onClick={() => document.getElementById(`partner-file-${index}`).click()} title={partner.logoUrl || "Click to upload logo"}>
                                                 {partner.logoUrl ? (
                                                     <img src={partner.logoUrl} alt={partner.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                                                 ) : (
@@ -583,6 +591,21 @@ export default function WebsiteSettingsPage() {
                                                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 8, display: "flex", alignItems: "center", justifyContent: "center", padding: "2px 0" }}>
                                                     <Upload size={8} />
                                                 </div>
+                                                {partner.logoUrl && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const updated = [...(formData.partners_list || [])];
+                                                            updated[index] = { ...updated[index], logoUrl: "" };
+                                                            setFormData({ ...formData, partners_list: updated });
+                                                        }}
+                                                        title="Remove logo"
+                                                        style={{ position: "absolute", top: 1, right: 1, width: 14, height: 14, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 9, lineHeight: "14px", padding: 0, cursor: "pointer" }}
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                )}
                                                 <input
                                                     id={`partner-file-${index}`}
                                                     type="file"

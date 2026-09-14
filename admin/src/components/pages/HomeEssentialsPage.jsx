@@ -16,6 +16,7 @@ import { serviceAPI, serviceCategoryAPI, mediaAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 import RouteSelector from "@/components/common/RouteSelector";
 import ServiceCategoryTab from "@/components/common/ServiceCategoryTab";
+import FileUploadField from "@/components/common/FileUploadField";
 
 export default function HomeEssentialsPage() {
   const [activeTab, setActiveTab] = useState("services");
@@ -488,26 +489,39 @@ export default function HomeEssentialsPage() {
                   </div>
                   <div className="form-group" style={{ flex: 1 }}>
                     <label className="form-label">Icon / Emoji</label>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <input
-                        type="text"
-                        className="form-input"
-                        style={{ textAlign: "center", margin: 0 }}
-                        maxLength={100}
-                        placeholder="🛠️ or image.png"
-                        value={form.icon}
-                        onChange={e => setForm({ ...form, icon: e.target.value })}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => iconFileInputRef.current?.click()}
-                        disabled={uploadingIcon}
-                        style={{ padding: "8px 12px", height: 40 }}
-                      >
-                        {uploadingIcon ? "..." : "Upload"}
-                      </button>
-                    </div>
+                    {isEmoji(form.icon) ? (
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ textAlign: "center", margin: 0 }}
+                          maxLength={100}
+                          placeholder="🛠️ or image.png"
+                          value={form.icon}
+                          onChange={e => setForm({ ...form, icon: e.target.value })}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => iconFileInputRef.current?.click()}
+                          disabled={uploadingIcon}
+                          style={{ padding: "8px 12px", height: 40 }}
+                        >
+                          {uploadingIcon ? "..." : "Upload"}
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <div style={{ flex: 1 }}>
+                          <FileUploadField
+                            value={getImageUrl(form.icon)}
+                            fileName={form.icon}
+                            folder="mobile/assets/images"
+                            onChange={(url) => setForm(prev => ({ ...prev, icon: url ? url : "🛠️" }))}
+                          />
+                        </div>
+                      </div>
+                    )}
                     <input
                       type="file"
                       ref={iconFileInputRef}

@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, PartyPopper, Plane, ArrowRight, Image as ImageIcon } from "lucide-react";
-import { serviceAPI, appConfigAPI, mediaAPI } from "@/lib/api";
+import { serviceAPI, appConfigAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 import DynamicServiceFormModal from "@/components/common/DynamicServiceFormModal";
 import ServiceCategoryTab from "@/components/common/ServiceCategoryTab";
+import FileUploadField from "@/components/common/FileUploadField";
 
 const isEmoji = (str) => {
     if (!str) return false;
@@ -36,7 +37,6 @@ export default function ToursTravelPage() {
     // one small direct edit against home_config this page needs.
     const [meetupIcon, setMeetupIcon] = useState("");
     const [meetupIconType, setMeetupIconType] = useState("emoji");
-    const [uploadingMeetupIcon, setUploadingMeetupIcon] = useState(false);
     const [savingMeetupIcon, setSavingMeetupIcon] = useState(false);
     const [showMeetupIconEditor, setShowMeetupIconEditor] = useState(false);
 
@@ -56,33 +56,6 @@ export default function ToursTravelPage() {
     }, []);
 
     useEffect(() => { loadMeetupIcon(); }, [loadMeetupIcon]);
-
-    const handleMeetupIconUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        if (!file.type.startsWith("image/")) {
-            showToast("Only image files are allowed", "error");
-            return;
-        }
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("folder", "mobile/assets/images");
-        try {
-            setUploadingMeetupIcon(true);
-            const res = await mediaAPI.upload(formData);
-            if (res.data?.success && res.data?.data?.fileUrl) {
-                setMeetupIcon(res.data.data.fileUrl);
-                showToast("Icon image uploaded — click Save to publish", "success");
-            } else {
-                throw new Error("Invalid response structure");
-            }
-        } catch (err) {
-            console.error(err);
-            showToast(err.response?.data?.message || "Upload failed", "error");
-        } finally {
-            setUploadingMeetupIcon(false);
-        }
-    };
 
     const saveMeetupIcon = async () => {
         if (!meetupIcon.trim()) {
@@ -250,20 +223,12 @@ export default function ToursTravelPage() {
                             onChange={e => setMeetupIcon(e.target.value)}
                         />
                     ) : (
-                        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-                            {meetupIcon && !isEmoji(meetupIcon) ? (
-                                <div style={{ width: 50, height: 50, borderRadius: 8, overflow: "hidden", border: "1px solid var(--border-color)" }}>
-                                    <img src={meetupIcon} alt="Local Meetups icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                </div>
-                            ) : (
-                                <div style={{ width: 50, height: 50, borderRadius: 8, border: "1px dashed var(--border-color)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <ImageIcon size={16} className="text-muted" />
-                                </div>
-                            )}
-                            <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer", margin: 0 }}>
-                                {uploadingMeetupIcon ? "Uploading..." : "Choose Image"}
-                                <input type="file" hidden accept="image/*" onChange={handleMeetupIconUpload} disabled={uploadingMeetupIcon} />
-                            </label>
+                        <div style={{ marginBottom: 16 }}>
+                            <FileUploadField
+                                value={meetupIcon && !isEmoji(meetupIcon) ? meetupIcon : ""}
+                                onChange={(url) => setMeetupIcon(url)}
+                                folder="mobile/assets/images"
+                            />
                         </div>
                     )}
                     <div style={{ display: "flex", gap: 8 }}>

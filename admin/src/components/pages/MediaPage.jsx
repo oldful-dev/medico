@@ -496,7 +496,7 @@ export default function MediaPage() {
                         </div>
                         <div className="modal-footer" style={{ marginTop: 12 }}>
                             <button className="btn btn-secondary" onClick={() => { navigator.clipboard.writeText(previewImage); showToast('URL copied'); }}>Copy URL</button>
-                            <button className="btn className=btn-primary" onClick={() => setPreviewImage(null)}>Close</button>
+                            <button className="btn btn-primary" onClick={() => setPreviewImage(null)}>Close</button>
                         </div>
                     </div>
                 </div>
