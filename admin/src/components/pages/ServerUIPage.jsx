@@ -459,7 +459,63 @@ export default function ServerUIPage() {
     });
   };
 
+  // Rebuilds one of the three sync-linked sections with its real, required
+  // id — the only safe way to bring one back after deleting it (they can no
+  // longer be deleted via the UI, but this also covers a section missing
+  // from a raw JSON edit or already-broken data). Using "Add Grid Service
+  // Section" instead gives it a random id, which silently breaks
+  // new-service auto-sync (see SYNC_LINKED_SECTION_IDS above) until an
+  // engineer fixes the id by hand.
+  const LINKED_SECTION_DEFAULTS = {
+    ayuxa_services: { title: "Care & Diagnostics", type: "service_grid", max_items: 6, view_all_route: "/all-ayuxa-services" },
+    tours_travel: { title: "Tours & Travel", type: "service_grid", max_items: 6, view_all_route: "/trip-travels" },
+    essentials: { title: "Home Essentials Services", type: "essentials_grid", max_items: 8, view_all_route: "/all-home-essentials" },
+  };
+
+  const restoreLinkedSection = (id) => {
+    const defaults = LINKED_SECTION_DEFAULTS[id];
+    if (!defaults) return;
+    setParsedConfig(prev => {
+      const sections = [...(prev.sections || [])];
+      sections.push({
+        id,
+        title: defaults.title,
+        type: defaults.type,
+        enabled: true,
+        sort_order: sections.length + 1,
+        max_items: defaults.max_items,
+        view_all_route: defaults.view_all_route,
+        services: []
+      });
+      const next = { ...prev, sections };
+      setRawJson(JSON.stringify(next, null, 2));
+      return next;
+    });
+    showToast(`Restored with id "${id}" — new services will auto-sync into it again.`, "success");
+  };
+
+  // These three section ids are hardcoded contracts the backend sync
+  // (sduiSync.js's CATEGORY_GROUPED_SECTIONS + isEssentials check) and the
+  // mobile app both key off of directly — deleting and re-adding
+  // "Diagnostics & Fitness" / "Tours & Travel" / "Home Essentials" via "Add
+  // Grid Service Section" assigns a new section_<timestamp> id, which
+  // silently breaks auto-sync of new services into it (the section still
+  // renders via type, but never gets backfilled). There's no way to detect
+  // that from title/type alone once the id is gone, so this warns before
+  // it happens (use the "Restore" button afterward to bring it back with
+  // its real id instead of "Add Grid Service Section").
+  const SYNC_LINKED_SECTION_IDS = new Set(['ayuxa_services', 'tours_travel', 'essentials']);
+
   const removeSection = (index) => {
+    const section = (parsedConfig.sections || [])[index];
+    if (section && SYNC_LINKED_SECTION_IDS.has(section.id)) {
+      const proceed = confirm(
+        `"${section.title}" (id: ${section.id}) is a special section that new services auto-sync into. ` +
+        `If you delete it, new services created afterward won't appear in it until it's restored with its ` +
+        `real id (use the "Restore" button that appears once it's gone, not "Add Grid Service Section"). Delete anyway?`
+      );
+      if (!proceed) return;
+    }
     setParsedConfig(prev => {
       const sections = (prev.sections || []).filter((_, i) => i !== index);
       const next = { ...prev, sections };
@@ -488,6 +544,45 @@ export default function ServerUIPage() {
       setRawJson(JSON.stringify(next, null, 2));
       return next;
     });
+  };
+
+  const removeServiceItem = (sectionIndex, serviceIndex) => {
+    setParsedConfig(prev => {
+      const sections = [...(prev.sections || [])];
+      const services = (sections[sectionIndex].services || []).filter((_, i) => i !== serviceIndex);
+      sections[sectionIndex] = { ...sections[sectionIndex], services };
+      const next = { ...prev, sections };
+      setRawJson(JSON.stringify(next, null, 2));
+      return next;
+    });
+  };
+
+  // Adds an existing Service (from Diagnostic & Fitness / Home Essentials /
+  // Tours & Travel / Core Services) into any grid section as a plain,
+  // one-time snapshot — this does NOT create a live link. Sections other
+  // than ayuxa_services/essentials/tours_travel (e.g. Quick Services) have
+  // no auto-sync, so if the source service's name/icon/price/enabled state
+  // changes later, this copy won't follow — it has to be re-added or
+  // edited by hand here too.
+  const addServiceFromDb = (sectionIndex, dbService) => {
+    if (!dbService) return;
+    setParsedConfig(prev => {
+      const sections = [...(prev.sections || [])];
+      const services = [...(sections[sectionIndex].services || [])];
+      services.push({
+        id: dbService.slug.replace(/-/g, '_'),
+        label: dbService.headline || dbService.name,
+        icon: dbService.icon || 'default.png',
+        route: dbService.route || `/dynamic-service/${dbService.slug}`,
+        enabled: true,
+        sort_order: services.length + 1,
+      });
+      sections[sectionIndex] = { ...sections[sectionIndex], services };
+      const next = { ...prev, sections };
+      setRawJson(JSON.stringify(next, null, 2));
+      return next;
+    });
+    showToast(`Added "${dbService.name}" — this is a snapshot, not a live link; edits to the original service won't sync here.`, "success");
   };
 
   const updateTrustBadge = (index, field, val) => {
@@ -1016,9 +1111,9 @@ export default function ServerUIPage() {
                               />
                               Enabled Section
                             </label>
-                            <button 
-                              type="button" 
-                              className="btn btn-sm btn-outline-danger" 
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
                               onClick={() => removeSection(sIdx)}
                               title="Delete Section"
                               style={{ padding: "2px 6px" }}
@@ -1234,6 +1329,15 @@ export default function ServerUIPage() {
                                       />
                                     </div>
                                   </div>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => removeServiceItem(sIdx, svIdx)}
+                                    title="Remove this item from the section"
+                                    style={{ padding: "4px 6px" }}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
                                 </div>
 
                                 {/* Read-only: category + real DB status from the
@@ -1259,25 +1363,75 @@ export default function ServerUIPage() {
                                 </div>
                               );})}
                             </div>
+
+                            {/* Add an existing service (from Diagnostic &
+                                Fitness / Home Essentials / Tours & Travel /
+                                Core Services) as a one-time snapshot into
+                                this section. Not a live link — see
+                                addServiceFromDb's comment. */}
+                            <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                              <select
+                                className="form-input"
+                                style={{ flex: 1, height: 32, fontSize: 12 }}
+                                value=""
+                                onChange={(e) => {
+                                  const dbSvc = dbServices.find(s => s.id === e.target.value);
+                                  if (dbSvc) addServiceFromDb(sIdx, dbSvc);
+                                }}
+                              >
+                                <option value="">+ Add existing service to this section...</option>
+                                {dbServices
+                                  .slice()
+                                  .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                                  .map(s => (
+                                    <option key={s.id} value={s.id}>
+                                      {s.name} ({s.category}{s.isEnabled ? "" : " — disabled"})
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
                           </div>
                         </div>
 
                       </div>
                     ))}
 
+                    {/* Restore controls — only shown when one of the two
+                        sync-linked sections is currently missing. This is
+                        the correct way to bring it back (keeps its real id),
+                        as opposed to "Add Grid Service Section" below, which
+                        always creates a fresh random id. */}
+                    {Object.keys(LINKED_SECTION_DEFAULTS)
+                      .filter(id => !(parsedConfig.sections || []).some(s => s.id === id))
+                      .map(id => (
+                        <div key={id} style={{ marginTop: 10, marginBottom: 10 }}>
+                          <button
+                            type="button"
+                            className="btn btn-warning"
+                            onClick={() => restoreLinkedSection(id)}
+                            style={{ display: "flex", alignItems: "center", gap: 6 }}
+                          >
+                            <Plus size={16} /> Restore &quot;{LINKED_SECTION_DEFAULTS[id].title}&quot; Section
+                          </button>
+                          <p className="text-xs text-muted" style={{ margin: "4px 0 0" }}>
+                            This section is missing — use this button (not &quot;Add Grid Service Section&quot; below) so new services keep auto-syncing into it.
+                          </p>
+                        </div>
+                    ))}
+
                     {/* Add New Section Controls */}
                     <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
-                      <button 
-                        type="button" 
-                        className="btn btn-outline-primary" 
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary"
                         onClick={() => addSection("custom_card")}
                         style={{ display: "flex", alignItems: "center", gap: 6 }}
                       >
                         <Plus size={16} /> Add Custom Banner Card Section
                       </button>
-                      <button 
-                        type="button" 
-                        className="btn btn-outline-secondary" 
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
                         onClick={() => addSection("service_grid")}
                         style={{ display: "flex", alignItems: "center", gap: 6 }}
                       >

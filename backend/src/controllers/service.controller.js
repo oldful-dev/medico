@@ -59,6 +59,26 @@ const createService = async (req, res, next) => {
             }
         }
 
+        // A raw P2002 unique-constraint error just says "slug taken" with no
+        // way to tell the admin WHY — often it's a service that was
+        // "deleted" but actually got soft-disabled instead, because it had
+        // active bookings (see deleteService below). Checking first lets us
+        // say exactly what's blocking them instead of a Prisma stack trace.
+        if (slug) {
+            const conflict = await prisma.service.findUnique({
+                where: { slug },
+                select: { id: true, name: true, category: true, isEnabled: true },
+            });
+            if (conflict) {
+                return sendResponse(
+                    res, 409, null,
+                    conflict.isEnabled
+                        ? `Slug "${slug}" is already used by "${conflict.name}" (category: ${conflict.category}). Choose a different slug, or delete/rename that service first.`
+                        : `Slug "${slug}" is already used by "${conflict.name}" (category: ${conflict.category}), which is disabled but still exists — likely because it had bookings and was soft-disabled instead of deleted. Force-delete it from its own page first, or choose a different slug.`
+                );
+            }
+        }
+
         const service = await prisma.service.create({
             data: {
                 name,
@@ -140,6 +160,22 @@ const updateService = async (req, res, next) => {
         }
         if (data.isDynamic !== undefined && data.isDynamic !== null) {
             data.isDynamic = data.isDynamic === true || data.isDynamic === 'true';
+        }
+
+        // Same friendly pre-check as createService — see the comment there.
+        if (data.slug && data.slug !== oldService?.slug) {
+            const conflict = await prisma.service.findUnique({
+                where: { slug: data.slug },
+                select: { id: true, name: true, category: true, isEnabled: true },
+            });
+            if (conflict && conflict.id !== req.params.id) {
+                return sendResponse(
+                    res, 409, null,
+                    conflict.isEnabled
+                        ? `Slug "${data.slug}" is already used by "${conflict.name}" (category: ${conflict.category}). Choose a different slug, or delete/rename that service first.`
+                        : `Slug "${data.slug}" is already used by "${conflict.name}" (category: ${conflict.category}), which is disabled but still exists — likely because it had bookings and was soft-disabled instead of deleted. Force-delete it from its own page first, or choose a different slug.`
+                );
+            }
         }
 
         const service = await prisma.service.update({

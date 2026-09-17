@@ -267,7 +267,13 @@ export default function DynamicServiceFormModal({
                 basePrice: parseFloat(form.basePrice) || 0,
                 sortOrder: parseInt(form.sortOrder, 10) || 1,
                 categoryId: form.categoryId || null,
-                formFieldsJson: formFieldsJsonObj
+                formFieldsJson: formFieldsJsonObj,
+                // serviceType always saved as "OTHER" regardless of which
+                // page created the service — HomeEssentialsPage.jsx and
+                // mobile's home essentials grid both filter on
+                // serviceType === "HOME_ESSENTIALS", so a service created
+                // here would save successfully but never appear anywhere.
+                serviceType: category === "HOME_ESSENTIALS" ? "HOME_ESSENTIALS" : form.serviceType,
             };
 
             if (editingService) {

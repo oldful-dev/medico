@@ -1637,6 +1637,22 @@ export default function ServiceCheckoutScreen() {
                     </Text>
                   )}
                 </View>
+                {isUpgraded && selectedUpgradePlan && savingsInfo && (
+                  <View style={styles.breakdownRow}>
+                    <Text style={styles.breakdownLabel}>
+                      {selectedUpgradePlan.name} (
+                      {selectedDuration === "QUARTERLY"
+                        ? t("service_checkout.months_3")
+                        : selectedDuration === "BIANNUAL"
+                          ? t("service_checkout.months_6")
+                          : t("service_checkout.months_12")}
+                      )
+                    </Text>
+                    <Text style={styles.breakdownValue}>
+                      ₹{savingsInfo.planPrice.toLocaleString("en-IN")}
+                    </Text>
+                  </View>
+                )}
                 {benefitApplied && (
                   <Text style={styles.benefitNote}>
                     {t("service_checkout.plan_benefit_applied")}
@@ -1672,7 +1688,17 @@ export default function ServiceCheckoutScreen() {
                   </Text>
                   <Text style={styles.totalValue}>
                     ₹
-                    {(amountWithTaxAndFee - discount).toLocaleString("en-IN", {
+                    {/* amountWithTaxAndFee intentionally excludes the plan's
+                        own cost (see savingsInfo.bookingTotalWithUpgrade vs
+                        finalPayable) so the coupon/discount math above isn't
+                        affected — but the displayed Total must include it,
+                        or this disagrees with the Pay button, which uses
+                        finalAmount (fed from finalPayable). */}
+                    {(
+                      amountWithTaxAndFee -
+                      discount +
+                      (isUpgraded && savingsInfo ? savingsInfo.planPrice : 0)
+                    ).toLocaleString("en-IN", {
                       minimumFractionDigits: 0,
                       maximumFractionDigits: 0,
                     })}
