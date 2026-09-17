@@ -118,6 +118,10 @@ export default function DynamicServiceFormModal({
     // Redcliffe Labs API, not from admin config — its price fields are read-only here.
     const isBloodTestService = form.slug === "blood-test" || form.route === "/blood-test";
 
+    /* eslint-disable react-hooks/set-state-in-effect -- resetting the
+       form's local state to match `editingService` when the modal opens
+       for a (possibly different) item; there's no external system to
+       synchronize with here, just deriving state from a prop change. */
     useEffect(() => {
         if (!open) return;
         if (editingService) {
@@ -165,6 +169,7 @@ export default function DynamicServiceFormModal({
             setFormFields(DEFAULT_FORM_FIELDS);
         }
     }, [open, editingService, category, defaultSortOrder]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const addFormField = () => {
         const nextId = `field_${Date.now()}`;
