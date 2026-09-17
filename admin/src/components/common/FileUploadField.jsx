@@ -107,10 +107,16 @@ export default function FileUploadField({ value, onChange, folder = "general", f
                     </button>
                 </div>
             ) : (
-                <label className="btn btn-secondary" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, width: "fit-content" }}>
+                <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, width: "fit-content" }}
+                    onClick={() => inputRef.current?.click()}
+                    disabled={uploading}
+                >
                     {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                     {uploading ? "Uploading..." : "Choose File"}
-                </label>
+                </button>
             )}
             <input ref={inputRef} type="file" hidden accept={accept} onChange={handleFile} disabled={uploading} />
         </div>
