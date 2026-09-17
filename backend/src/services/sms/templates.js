@@ -91,6 +91,21 @@ const SMS_TEMPLATES = {
         variables: 1,
         text: 'Dear {#var#}, We have important update for you. Please check the Ayuxa app for details. Team Ayuxa.',
     },
+    // SOS resolved — sent to the client themselves once their SOS is
+    // marked RESOLVED.
+    SOS_RESOLVED_CLIENT: {
+        senderId: 'AYUXA',
+        templateId: '225741',
+        variables: 1,
+        text: 'Dear {#var#}, We are writing to confirm that the SOS alert recently triggered via the AYUXA app has been successfully resolved. Open Ayuxa app for more details. Team Ayuxa.',
+    },
+    // SOS resolved — sent to the client's emergency contact (family member).
+    SOS_RESOLVED_FAMILY: {
+        senderId: 'AYUXA',
+        templateId: '225740',
+        variables: 2,
+        text: 'Dear {#var#}, We are writing to confirm that the SOS alert recently triggered by your family member "{#var#}" via the AYUXA app has been successfully resolved. Open Ayuxa/Connect app for more details. Team Ayuxa.',
+    },
 
     // ── Sender: AYUXAH (Employees / Caregivers) ──────────────────────────
 

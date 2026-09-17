@@ -253,6 +253,29 @@ const WHATSAPP_TEMPLATES = {
         campaignEligible: true,
         description: 'Invites customer to follow the Ayuxa WhatsApp Channel — marketing',
     },
+    // SOS resolved — sent to the client themselves once their SOS is
+    // marked RESOLVED.
+    SOS_RESOLVED_CLIENT: {
+        waba: 'AYUXA_FAMILY',
+        messageId: 33302,
+        templateId: '1091340266614348',
+        name: 'sos_alert_resolved',
+        variables: 1,              // Var1=client name
+        mediaRequired: false,
+        docRequired: false,
+        description: 'SOS resolved — confirmation sent to the client',
+    },
+    // SOS resolved — sent to the client's emergency contact (family member).
+    SOS_RESOLVED_FAMILY: {
+        waba: 'AYUXA_FAMILY',
+        messageId: 33301,
+        templateId: '2086279819430815',
+        name: 'sos_triggered_resolved_family',
+        variables: 2,              // Var1=family member (recipient) name, Var2=who triggered it (client)
+        mediaRequired: false,
+        docRequired: false,
+        description: 'SOS resolved — confirmation sent to the family/emergency contact',
+    },
 
     // ════════════════════════════════════════════
     //  AYUXA_RELEASE — Marketing / promotions

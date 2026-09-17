@@ -217,6 +217,29 @@ const sendSOSAlertFamily = ({ phone }) =>
     });
 
 /**
+ * SOS resolved — confirmation sent to the client (AYUXA_FAMILY).
+ * Template: SOS_RESOLVED_CLIENT — Var1=client name.
+ */
+const sendSOSResolvedClient = ({ phone, name, userId }) =>
+    sendWhatsApp({
+        template: 'SOS_RESOLVED_CLIENT',
+        mobile: phone,
+        variables: [name || 'Customer'],
+        userId,
+    });
+
+/**
+ * SOS resolved — confirmation sent to the family/emergency contact (AYUXA_FAMILY).
+ * Template: SOS_RESOLVED_FAMILY — Var1=family member (recipient) name, Var2=client name.
+ */
+const sendSOSResolvedFamily = ({ phone, familyName, clientName }) =>
+    sendWhatsApp({
+        template: 'SOS_RESOLVED_FAMILY',
+        mobile: phone,
+        variables: [familyName || 'Family Member', clientName || 'your family member'],
+    });
+
+/**
  * Client care plan cancelled/expired — family notified (AYUXA_FAMILY).
  * Template: PLAN_EXPIRED_FAMILY — Var1=family_name, Var2=client_name, Var3=ayuxa_id
  */
@@ -441,6 +464,8 @@ module.exports = {
 
     // Family (AYUXA_FAMILY)
     sendSOSAlertFamily,
+    sendSOSResolvedClient,
+    sendSOSResolvedFamily,
     sendPlanExpiredFamily,
     sendPlanExpiryFamily,
     sendHealthCheckFamily,

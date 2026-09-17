@@ -36,6 +36,8 @@ const {
 
     // Family
     sendSOSAlertFamily,
+    sendSOSResolvedClient,
+    sendSOSResolvedFamily,
     sendPlanExpiredFamily,
     sendPlanExpiryFamily,
     sendHealthCheckFamily,
@@ -87,6 +89,8 @@ module.exports = {
 
     // Family
     sendSOSAlertFamily,
+    sendSOSResolvedClient,
+    sendSOSResolvedFamily,
     sendPlanExpiredFamily,
     sendPlanExpiryFamily,
     sendHealthCheckFamily,

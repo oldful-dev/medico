@@ -487,9 +487,7 @@ const resolveSOS = async (req, res) => {
         const { emitToAdmins } = require('../services/socket.service');
         emitToAdmins('sos_updated', alert);
 
-        // Push + Email to user confirming their SOS has been resolved — non-fatal.
-        // No SMS/WhatsApp to the client here by design (they only get a push
-        // at trigger time too) — Email is the one channel added on resolve.
+        // Push to user confirming their SOS has been resolved — non-fatal.
         try {
             const { sendPushToUser } = require('../utils/pushNotification.service');
             await sendPushToUser(alert.userId, {
@@ -501,6 +499,7 @@ const resolveSOS = async (req, res) => {
             logger.warn('resolveSOS: push failed (non-fatal):', pushErr.message);
         }
 
+        // Email to the client — approved template, non-fatal.
         if (alert.user?.email) {
             try {
                 await emailService.sendSOSResolvedClient({
@@ -511,6 +510,40 @@ const resolveSOS = async (req, res) => {
             } catch (emailErr) {
                 logger.warn('resolveSOS: email failed (non-fatal):', emailErr.message);
             }
+        }
+
+        // WhatsApp + SMS to the client — approved templates (SOS_RESOLVED_CLIENT).
+        if (alert.user?.phone) {
+            try {
+                await wa.sendSOSResolvedClient({ phone: alert.user.phone, name: alert.user.name, userId: alert.userId });
+            } catch (waErr) {
+                logger.warn('resolveSOS: client WhatsApp failed (non-fatal):', waErr.message);
+            }
+            try {
+                await sendSMS({ template: 'SOS_RESOLVED_CLIENT', mobile: alert.user.phone, variables: [alert.user.name] });
+            } catch (smsErr) {
+                logger.warn('resolveSOS: client SMS failed (non-fatal):', smsErr.message);
+            }
+        }
+
+        // WhatsApp + SMS to the client's emergency contacts — approved
+        // templates (SOS_RESOLVED_FAMILY).
+        try {
+            const contacts = await prisma.emergencyContact.findMany({ where: { userId: alert.userId, user: { status: 'ACTIVE' } } });
+            for (const contact of contacts) {
+                try {
+                    await wa.sendSOSResolvedFamily({ phone: contact.phone, familyName: contact.name, clientName: alert.user?.name });
+                } catch (waErr) {
+                    logger.warn(`resolveSOS: family WhatsApp failed for ${contact.phone} (non-fatal):`, waErr.message);
+                }
+                try {
+                    await sendSMS({ template: 'SOS_RESOLVED_FAMILY', mobile: contact.phone, variables: [contact.name, alert.user?.name] });
+                } catch (smsErr) {
+                    logger.warn(`resolveSOS: family SMS failed for ${contact.phone} (non-fatal):`, smsErr.message);
+                }
+            }
+        } catch (err) {
+            logger.warn('resolveSOS: family contacts fetch failed (non-fatal):', err.message);
         }
 
         res.json({ success: true, message: 'SOS alert resolved', data: alert });
