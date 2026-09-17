@@ -481,13 +481,15 @@ const resolveSOS = async (req, res) => {
                 resolvedAt: new Date(),
                 resolvedNotes: notes,
             },
-            include: { user: { select: { id: true, name: true, phone: true } } },
+            include: { user: { select: { id: true, name: true, phone: true, email: true } } },
         });
 
         const { emitToAdmins } = require('../services/socket.service');
         emitToAdmins('sos_updated', alert);
 
-        // Push + SMS to user confirming their SOS has been resolved — non-fatal
+        // Push + Email to user confirming their SOS has been resolved — non-fatal.
+        // No SMS/WhatsApp to the client here by design (they only get a push
+        // at trigger time too) — Email is the one channel added on resolve.
         try {
             const { sendPushToUser } = require('../utils/pushNotification.service');
             await sendPushToUser(alert.userId, {
@@ -497,6 +499,18 @@ const resolveSOS = async (req, res) => {
             });
         } catch (pushErr) {
             logger.warn('resolveSOS: push failed (non-fatal):', pushErr.message);
+        }
+
+        if (alert.user?.email) {
+            try {
+                await emailService.sendSOSResolvedClient({
+                    to: alert.user.email,
+                    name: alert.user.name,
+                    userId: alert.userId,
+                });
+            } catch (emailErr) {
+                logger.warn('resolveSOS: email failed (non-fatal):', emailErr.message);
+            }
         }
 
         res.json({ success: true, message: 'SOS alert resolved', data: alert });

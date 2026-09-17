@@ -26,6 +26,7 @@ const {
     sendSupportTicketToAdmin,
     sendUserReplyNotifyAdmin,
     sendSOSAlertAdmin,
+    sendSOSResolvedClient,
     sendCareersNotifyAdmin,
     sendCareersApplicantConfirm,
     sendNewsletterConfirm,
@@ -56,6 +57,7 @@ module.exports = {
 
     // Emergency
     sendSOSAlertAdmin,
+    sendSOSResolvedClient,
 
     // HR / Careers
     sendCareersNotifyAdmin,

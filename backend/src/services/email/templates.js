@@ -335,6 +335,26 @@ const EMAIL_TEMPLATES = {
         `),
     },
 
+    // Sent to the client themselves once admin marks their SOS RESOLVED —
+    // not at trigger time (they only get a push then).
+    SOS_RESOLVED_CLIENT: {
+        subject: () => `Update: SOS Alert Successfully Resolved`,
+        html: (vars) => layout(`
+            <h2 style="margin:0 0 8px;color:${PRIMARY};font-size:20px;">SOS Alert Resolved</h2>
+            <p style="margin:0 0 16px;color:#555;font-size:15px;line-height:1.6;">Dear ${vars.name},</p>
+            <p style="margin:0 0 16px;color:#555;font-size:15px;line-height:1.6;">
+                We are writing to confirm that the SOS alert recently triggered via the AYUXA app has been successfully resolved.
+            </p>
+            <p style="margin:0 0 16px;color:#555;font-size:15px;line-height:1.6;">
+                Our emergency response team immediately reviewed the alert, coordinated the necessary checks, and verified that everything is safe and secure. Your safety and well-being remain our top priority, and our support team is always here for you.
+            </p>
+            <p style="margin:0 0 20px;color:#555;font-size:15px;line-height:1.6;">
+                Should you need any further assistance or have questions regarding this incident, please feel free to reach out to our centralized customer care at 080 4728 0789 or email us at support@ayuxacare.com.
+            </p>
+            <p style="margin:0;color:#777;font-size:13px;">Warm regards,<br/>Team Ayuxa</p>
+        `),
+    },
+
     // ─── HR / Careers ─────────────────────────
 
     CAREERS_ADMIN_NOTIFY: {

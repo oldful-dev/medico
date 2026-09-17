@@ -141,6 +141,15 @@ const sendSOSAlertAdmin = ({ userName, userUniqueId, phone, location }) =>
         html: EMAIL_TEMPLATES.SOS_ALERT_ADMIN.html({ userName, userUniqueId, phone, location }),
     });
 
+// Sent to the client themselves once their SOS is marked RESOLVED.
+const sendSOSResolvedClient = ({ to, name, userId }) =>
+    sendEmail({
+        to,
+        subject: EMAIL_TEMPLATES.SOS_RESOLVED_CLIENT.subject(),
+        html: EMAIL_TEMPLATES.SOS_RESOLVED_CLIENT.html({ name }),
+        userId,
+    });
+
 // ─── HR / Careers ─────────────────────────────
 
 const sendCareersNotifyAdmin = async ({ name, email, phone, role, experience, resumeLink, coverLetter }) => {
@@ -199,6 +208,7 @@ module.exports = {
     sendSupportTicketToAdmin,
     sendUserReplyNotifyAdmin,
     sendSOSAlertAdmin,
+    sendSOSResolvedClient,
     sendCareersNotifyAdmin,
     sendCareersApplicantConfirm,
     sendNewsletterConfirm,

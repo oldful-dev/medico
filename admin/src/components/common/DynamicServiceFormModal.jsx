@@ -632,7 +632,12 @@ export default function DynamicServiceFormModal({
                                 </div>
                             </div>
                         </div>
-                         {/* VISUAL FORM BUILDER */}
+                         {/* VISUAL FORM BUILDER — only for Dynamic SDUI pages. A "Core
+                             Built-in Page" is rendered by native app code that doesn't
+                             read formFieldsJson at all, so showing a form builder for
+                             it is meaningless and misleads admins into thinking these
+                             fields do something. */}
+                         {form.isDynamic && (<>
                          <div className="form-builder-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border-color)", paddingTop: 24, marginTop: 24, marginBottom: 16 }}>
                              <div>
                                  <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--accent-primary)" }}>Form Fields Builder</h4>
@@ -765,6 +770,7 @@ export default function DynamicServiceFormModal({
                                  ))
                              )}
                          </div>
+                         </>)}
                     </div>
                     <div className="modal-footer">
                         <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
