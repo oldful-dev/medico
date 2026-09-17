@@ -251,6 +251,37 @@ const EMAIL_TEMPLATES = {
         `),
     },
 
+    // ─── Marketing/broadcast — WhatsApp + Email only, never SMS ─────
+    // (client instruction: SMS keeps only its existing "Update" DLT template
+    // and welcome template; these mirror the WhatsApp ANNOUNCEMENT_UPDATE /
+    // PROMO_OFFER templates for the email channel of the same campaigns.)
+
+    ANNOUNCEMENT_UPDATE: {
+        subject: () => `Ayuxa: Important Update`,
+        html: (vars) => layout(`
+            <h2 style="margin:0 0 8px;color:${PRIMARY};font-size:20px;">General Announcement</h2>
+            <p style="margin:0 0 20px;color:#555;font-size:15px;line-height:1.6;">
+                Dear ${vars.name}, Ayuxa has an important notice/update for you. Please check the Ayuxa App for details.
+            </p>
+            <table cellpadding="0" cellspacing="0"><tr><td style="background-color:${PRIMARY};border-radius:6px;">
+                <a href="${vars.appUrl || 'https://ayuxacare.com'}" style="display:inline-block;padding:12px 28px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;">Open Ayuxa App</a>
+            </td></tr></table>
+        `),
+    },
+
+    PROMO_OFFER: {
+        subject: (vars) => `${vars.discount || 'A special'} discount on Ayuxa services!`,
+        html: (vars) => layout(`
+            <h2 style="margin:0 0 8px;color:${PRIMARY};font-size:20px;">Discount Offer for You 🎁</h2>
+            <p style="margin:0 0 20px;color:#555;font-size:15px;line-height:1.6;">
+                Dear ${vars.name}, enjoy <strong>${vars.discount || 'a special'}</strong> discount on Ayuxa Service! Open the app to redeem now.
+            </p>
+            <table cellpadding="0" cellspacing="0"><tr><td style="background-color:${PRIMARY};border-radius:6px;">
+                <a href="${vars.appUrl || 'https://ayuxacare.com'}" style="display:inline-block;padding:12px 28px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;">Redeem Now</a>
+            </td></tr></table>
+        `),
+    },
+
     // ─── Support ──────────────────────────────
 
     SUPPORT_TICKET_ADMIN: {

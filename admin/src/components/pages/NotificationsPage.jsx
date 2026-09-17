@@ -12,6 +12,7 @@ import FileUploadField from "@/components/common/FileUploadField";
 // too (appMessage.controller.js), this list entry exists only so admins can
 // see it's accounted for and understand where it actually lives.
 const MESSAGE_TYPES = [
+    { value: "EMERGENCY", label: "🚨 Emergency Announcement" },
     { value: "ANNOUNCEMENT", label: "Important Announcement" },
     { value: "SERVICE_UPDATE", label: "Service Update" },
     { value: "PROMOTIONAL", label: "Promotional Message" },
@@ -273,27 +274,40 @@ export default function NotificationsPage() {
     const [logs, setLogs] = useState([]);
     const [cities, setCities] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [campaign, setCampaign] = useState({ channel: 'PUSH', subject: '', body: '', cityId: '', templateId: '' });
+    const [campaign, setCampaign] = useState({ channel: 'PUSH', subject: '', body: '', cityId: '', templateId: '', mediaUrl: '' });
     const [showCampaign, setShowCampaign] = useState(false);
+    const [campaignTemplates, setCampaignTemplates] = useState({ whatsapp: [], email: [] });
 
-    useEffect(() => { loadLogs(); cityAPI.getAll().then(r => setCities(r.data?.data || [])).catch(() => { }); }, []);
+    useEffect(() => {
+        loadLogs();
+        cityAPI.getAll().then(r => setCities(r.data?.data || [])).catch(() => { });
+        // Live from the real WHATSAPP_TEMPLATES/EMAIL campaign-eligible lists
+        // (backend/src/controllers/notification.controller.js getCampaignTemplates)
+        // — not a hardcoded array that can drift out of sync with what actually sends.
+        notificationAPI.getCampaignTemplates().then(r => setCampaignTemplates(r.data?.data || { whatsapp: [], email: [] })).catch(() => { });
+    }, []);
 
     async function loadLogs() { try { setLoading(true); const r = await notificationAPI.getLogs({ limit: 50 }); setLogs(r.data?.data || []); } catch (e) { } finally { setLoading(false); } }
 
     async function sendCampaign(e) {
         e.preventDefault();
-        try { await notificationAPI.sendCampaign(campaign); showToast('Campaign sent!'); setShowCampaign(false); }
-        catch (e) { showToast(e.response?.data?.message || 'Failed', 'error'); }
+        try {
+            const r = await notificationAPI.sendCampaign(campaign);
+            const { sentCount, failedCount, errors } = r.data?.data || {};
+            if (failedCount > 0) {
+                // Real per-recipient error text (e.g. Fast2SMS's own "Template
+                // ID is invalid or not approved") — not just a bare fail count.
+                showToast(`${sentCount} sent, ${failedCount} failed: ${(errors || []).join('; ') || 'see Campaigns & Logs for details'}`, 'error');
+            } else {
+                showToast(r.data?.message || 'Campaign sent!');
+            }
+            setShowCampaign(false);
+            loadLogs();
+        } catch (e) { showToast(e.response?.data?.message || 'Failed', 'error'); }
     }
 
     const channelColors = { EMAIL: 'badge-info', WHATSAPP: 'badge-success', PUSH: 'badge-purple', SMS: 'badge-warning' };
-
-    const whatsappTemplates = [
-        { value: 'ayuxa_remember', label: 'Ayuxa Remember (Marketing)' },
-        { value: 'birthday_wishes', label: 'Birthday Wishes (Marketing)' },
-        { value: 'plan_expiry_reminder', label: 'Plan Expiry Reminder (Marketing)' },
-        { value: 'followup_feedback', label: 'Follow-up Feedback (Marketing)' },
-    ];
+    const selectedWhatsappTemplate = campaignTemplates.whatsapp.find(t => t.value === campaign.templateId);
 
     return (
         <div>
@@ -339,8 +353,9 @@ export default function NotificationsPage() {
                                     <div className="form-group">
                                         <label className="form-label">Channel</label>
                                         <select className="form-select" value={campaign.channel} onChange={e => setCampaign({ ...campaign, channel: e.target.value, templateId: '' })}>
-                                            {['PUSH', 'EMAIL', 'WHATSAPP', 'SMS'].map(c => <option key={c} value={c}>{c}</option>)}
+                                            {['PUSH', 'EMAIL', 'WHATSAPP'].map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
+                                        <small className="text-muted">SMS campaigns aren&apos;t listed — no DLT-approved broadcast template registered yet.</small>
                                     </div>
                                     <div className="form-group">
                                         <label className="form-label">Target City</label>
@@ -353,19 +368,55 @@ export default function NotificationsPage() {
                                 {campaign.channel === 'WHATSAPP' && (
                                     <div className="form-group">
                                         <label className="form-label">WhatsApp Template *</label>
-                                        <select className="form-select" required value={campaign.templateId} onChange={e => setCampaign({ ...campaign, templateId: e.target.value })}>
+                                        <select className="form-select" required value={campaign.templateId} onChange={e => setCampaign({ ...campaign, templateId: e.target.value, mediaUrl: '' })}>
                                             <option value="">Select a template</option>
-                                            {whatsappTemplates.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                            {campaignTemplates.whatsapp.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                                         </select>
                                         <small className="text-muted">Only approved marketing templates can be used for campaigns.</small>
                                     </div>
                                 )}
-                                {campaign.channel !== 'WHATSAPP' && (
+                                {campaign.channel === 'WHATSAPP' && selectedWhatsappTemplate?.mediaRequired && (
+                                    <div className="form-group">
+                                        <label className="form-label">Template Image *</label>
+                                        <FileUploadField
+                                            value={campaign.mediaUrl}
+                                            onChange={(url) => setCampaign({ ...campaign, mediaUrl: url })}
+                                            folder="notification-campaigns"
+                                        />
+                                        <small className="text-muted">This template requires an image — the campaign can&apos;t send without one.</small>
+                                    </div>
+                                )}
+                                {campaign.channel === 'EMAIL' && (
+                                    <div className="form-group">
+                                        <label className="form-label">Template (optional)</label>
+                                        <select className="form-select" value={campaign.templateId} onChange={e => setCampaign({ ...campaign, templateId: e.target.value })}>
+                                            <option value="">Custom (use Subject/Message below)</option>
+                                            {campaignTemplates.email.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                        </select>
+                                        <small className="text-muted">Pick a structured marketing template, or leave blank to send free-form Subject/Message.</small>
+                                    </div>
+                                )}
+                                {campaign.channel !== 'WHATSAPP' && !(campaign.channel === 'EMAIL' && campaign.templateId) && (
                                     <div className="form-group"><label className="form-label">Subject {campaign.channel === 'PUSH' && '(Notification title)'}</label><input className="form-input" value={campaign.subject} onChange={e => setCampaign({ ...campaign, subject: e.target.value })} /></div>
                                 )}
                                 <div className="form-group">
-                                    <label className="form-label">Message {campaign.channel === 'WHATSAPP' ? '(Preview — actual content from template)' : '*'}</label>
-                                    <textarea className="form-input" rows={4} required={campaign.channel !== 'WHATSAPP'} value={campaign.body} onChange={e => setCampaign({ ...campaign, body: e.target.value })} />
+                                    <label className="form-label">
+                                        {campaign.channel === 'WHATSAPP' && selectedWhatsappTemplate?.variables >= 2 ? 'Message — 2nd variable (e.g. discount/link) *'
+                                            : campaign.channel === 'WHATSAPP' ? 'Message (Preview — actual content from template)'
+                                            : campaign.channel === 'EMAIL' && campaign.templateId === 'PROMO_OFFER' ? 'Discount value (e.g. "20%") *'
+                                            : campaign.channel === 'EMAIL' && campaign.templateId === 'ANNOUNCEMENT_UPDATE' ? 'Message (this template uses fixed copy — leave blank)'
+                                            : 'Message *'}
+                                    </label>
+                                    <textarea
+                                        className="form-input" rows={4}
+                                        required={(campaign.channel === 'WHATSAPP' && selectedWhatsappTemplate?.variables >= 2) || (campaign.channel !== 'WHATSAPP' && !(campaign.channel === 'EMAIL' && campaign.templateId === 'ANNOUNCEMENT_UPDATE'))}
+                                        disabled={campaign.channel === 'EMAIL' && campaign.templateId === 'ANNOUNCEMENT_UPDATE'}
+                                        value={campaign.body}
+                                        onChange={e => setCampaign({ ...campaign, body: e.target.value })}
+                                    />
+                                    {campaign.channel === 'WHATSAPP' && campaign.templateId && selectedWhatsappTemplate?.variables < 2 && (
+                                        <small className="text-muted">This template has no second variable — leave blank.</small>
+                                    )}
                                 </div>
                             </div><div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setShowCampaign(false)}>Cancel</button><button type="submit" className="btn btn-success"><Send size={14} /> Send</button></div></form>
                         </div></div>

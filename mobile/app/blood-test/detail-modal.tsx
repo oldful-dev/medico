@@ -8,9 +8,11 @@ import {
     StyleSheet,
     ActivityIndicator,
     Platform,
+    Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import RenderHtml from 'react-native-render-html';
 import { labService, type LabPackage } from '@/services/api/labService';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
@@ -366,12 +368,19 @@ export function BloodTestDetailModal({
                                             color={pkg.fasting ? '#D97706' : PRIMARY_GREEN}
                                             style={{ marginRight: 8 }}
                                         />
-                                        <Text style={styles.prepText}>
-                                            {pkg.specimen_instructions ||
-                                                (pkg.fasting_time
+                                        {pkg.specimen_instructions ? (
+                                            <RenderHtml
+                                                contentWidth={Dimensions.get('window').width - 64}
+                                                source={{ html: pkg.specimen_instructions }}
+                                                baseStyle={styles.prepText}
+                                            />
+                                        ) : (
+                                            <Text style={styles.prepText}>
+                                                {pkg.fasting_time
                                                     ? pkg.fasting_time
-                                                    : t('blood_test.no_prep') || 'No special preparation required')}
-                                        </Text>
+                                                    : t('blood_test.no_prep') || 'No special preparation required'}
+                                            </Text>
+                                        )}
                                     </View>
                                 </View>
 

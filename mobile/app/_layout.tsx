@@ -12,6 +12,7 @@ import { usePreventScreenCapture } from 'expo-screen-capture';
 import { useTranslation } from 'react-i18next';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { appMessageService, AppMessage } from '@/services/api/appMessageService';
+import { notificationService } from '@/services/device/notificationService';
 import 'react-native-reanimated';
 import '@/i18n/i18n';
 
@@ -190,17 +191,30 @@ function RootLayoutContent() {
   // version) — not AsyncStorage — so /active already accounts for the 24h
   // re-show cooldown and permanent dismissal. Only fetch once logged in
   // (endpoint requires auth); profile.id changing (e.g. login/logout) re-checks.
+  const fetchActiveMessage = async () => {
+    try {
+      const res = await appMessageService.getActive();
+      const message = res.success ? res.data : null;
+      if (message) setActiveAppMessage(message);
+    } catch {
+      // Never block app usage over a popup.
+    }
+  };
+
   useEffect(() => {
     if (!profile?.id) return;
-    (async () => {
-      try {
-        const res = await appMessageService.getActive();
-        const message = res.success ? res.data : null;
-        if (message) setActiveAppMessage(message);
-      } catch {
-        // Never block app usage over a popup.
-      }
-    })();
+    fetchActiveMessage();
+  }, [profile?.id]);
+
+  // A Wish & Information push arrives when an admin creates one while the
+  // user already has the app open — the login-only fetch above would miss
+  // it, so re-check /active on receipt (foreground or background tap).
+  useEffect(() => {
+    if (!profile?.id) return;
+    const sub = notificationService.addNotificationListener((notification) => {
+      if (notification.request.content.data?.type === 'app_message') fetchActiveMessage();
+    });
+    return () => sub.remove();
   }, [profile?.id]);
 
   // Spec 6.3: OK/Agree -> acknowledge (never shown again). Dismiss -> dismiss

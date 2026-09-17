@@ -115,11 +115,8 @@ export default function BookCaregiverSupportScreen() {
                 setSelectedImages(prev => [...prev, result.assets[0].uri]);
             }
         } else {
-            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (permissionResult.granted === false) {
-                triggerAlert(t('family_member_form.permission_required_title'), t('family_member_form.gallery_permission_msg'));
-                return;
-            }
+            // launchImageLibraryAsync uses the system Photo Picker on Android
+            // 13+ / modern iOS — no runtime permission needed here.
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsMultipleSelection: true,

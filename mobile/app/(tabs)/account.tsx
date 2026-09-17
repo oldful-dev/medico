@@ -1,5 +1,5 @@
 // Account Tab — My Profile
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     View, Text, Image, TouchableOpacity, StyleSheet,
     Switch, Modal, ActivityIndicator, Linking,
@@ -18,7 +18,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { usePlacementBanners } from '@/hooks/use-placement-banners';
 import { BannerSlider } from '@/components/BannerSlider';
-import { userService, ApiError } from '@/services/api/userService';
+import { userService } from '@/services/api/userService';
+import { ApiError } from '@/services/api/apiClient';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
@@ -217,6 +218,17 @@ export default function AccountScreen() {
     const bloodGroup = medicalCard?.bloodGroup || t('account.not_set');
     const allergies = medicalCard?.allergies?.length ? medicalCard.allergies.join(', ') : t('common.none');
 
+    // Cache-bust only when the URL itself changes (e.g. after a re-upload) —
+    // computing this inline with Math.random() on every render forced the
+    // Image to treat each render as a new source and re-fetch endlessly,
+    // causing constant flicker/reload of the avatar.
+    const avatarUri = useMemo(() => {
+        if (!profile?.profileImageUrl) return null;
+        const resolvedUrl = getAssetUrl(profile.profileImageUrl);
+        const separator = resolvedUrl.includes('?') ? '&' : '?';
+        return `${resolvedUrl}${separator}_=${Date.now()}`;
+    }, [profile?.profileImageUrl]);
+
     const activeSubs = profile?.subscriptions?.filter((sub: any) => sub.status === 'ACTIVE') || [];
     const getMembershipConfig = (sub: any) => {
         const tier = sub?.plan?.tier?.toLowerCase();
@@ -251,8 +263,9 @@ export default function AccountScreen() {
 
     const pickFromGallery = async () => {
         setAvatarPickerVisible(false);
-        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!perm.granted) { triggerAlert(t('account.permission_required'), t('account.gallery_access_needed')); return; }
+        // launchImageLibraryAsync uses the system Photo Picker on Android 13+ /
+        // modern iOS — no runtime permission needed; requesting one first is
+        // what pulls in READ_MEDIA_IMAGES and trips Play's photo-picker policy.
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
         if (!result.canceled && result.assets[0]) uploadImage(result.assets[0]);
     };
@@ -364,7 +377,7 @@ export default function AccountScreen() {
                 keyboardShouldPersistTaps="handled"
             >
 
-                <BannerSlider banners={accountBanners} colors={colors} />
+                <BannerSlider banners={accountBanners} colors={colors} noMargin />
 
                 {/* ═══════════════════════════════════════
                     PROFILE HEADER CARD
@@ -379,13 +392,7 @@ export default function AccountScreen() {
                                     <ActivityIndicator size="large" color={colors.primary} />
                                 ) : (
                                     <Image
-                                        source={profile?.profileImageUrl
-                                            ? { uri: (() => {
-                                                const resolvedUrl = getAssetUrl(profile.profileImageUrl);
-                                                const separator = resolvedUrl.includes('?') ? '&' : '?';
-                                                return `${resolvedUrl}${separator}_=${Math.random()}`;
-                                            })() }
-                                            : avatarImg}
+                                        source={avatarUri ? { uri: avatarUri } : avatarImg}
                                         style={profile?.profileImageUrl ? styles.avatarFull : styles.avatarDefault}
                                         resizeMode="cover"
                                     />
@@ -1065,6 +1072,7 @@ function makeStyles(c: ThemeColors) {
         menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
         menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
         menuTitle: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: c.textDark },
+        menuSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: c.textMuted, marginTop: 1 },
         menuRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
         menuValue: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: c.textMuted },
 

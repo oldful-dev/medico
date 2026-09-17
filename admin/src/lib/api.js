@@ -278,6 +278,7 @@ export const sosAPI = {
 // ── Notifications ────────────────────────────────────
 export const notificationAPI = {
     getLogs: (params) => api.get('/notifications/logs', { params }),
+    getCampaignTemplates: () => api.get('/notifications/campaign-templates'),
     sendCampaign: (data) => api.post('/notifications/send-campaign', data),
 };
 

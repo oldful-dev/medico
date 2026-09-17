@@ -21,6 +21,8 @@ const {
     sendDataExport,
     sendPlanExpiryReminder,
     sendBirthdayWish,
+    sendAnnouncementUpdate,
+    sendPromoOfferEmail,
     sendSupportTicketToAdmin,
     sendUserReplyNotifyAdmin,
     sendSOSAlertAdmin,
@@ -45,6 +47,8 @@ module.exports = {
     sendDataExport,
     sendPlanExpiryReminder,
     sendBirthdayWish,
+    sendAnnouncementUpdate,
+    sendPromoOfferEmail,
 
     // Support
     sendSupportTicketToAdmin,

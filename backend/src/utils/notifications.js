@@ -155,21 +155,19 @@ const sendWelcomeNotifications = async (user) => {
         userId: user.id,
     });
 
-    // Welcome WhatsApp — WELCOME_USER (AYUXA_RELEASE, msgId 20828) — no body vars, doc required
-    // Only send if we have a welcome document URL configured
-    const welcomeDocUrl = process.env.WELCOME_DOC_URL;
-    let waSuccess = false;
-    if (welcomeDocUrl) {
-        waSuccess = await wa.sendWelcome({
-            phone: user.phone,
-            userId: user.id,
-            mediaUrl: welcomeDocUrl,
-            docFilename: 'Ayuxa_Welcome.pdf',
-        }).catch(err => {
-            logger.warn('Welcome WhatsApp failed (non-fatal):', err.message);
-            return false;
-        });
-    }
+    // Welcome WhatsApp — WELCOME_USER (AYUXA_RELEASE, msgId 20828) — no body vars, doc required.
+    // SLA doc lives in the public ayuxa-assets GCS bucket (uploaded via
+    // scripts/upload-welcome-sla.js) — same asset attached to the welcome email.
+    const WELCOME_DOC_URL = 'https://assets.ayuxacare.com/b942e2cd-7567-4f9c-ac9b-80dc87c61919.pdf';
+    const waSuccess = await wa.sendWelcome({
+        phone: user.phone,
+        userId: user.id,
+        mediaUrl: WELCOME_DOC_URL,
+        docFilename: 'Ayuxa_Welcome.pdf',
+    }).catch(err => {
+        logger.warn('Welcome WhatsApp failed (non-fatal):', err.message);
+        return false;
+    });
 
     // Welcome SMS — DLT template WELCOME_USER (215420, sender AYUXA) — Var1=name
     // Only send SMS if WhatsApp welcome didn't go through (or wasn't configured)

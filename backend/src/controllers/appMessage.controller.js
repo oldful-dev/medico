@@ -12,6 +12,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse } = require('../utils/helpers');
+const { logger } = require('../config/logger');
 
 const DISMISS_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
@@ -210,6 +211,40 @@ const createMessage = async (req, res, next) => {
         });
 
         res.status(201).json({ success: true, data: message });
+
+        // Fire-and-forget SMS + Push broadcast — every successfully created
+        // Wish & Information popup also notifies active users, scoped to the
+        // same targetCityId. Runs after the response so a slow/failed send
+        // never delays the admin's create call; failures are logged, not
+        // surfaced to the admin here. SMS uses IMPORTANT_UPDATE — an
+        // approved DLT broadcast template (templateId 225650), unlike the
+        // free-text campaign SMS path which stays disabled (see
+        // notification.controller.js's sendCampaign SMS branch).
+        if (message.isActive) {
+            const { sendSMS } = require('../services/sms');
+            const { sendPushToUsers } = require('../utils/pushNotification.service');
+            const where = { status: 'ACTIVE' };
+            if (message.targetCityId) where.cityId = message.targetCityId;
+            prisma.user.findMany({ where, select: { id: true, name: true, phone: true, fcmDeviceToken: true } })
+                .then(users => {
+                    const withPhone = users.filter(u => u.phone);
+                    const userIds = users.filter(u => u.fcmDeviceToken).map(u => u.id);
+                    return Promise.all([
+                        Promise.all(withPhone.map(u =>
+                            sendSMS({ template: 'IMPORTANT_UPDATE', mobile: u.phone, variables: [u.name || 'Customer'], userId: u.id })
+                                .catch(err => logger.warn('Wish & Info SMS broadcast failed', { userId: u.id, message: err.message }))
+                        )),
+                        userIds.length
+                            // data.type: 'app_message' lets the app, if already open, re-fetch
+                            // /app-messages/active on receipt instead of waiting for next login
+                            // (mobile/app/_layout.tsx's notification listener).
+                            ? sendPushToUsers(userIds, { title: message.title, body: message.body, data: { type: 'app_message' } })
+                                .catch(err => logger.warn('Wish & Info push broadcast failed', { message: err.message }))
+                            : null,
+                    ]);
+                })
+                .catch(err => logger.warn('Wish & Info broadcast lookup failed', { message: err.message }));
+        }
     } catch (error) {
         next(error);
     }

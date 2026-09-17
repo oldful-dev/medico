@@ -204,11 +204,13 @@ const triggerSOS = async (req, res) => {
     }
 
     // Admin SMS fallback (SOS_ADMIN — sender AYUXHO)
+    // Template: "Dear {#var#}, SOS triggered by {#var#} in Ayuxa..." —
+    // Var1 is the recipient label, Var2 is who triggered it (the client).
     try {
         const smsSent = await sendSMS({
             template: 'SOS_ADMIN',
             mobile: adminPhone,
-            variables: [user.name, user.uniqueUserId],
+            variables: ['Ayuxa Team', user.name],
         });
         if (smsSent) {
             adminNotified = true;
@@ -235,20 +237,18 @@ const triggerSOS = async (req, res) => {
     }
 
     // 7. Notify family contacts via WhatsApp + SMS — non-fatal
+    // WhatsApp uses SOS_ALERT_FAMILY (messageId 20899, "_urgent_alert_",
+    // AYUXA_FAMILY) — confirmed approved in the Fast2SMS portal. The earlier
+    // SOS_ALERT_CLIENT (messageId 20513) is NOT approved and has been removed.
     let familyNotified = false;
     try {
         const contacts = await prisma.emergencyContact.findMany({ where: { userId: user.id, user: { status: 'ACTIVE' } } });
         logger.info(`[SOS] Notifying ${contacts.length} emergency contact(s)`);
 
         for (const contact of contacts) {
-            // WhatsApp — SOS_ALERT_CLIENT to each emergency contact (via AYUXA)
+            // WhatsApp (SOS_ALERT_FAMILY — sender Ayuxa Backend, approved messageId 20899)
             try {
-                const waSent = await wa.sendSOSAlertClient({
-                    phone: contact.phone,
-                    userName: user.name,
-                    ayuxaId: sosDetails,   // pack location details into Var2
-                    userId: user.id,
-                });
+                const waSent = await wa.sendSOSAlertFamily({ phone: contact.phone });
                 if (waSent) {
                     familyNotified = true;
                     logger.info(`[SOS] Family WhatsApp sent → ${contact.phone} (${contact.name})`);
@@ -259,7 +259,7 @@ const triggerSOS = async (req, res) => {
                 logger.warn(`[SOS] Family WhatsApp error for ${contact.phone}: ${err.message}`);
             }
 
-            // SMS fallback (SOS_FAMILY — sender AYUXHO)
+            // SMS fallback (SOS_FAMILY — sender AYUXA, approved templateId 215594)
             try {
                 const smsSent = await sendSMS({
                     template: 'SOS_FAMILY',

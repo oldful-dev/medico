@@ -483,7 +483,7 @@ const generateDumpHtml = (users) => {
                             </div>
                             <div class="info-row">
                                 <span class="info-label">Date of Birth</span>
-                                <span class="info-value">${user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
+                                <span class="info-value">${user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('en-IN', { timeZone: 'UTC' }) : 'N/A'}</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-label font-bold" style="margin-top: 10px; display: block; border-bottom: 1px solid var(--border);">Registered Addresses</span>

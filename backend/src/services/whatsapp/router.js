@@ -186,6 +186,23 @@ const sendSOSAlertClient = ({ phone, userName, ayuxaId, userId }) =>
         userId,
     });
 
+/**
+ * Welcome message with SLA document, corrected to send as "Ayuxa" (AYUXA).
+ * PENDING Fast2SMS approval as of registration — do not call from
+ * sendWelcomeNotifications until confirmed approved; that flow still uses
+ * the working sendWelcome (AYUXA_RELEASE, 20828).
+ * Template: WELCOME_FLOW_V2 — Var1=name, Var2=Ayuxa ID; document header required.
+ */
+const sendWelcomeFlowV2 = ({ phone, name, ayuxaId, mediaUrl, docFilename, userId }) =>
+    sendWhatsApp({
+        template: 'WELCOME_FLOW_V2',
+        mobile: phone,
+        variables: [name || 'Customer', ayuxaId || ''],
+        mediaUrl,
+        docFilename,
+        userId,
+    });
+
 // ─── AYUXA_FAMILY — Family notifications ──────────────────────────────────────
 
 /**
@@ -242,6 +259,93 @@ const sendPrescriptionUploadedFamily = ({ phone, familyName, mediaUrl }) =>
         mobile: phone,
         variables: [familyName || 'Member'],
         mediaUrl,
+    });
+
+// ─── AYUXA_FAMILY — Marketing/broadcast (client: WhatsApp + Email only, never SMS) ─
+
+/**
+ * General announcement / important update — the "Update" template (AYUXA_FAMILY).
+ * Template: ANNOUNCEMENT_UPDATE — Var1=name, Var2=deep-link slug; image header required.
+ */
+const sendAnnouncementUpdate = ({ phone, name, linkSlug, mediaUrl, userId }) =>
+    sendWhatsApp({
+        template: 'ANNOUNCEMENT_UPDATE',
+        mobile: phone,
+        variables: [name || 'Customer', linkSlug || ''],
+        mediaUrl,
+        userId,
+    });
+
+/**
+ * Discount/offer announcement (AYUXA_FAMILY).
+ * Template: PROMO_OFFER — Var1=name, Var2=discount (e.g. "20%")
+ */
+const sendPromoOffer = ({ phone, name, discount, userId }) =>
+    sendWhatsApp({
+        template: 'PROMO_OFFER',
+        mobile: phone,
+        variables: [name || 'Customer', discount || ''],
+        userId,
+    });
+
+/**
+ * Birthday wish, AYUXA_FAMILY variant (AYUXA_FAMILY). Prefer sendBirthdayWishes
+ * (AYUXA_RELEASE, msgId 20829) for the automated per-user cron send — this is
+ * the alternate approved template on the family number, kept available since
+ * it's already approved at Fast2SMS.
+ * Template: BIRTHDAY_WISHES_FAMILY — no body variables; image header required.
+ */
+const sendBirthdayWishesFamily = ({ phone, mediaUrl, userId }) =>
+    sendWhatsApp({
+        template: 'BIRTHDAY_WISHES_FAMILY',
+        mobile: phone,
+        variables: [],
+        mediaUrl,
+        userId,
+    });
+
+/**
+ * Welcome message with SLA document, AYUXA_FAMILY variant (AYUXA_FAMILY).
+ * PENDING Fast2SMS approval as of registration — sending will fail (Fast2SMS
+ * rejects unapproved templateIds) until approved. Do not use for the
+ * automated welcome flow (utils/notifications.js) until then — that flow
+ * uses the working sendWelcome (AYUXA_RELEASE, 20828).
+ * Template: WELCOME_FLOW_FAMILY — Var1=name, Var2=Ayuxa ID; document header required.
+ */
+const sendWelcomeFlowFamily = ({ phone, name, ayuxaId, mediaUrl, docFilename, userId }) =>
+    sendWhatsApp({
+        template: 'WELCOME_FLOW_FAMILY',
+        mobile: phone,
+        variables: [name || 'Customer', ayuxaId || ''],
+        mediaUrl,
+        docFilename,
+        userId,
+    });
+
+/**
+ * Friendly wellness check-in, AYUXA_FAMILY variant (AYUXA_FAMILY). Same
+ * content as sendWellnessReminder (AYUXA_RELEASE, 20830), re-registered
+ * under this number.
+ * Template: WELLNESS_REMINDER_FAMILY — Var1=name
+ */
+const sendWellnessReminderFamily = ({ phone, name, userId }) =>
+    sendWhatsApp({
+        template: 'WELLNESS_REMINDER_FAMILY',
+        mobile: phone,
+        variables: [name || 'Customer'],
+        userId,
+    });
+
+/**
+ * Invite customer to follow the Ayuxa WhatsApp Channel (AYUXA_FAMILY).
+ * Template: WHATSAPP_CHANNEL — Var1=name, Var2=deep-link slug (button URL)
+ */
+const sendWhatsAppChannelInvite = ({ phone, name, linkSlug, userId }) =>
+    sendWhatsApp({
+        template: 'WHATSAPP_CHANNEL',
+        mobile: phone,
+        variables: [name || 'Customer', linkSlug || ''],
+        userId,
     });
 
 // ─── AYUXA_HQ — Employee / caregiver notifications ───────────────────────────
@@ -333,6 +437,7 @@ module.exports = {
     sendLabReportReady,
     sendPlanExpiryReminder,
     sendSOSAlertClient,
+    sendWelcomeFlowV2,
 
     // Family (AYUXA_FAMILY)
     sendSOSAlertFamily,
@@ -341,6 +446,14 @@ module.exports = {
     sendHealthCheckFamily,
     sendPrescriptionUploadedFamily,
     sendSOSOffice,
+
+    // Marketing/broadcast (AYUXA_FAMILY) — WhatsApp + Email only, never SMS
+    sendAnnouncementUpdate,
+    sendPromoOffer,
+    sendBirthdayWishesFamily,
+    sendWelcomeFlowFamily,
+    sendWellnessReminderFamily,
+    sendWhatsAppChannelInvite,
 
     // Employee / caregiver (AYUXA_HQ)
     sendShiftAssigned,

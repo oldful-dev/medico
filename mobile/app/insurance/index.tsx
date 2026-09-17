@@ -181,12 +181,8 @@ export default function InsuranceScreen() {
     };
 
     const handleUploadDocument = async (docType: 'aadhaar' | 'pan') => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            triggerAlert(t('common.permission_required'), 'Gallery permission is required to upload documents.');
-            return;
-        }
-
+        // launchImageLibraryAsync uses the system Photo Picker on Android 13+ /
+        // modern iOS — no runtime permission needed here.
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
             quality: 0.8,

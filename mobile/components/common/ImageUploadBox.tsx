@@ -60,12 +60,10 @@ export default function ImageUploadBox({
     }, [maxImages, t]);
 
     const openGallery = useCallback(async () => {
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (permissionResult.granted === false) {
-            Alert.alert(t('common.permission_required'), t('image_upload.gallery_permission'));
-            return;
-        }
-
+        // launchImageLibraryAsync uses the system Photo Picker on Android
+        // 13+ / modern iOS, which needs no runtime permission at all — do
+        // NOT request MediaLibrary permission first, that's what pulls in
+        // READ_MEDIA_IMAGES and trips Play Store's photo-picker policy check.
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
             allowsMultipleSelection: true,

@@ -3,7 +3,7 @@ export default {
     "name": "Ayuxa",
     "slug": "ayuxacare",
     "owner": "ayuxacare",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icons/icon.png",
     "scheme": "ayuxacare",
@@ -22,6 +22,12 @@ export default {
     },
     "android": {
       "package": "com.ayuxacare.app",
+      // Play Store's version code, bumped by hand each release — must
+      // strictly increase or Play Console rejects the upload outright.
+      // Explicit here (not left to prebuild's own default) since android/
+      // is gitignored/regenerated and a hand-edit to build.gradle would
+      // silently vanish on the next `expo prebuild --clean`.
+      "versionCode": 3,
       "googleServicesFile": "./google-services.json",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {

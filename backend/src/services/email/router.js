@@ -8,18 +8,38 @@
 //    3. Export in index.js
 // ──────────────────────────────────────────────
 
+const fs = require('fs');
+const path = require('path');
 const { sendEmail } = require('./email.service');
 const { EMAIL_TEMPLATES } = require('./templates');
 
+// Static SLA doc attached to every welcome email — same file used as the
+// WhatsApp welcome template's media (see whatsapp/router.js sendWelcome).
+// Read lazily (not at module load) so a missing file doesn't crash boot.
+const WELCOME_SLA_PATH = path.join(__dirname, '../../assets/documents/Ayuxa_Welcome_SLA.pdf');
+let welcomeSlaBuffer = null;
+function getWelcomeSlaBuffer() {
+    if (welcomeSlaBuffer) return welcomeSlaBuffer;
+    try {
+        welcomeSlaBuffer = fs.readFileSync(WELCOME_SLA_PATH);
+    } catch (err) {
+        return null; // welcome email still sends, just without the attachment
+    }
+    return welcomeSlaBuffer;
+}
+
 // ─── Onboarding ───────────────────────────────
 
-const sendWelcome = ({ to, name, uniqueUserId, userId }) =>
-    sendEmail({
+const sendWelcome = ({ to, name, uniqueUserId, userId }) => {
+    const slaBuffer = getWelcomeSlaBuffer();
+    return sendEmail({
         to,
         subject: EMAIL_TEMPLATES.WELCOME.subject({ name }),
         html: EMAIL_TEMPLATES.WELCOME.html({ name, uniqueUserId }),
         userId,
+        ...(slaBuffer && { attachments: [{ content: slaBuffer, mimeType: 'application/pdf', name: 'Ayuxa_Welcome_SLA.pdf' }] }),
     });
+};
 
 // ─── Transactional ────────────────────────────
 
@@ -71,6 +91,27 @@ const sendBirthdayWish = ({ to, name, userId }) =>
         to,
         subject: EMAIL_TEMPLATES.BIRTHDAY_WISH.subject(),
         html: EMAIL_TEMPLATES.BIRTHDAY_WISH.html({ name }),
+        userId,
+        isMarketing: true,
+    });
+
+// ─── Marketing/broadcast — WhatsApp + Email only, never SMS ─────
+// (client instruction: keep these off SMS entirely)
+
+const sendAnnouncementUpdate = ({ to, name, appUrl, userId }) =>
+    sendEmail({
+        to,
+        subject: EMAIL_TEMPLATES.ANNOUNCEMENT_UPDATE.subject(),
+        html: EMAIL_TEMPLATES.ANNOUNCEMENT_UPDATE.html({ name, appUrl }),
+        userId,
+        isMarketing: true,
+    });
+
+const sendPromoOfferEmail = ({ to, name, discount, appUrl, userId }) =>
+    sendEmail({
+        to,
+        subject: EMAIL_TEMPLATES.PROMO_OFFER.subject({ discount }),
+        html: EMAIL_TEMPLATES.PROMO_OFFER.html({ name, discount, appUrl }),
         userId,
         isMarketing: true,
     });
@@ -153,6 +194,8 @@ module.exports = {
     sendDataExport,
     sendPlanExpiryReminder,
     sendBirthdayWish,
+    sendAnnouncementUpdate,
+    sendPromoOfferEmail,
     sendSupportTicketToAdmin,
     sendUserReplyNotifyAdmin,
     sendSOSAlertAdmin,

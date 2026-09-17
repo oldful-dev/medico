@@ -393,9 +393,13 @@ const initCronJobs = () => {
                 select: { id: true, name: true, email: true, dateOfBirth: true },
             });
 
+            // dateOfBirth is stored as UTC midnight for the entered calendar
+            // date (new Date("1995-06-27") parses as 1995-06-27T00:00Z) — use
+            // getUTC* here, not local getters, or the day shifts by one on
+            // any server whose local timezone isn't UTC.
             const birthdayUsers = users.filter(u => {
                 const dob = new Date(u.dateOfBirth);
-                return dob.getMonth() === todayMonth && dob.getDate() === todayDate;
+                return dob.getUTCMonth() === todayMonth && dob.getUTCDate() === todayDate;
             });
 
             let sent = 0;

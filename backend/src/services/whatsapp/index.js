@@ -32,6 +32,7 @@ const {
     sendLabReportReady,
     sendPlanExpiryReminder,
     sendSOSAlertClient,
+    sendWelcomeFlowV2,
 
     // Family
     sendSOSAlertFamily,
@@ -39,6 +40,14 @@ const {
     sendPlanExpiryFamily,
     sendHealthCheckFamily,
     sendPrescriptionUploadedFamily,
+
+    // Marketing/broadcast (AYUXA_FAMILY) — WhatsApp + Email only, never SMS
+    sendAnnouncementUpdate,
+    sendPromoOffer,
+    sendBirthdayWishesFamily,
+    sendWelcomeFlowFamily,
+    sendWellnessReminderFamily,
+    sendWhatsAppChannelInvite,
 
     // Employee / caregiver
     sendShiftAssigned,
@@ -74,6 +83,7 @@ module.exports = {
     sendLabReportReady,
     sendPlanExpiryReminder,
     sendSOSAlertClient,
+    sendWelcomeFlowV2,
 
     // Family
     sendSOSAlertFamily,
@@ -81,6 +91,14 @@ module.exports = {
     sendPlanExpiryFamily,
     sendHealthCheckFamily,
     sendPrescriptionUploadedFamily,
+
+    // Marketing/broadcast (AYUXA_FAMILY) — WhatsApp + Email only, never SMS
+    sendAnnouncementUpdate,
+    sendPromoOffer,
+    sendBirthdayWishesFamily,
+    sendWelcomeFlowFamily,
+    sendWellnessReminderFamily,
+    sendWhatsAppChannelInvite,
 
     // Employee / caregiver
     sendShiftAssigned,

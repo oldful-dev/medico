@@ -102,12 +102,8 @@ export default function ScanEcgScreen() {
     };
 
     const openGallery = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            triggerAlert('Permission Denied', 'Gallery permission is required to upload a prescription.');
-            return;
-        }
-
+        // launchImageLibraryAsync uses the system Photo Picker on Android 13+ /
+        // modern iOS — no runtime permission needed here.
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
             allowsMultipleSelection: true,

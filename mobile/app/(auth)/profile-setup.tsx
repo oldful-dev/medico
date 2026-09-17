@@ -303,7 +303,10 @@ export default function ProfileSetupScreen() {
                 email: email.trim() || undefined,
                 cityId: cityId,
                 preferredLanguage: langCode,
-                gender: gender.toLowerCase() || undefined,
+                // Stored uppercase to match edit-profile.tsx's GENDER_OPTIONS
+                // ('MALE'/'FEMALE'/'OTHER') — lowercase here meant gender
+                // never showed as selected after signup.
+                gender: gender.toUpperCase() || undefined,
                 dateOfBirth: formattedDOB,
                 emergencyNumber: cleanEmergency.length === 10 ? `+91${cleanEmergency}` : undefined,
                 line1: line1.trim() || undefined,

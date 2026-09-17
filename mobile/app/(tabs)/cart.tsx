@@ -316,7 +316,7 @@ export default function CartScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={[styles.scroll, { paddingBottom: 20 + TAB_BAR_HEIGHT }]}
             >
-                <BannerSlider banners={cartBanners} colors={colors} />
+                <BannerSlider banners={cartBanners} colors={colors} noMargin />
 
                 {/* ── Active Plan Benefit Banner ── */}
                 {hasActivePlan && (

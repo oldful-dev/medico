@@ -938,6 +938,11 @@ const generateUserDataExportPDF = async (userData) => {
             return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         };
         const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+        // Date-only fields (dateOfBirth) are stored as UTC midnight for the
+        // entered calendar date — must read back in UTC, or the day shifts
+        // by one on any server whose local timezone isn't UTC. Don't use
+        // this for real timestamps like createdAt (those want local/IST time).
+        const fmtDateOnly = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—';
 
         // Two-column info card — used for the Profile block up top.
         const infoCard = (rows) => `
@@ -1045,7 +1050,7 @@ const generateUserDataExportPDF = async (userData) => {
                     ['Phone', userData.phone],
                     ['Email', userData.email],
                     ['Gender', userData.gender],
-                    ['Date of Birth', fmtDate(userData.dateOfBirth)],
+                    ['Date of Birth', fmtDateOnly(userData.dateOfBirth)],
                     ['City', userData.city?.name],
                     ['Account Created', fmtDate(userData.createdAt)],
                     ['Account Status', userData.status],

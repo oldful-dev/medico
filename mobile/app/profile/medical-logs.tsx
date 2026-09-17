@@ -402,8 +402,8 @@ export default function MedicalLogsScreen() {
     };
 
     const pickFromGallery = async () => {
-        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!perm.granted) { triggerAlert(t('medical_logs.alerts.permission_required_title'), t('medical_logs.alerts.gallery_access_needed')); return; }
+        // launchImageLibraryAsync uses the system Photo Picker on Android 13+ /
+        // modern iOS — no runtime permission needed here.
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
         if (!result.canceled && result.assets[0]) {
             const asset = result.assets[0];

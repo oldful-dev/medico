@@ -106,12 +106,8 @@ export default function OrderMedicinesScreen() {
     };
 
     const openGallery = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            triggerAlert(t('common.permission_required') || 'Permission Denied', t('order_medicines.gallery_permission') || 'Gallery permission is required.');
-            return;
-        }
-
+        // launchImageLibraryAsync uses the system Photo Picker on Android 13+ /
+        // modern iOS — no runtime permission needed here.
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
             allowsMultipleSelection: true,

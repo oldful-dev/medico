@@ -21,9 +21,16 @@ import { Banner } from '@/services/api/bannerService';
 interface BannerSliderProps {
   banners: Banner[];
   colors: ThemeColors;
+  bannerHeight?: number;
+  noMargin?: boolean;
 }
 
-export function BannerSlider({ banners, colors }: BannerSliderProps) {
+export function BannerSlider({ 
+  banners, 
+  colors, 
+  bannerHeight = 200, 
+  noMargin = false 
+}: BannerSliderProps) {
   const { width } = useWindowDimensions();
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
@@ -33,8 +40,7 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
   const [autoScrollTimer, setAutoScrollTimer] = useState<any>(null);
 
   const activeBanners = banners.filter((b: Banner) => b.isActive);
-
-  const BANNER_HEIGHT = 240;
+  const cardWidth = noMargin ? (width - Spacing.md * 2) : (width - Spacing.cardMargin * 2);
 
   // Auto-scroll every 5 seconds
   useEffect(() => {
@@ -59,8 +65,8 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const currentIndex = Math.round(contentOffsetX / width);
-    setCurrentIndex(currentIndex);
+    const index = Math.round(contentOffsetX / cardWidth);
+    setCurrentIndex(index);
     Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
       useNativeDriver: false,
     })(event);
@@ -73,7 +79,7 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
 
   if (activeBanners.length === 0) return null;
 
-  const s = makeStyles(colors, width, BANNER_HEIGHT);
+  const s = makeStyles(colors, cardWidth, bannerHeight, noMargin);
 
   return (
     <View style={s.container}>
@@ -96,7 +102,7 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
 
               {/* Dark Overlay Gradient */}
               <LinearGradient
-                colors={['rgba(0,0,0,0.25)', 'rgba(0,0,0,0.5)']}
+                colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.65)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 style={s.gradientOverlay}
@@ -117,7 +123,7 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
 
                 <View style={s.ctaContainer}>
                   <Text style={s.ctaText}>{item.ctaText || 'Explore'}</Text>
-                  <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                  <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
                 </View>
               </View>
             </TouchableOpacity>
@@ -152,9 +158,9 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
           <View style={s.paginationContainer}>
             {activeBanners.map((_: Banner, index: number) => {
               const inputRange = [
-                (index - 1) * width,
-                index * width,
-                (index + 1) * width,
+                (index - 1) * cardWidth,
+                index * cardWidth,
+                (index + 1) * cardWidth,
               ];
 
               const scale = scrollX.interpolate({
@@ -190,26 +196,25 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
   );
 }
 
-function makeStyles(c: ThemeColors, width: number, bannerHeight: number) {
+function makeStyles(c: ThemeColors, cardWidth: number, bannerHeight: number, noMargin: boolean) {
   return StyleSheet.create({
     container: {
-      marginHorizontal: Spacing.cardMargin,
-      marginTop: Spacing.md,
+      marginHorizontal: noMargin ? 0 : Spacing.cardMargin,
+      marginTop: Spacing.sm,
       marginBottom: Spacing.md,
+      alignItems: 'center',
     },
     sliderWrapper: {
       position: 'relative',
+      width: cardWidth,
+      borderRadius: 18,
+      overflow: 'hidden',
     },
     bannerCard: {
-      width: width - Spacing.cardMargin * 2,
+      width: cardWidth,
       height: bannerHeight,
-      borderRadius: 20,
+      borderRadius: 18,
       overflow: 'hidden',
-      shadowColor: 'transparent',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0,
-      shadowRadius: 0,
-      elevation: 0,
     },
     bannerImage: {
       width: '100%',
@@ -221,18 +226,18 @@ function makeStyles(c: ThemeColors, width: number, bannerHeight: number) {
     },
     bannerContent: {
       flex: 1,
-      padding: 20,
+      padding: 16,
       justifyContent: 'flex-end',
-      gap: 12,
+      gap: 10,
       ...StyleSheet.absoluteFillObject,
     },
     textGroup: {
-      gap: 4,
+      gap: 3,
     },
     bannerHeading: {
       fontFamily: Fonts.bold,
-      fontSize: 17,
-      lineHeight: 22,
+      fontSize: 16,
+      lineHeight: 21,
       color: '#FFFFFF',
     },
     bannerSubheading: {
@@ -245,21 +250,21 @@ function makeStyles(c: ThemeColors, width: number, bannerHeight: number) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      backgroundColor: '#02743F', // Matching green CTA background
-      paddingHorizontal: 16,
-      paddingVertical: 7,
-      borderRadius: 30,
+      backgroundColor: '#02743F',
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      borderRadius: 20,
       alignSelf: 'flex-start',
     },
     ctaText: {
       fontFamily: Fonts.bold,
-      fontSize: 11.5,
+      fontSize: 11,
       color: '#FFFFFF',
     },
     paginationContainer: {
       position: 'absolute',
-      bottom: 12,
-      right: 16,
+      bottom: 10,
+      right: 14,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,

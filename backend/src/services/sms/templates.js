@@ -83,6 +83,14 @@ const SMS_TEMPLATES = {
         variables: 2,
         text: 'Dear {#var#}, care plan cancelled/expired. Contact {#var#}. Team Ayuxa.',
     },
+    // Approved DLT broadcast template — the "important update" alert used
+    // for Wish & Information popups (see appMessage.controller.js).
+    IMPORTANT_UPDATE: {
+        senderId: 'AYUXA',
+        templateId: '225650',
+        variables: 1,
+        text: 'Dear {#var#}, We have important update for you. Please check the Ayuxa app for details. Team Ayuxa.',
+    },
 
     // ── Sender: AYUXAH (Employees / Caregivers) ──────────────────────────
 

@@ -302,6 +302,28 @@ const withNetworkSecurityConfigManifest = (config) => {
     });
 };
 
+// expo-image-picker's own AndroidManifest.xml unconditionally declares
+// READ_MEDIA_IMAGES/READ_MEDIA_VIDEO, even though launchImageLibraryAsync()
+// uses Android's system Photo Picker and never actually requests either at
+// runtime -- the app doesn't call requestMediaLibraryPermissionsAsync()
+// anywhere. Google Play's photo/video permissions policy flags the mere
+// declaration regardless of whether it's ever requested, so force-remove
+// both here (manifest merger honors tools:node="remove" from the app
+// module over a library's own declaration).
+const withRemoveMediaLibraryPermissions = (config) => {
+    return withAndroidManifest(config, (config) => {
+        const manifest = config.modResults.manifest;
+        manifest['uses-permission'] = manifest['uses-permission'] || [];
+        for (const name of ['android.permission.READ_MEDIA_IMAGES', 'android.permission.READ_MEDIA_VIDEO']) {
+            const already = manifest['uses-permission'].some((p) => p.$?.['android:name'] === name);
+            if (!already) {
+                manifest['uses-permission'].push({ $: { 'android:name': name, 'tools:node': 'remove' } });
+            }
+        }
+        return config;
+    });
+};
+
 // expo-screen-capture's usePreventScreenCapture() sets FLAG_SECURE from a
 // React useEffect, which only runs after JS boots and the root layout
 // mounts -- leaving a real (if brief) native-boot window where FLAG_SECURE
@@ -350,6 +372,7 @@ module.exports = function withAndroidHardening(config) {
     config = withReleaseSigningConfig(config);
     config = withNetworkSecurityConfigFile(config);
     config = withNetworkSecurityConfigManifest(config);
+    config = withRemoveMediaLibraryPermissions(config);
     config = withReleaseOptimization(config);
     config = withRazorpayProguardRules(config);
     config = withMainActivitySecureFlag(config);

@@ -1119,7 +1119,7 @@ model AppMessage {
   id                String    @id @default(uuid())
   title             String    @db.VarChar(80)
   body              String    @db.Text
-  type              String    @default("ANNOUNCEMENT") @db.VarChar(20) // ANNOUNCEMENT | SERVICE_UPDATE | PROMOTIONAL | POLICY_UPDATE | OTHER
+  type              String    @default("ANNOUNCEMENT") @db.VarChar(20) // EMERGENCY | ANNOUNCEMENT | SERVICE_UPDATE | PROMOTIONAL | POLICY_UPDATE | OTHER | BIRTHDAY_WISHES
   imageUrl          String?
   targetCityId      String?   @map("target_city_id")
   startsAt          DateTime? @map("starts_at")

@@ -65,11 +65,8 @@ export default function MyPrescriptionsScreen() {
     const onRefresh = () => { setRefreshing(true); fetchReports(); };
 
     const handleUpload = async () => {
-        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!permission.granted) {
-            triggerAlert(t('my_prescriptions.permission_required'), t('my_prescriptions.gallery_permission_msg'));
-            return;
-        }
+        // launchImageLibraryAsync uses the system Photo Picker on Android 13+ /
+        // modern iOS — no runtime permission needed here.
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
             quality: 0.8,

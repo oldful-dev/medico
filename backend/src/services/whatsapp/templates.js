@@ -72,6 +72,12 @@ const WHATSAPP_TEMPLATES = {
         docRequired: false,
         description: 'Care plan expiring soon — renewal CTA to client',
     },
+    // BROKEN — messageId 20513 does not exist in the approved Fast2SMS
+    // WhatsApp template list (verified against the portal export). Sending
+    // fails with "invalid or not approved". Superseded by SOS_ALERT_FAMILY
+    // (messageId 20899, AYUXA_FAMILY) for the emergency-contact WhatsApp
+    // alert — see sos.controller.js. Kept only because interakt.service.js
+    // (legacy shim) and utils/test-whatsapp.js still reference it.
     SOS_ALERT_CLIENT: {
         waba: 'AYUXA',
         messageId: 20513,
@@ -79,6 +85,24 @@ const WHATSAPP_TEMPLATES = {
         mediaRequired: false,
         docRequired: false,
         description: 'SOS triggered — confirmation/alert sent to client\'s emergency contacts',
+    },
+    // Corrected re-registration of the welcome flow — the original send was
+    // meant to go out as "Ayuxa" (this AYUXA waba), not "Ayuxa Backend"
+    // (AYUXA_FAMILY); Fast2SMS registered it here correctly. STILL PENDING
+    // approval as of registration — do not wire into sendWelcomeNotifications
+    // until confirmed approved (sending an unapproved template fails outright).
+    // The live welcome flow keeps using WELCOME_USER (AYUXA_RELEASE, 20828)
+    // until this is confirmed working.
+    WELCOME_FLOW_V2: {
+        waba: 'AYUXA',
+        messageId: 33129,
+        templateId: '33129',
+        name: 'welcome_flow',
+        variables: 2,              // Var1=name, Var2=Ayuxa ID
+        mediaRequired: false,
+        docRequired: true,        // document header — same SLA PDF as WELCOME_USER
+        pending: true,
+        description: 'Welcome message with SLA document, corrected to send as "Ayuxa" — PENDING Fast2SMS approval',
     },
 
     // ════════════════════════════════════════════
@@ -152,6 +176,84 @@ const WHATSAPP_TEMPLATES = {
         description: 'EMERGENCY SOS TRIGGERED — alert sent to office/admin from family sender',
     },
 
+    // ── Marketing/broadcast templates registered on AYUXA_FAMILY, not
+    // AYUXA_RELEASE — Fast2SMS registered these under this number, so they
+    // must send from here, not the AYUXA_RELEASE section below. Client
+    // instruction: keep these WhatsApp + Email only, never SMS.
+    ANNOUNCEMENT_UPDATE: {
+        waba: 'AYUXA_FAMILY',
+        messageId: 32999,
+        templateId: '32999',
+        name: 'annpuncement',
+        variables: 2,              // Var1=name, Var2=app deep-link slug
+        mediaRequired: true,       // image header
+        docRequired: false,
+        campaignEligible: true,
+        description: 'General announcement / important update — marketing (the "Update" template)',
+    },
+    PROMO_OFFER: {
+        waba: 'AYUXA_FAMILY',
+        messageId: 33003,
+        templateId: '33003',
+        name: 'promo_offer',
+        variables: 2,              // Var1=name, Var2=discount (e.g. "20%")
+        mediaRequired: false,
+        docRequired: false,
+        campaignEligible: true,
+        description: 'Discount/offer announcement — marketing',
+    },
+    BIRTHDAY_WISHES_FAMILY: {
+        waba: 'AYUXA_FAMILY',
+        messageId: 33000,
+        templateId: '33000',
+        name: 'happy_birthday',
+        variables: 0,              // registered with a broken {{}} placeholder, not a real Var1 slot
+        mediaRequired: true,       // image header — see assets/documents/ or the birthday image asset
+        docRequired: false,
+        description: 'Birthday wish (AYUXA_FAMILY variant) — marketing. Prefer BIRTHDAY_WISHES (AYUXA_RELEASE, msgId 20829) for the automated cron send; this is the alternate approved template on the family number.',
+    },
+    // PENDING at Fast2SMS as of this registration — sending will fail until
+    // Fast2SMS approves it. Wired in per explicit instruction ("integrate
+    // all of them, dont care abt pending"); do not use for the automated
+    // welcome flow (utils/notifications.js) until status flips to approved —
+    // that flow already uses the working WELCOME_USER (AYUXA_RELEASE, 20828).
+    WELCOME_FLOW_FAMILY: {
+        waba: 'AYUXA_FAMILY',
+        messageId: 33001,
+        templateId: '33001',
+        name: 'welcome_flow',
+        variables: 2,              // Var1=name, Var2=Ayuxa ID
+        mediaRequired: false,
+        docRequired: true,        // document header — same SLA PDF as email/WELCOME_USER
+        pending: true,
+        description: 'Welcome message with SLA document (AYUXA_FAMILY variant) — PENDING Fast2SMS approval',
+    },
+    WELLNESS_REMINDER_FAMILY: {
+        waba: 'AYUXA_FAMILY',
+        messageId: 33121,
+        templateId: '33121',
+        name: 'friendly_remember',
+        variables: 1,              // Var1=name
+        mediaRequired: false,
+        docRequired: false,
+        campaignEligible: true,
+        description: 'Friendly wellness check-in (AYUXA_FAMILY variant) — marketing. Same content as WELLNESS_REMINDER (AYUXA_RELEASE, 20830), re-registered under this number.',
+    },
+    // "WhatsApp Channel" template — explicit client request to add this to
+    // Notification Management. Points customers at Ayuxa's public WhatsApp
+    // channel for health updates/announcements/fraud-awareness content.
+    WHATSAPP_CHANNEL: {
+        waba: 'AYUXA_FAMILY',
+        messageId: 33122,
+        templateId: '33122',
+        name: 'whatsapp_channel',
+        variables: 2,              // Var1=name, Var2=deep-link slug (button URL)
+        mediaRequired: false,
+        docRequired: false,
+        campaignEligible: true,
+        description: 'Invites customer to follow the Ayuxa WhatsApp Channel — marketing',
+    },
+
     // ════════════════════════════════════════════
     //  AYUXA_RELEASE — Marketing / promotions
     // ════════════════════════════════════════════
@@ -170,6 +272,7 @@ const WHATSAPP_TEMPLATES = {
         variables: 1,              // Var1=name
         mediaRequired: false,
         docRequired: false,
+        campaignEligible: true,
         description: 'Friendly daily wellness check-in — marketing',
     },
     BIRTHDAY_WISHES: {
@@ -201,9 +304,13 @@ const WHATSAPP_TEMPLATES = {
         docRequired: false,
         description: 'New shift assigned — employee notified',
     },
+    // Replaces the old SOS_DISPATCH (20932, AYUXA_HQ) per explicit instruction
+    // — caregiver dispatch now uses this approved AYUXA_FAMILY template.
     SOS_DISPATCH: {
-        waba: 'AYUXA_HQ',
-        messageId: 20932,
+        waba: 'AYUXA_FAMILY',
+        messageId: 33131,
+        templateId: '33131',
+        name: 'emergency_dispatch_',
         variables: 3,              // Var1=emp_name, Var2=client_name, Var3=client_id
         mediaRequired: false,
         docRequired: false,

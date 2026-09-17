@@ -13,8 +13,9 @@ router.put('/my/:id/read',  authenticateUser, ctrl.markNotificationRead);
 router.use(authenticateAdmin);
 router.use(blockNonManagement);
 
-router.get('/logs',             ctrl.getNotificationLogs);
-router.post('/send-campaign',   ctrl.sendCampaign);
-router.post('/test-push',       ctrl.sendTestPush);
+router.get('/logs',                  ctrl.getNotificationLogs);
+router.get('/campaign-templates',    ctrl.getCampaignTemplates);
+router.post('/send-campaign',        ctrl.sendCampaign);
+router.post('/test-push',            ctrl.sendTestPush);
 
 module.exports = router;
