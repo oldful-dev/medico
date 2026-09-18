@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -24,52 +24,72 @@ export default function DocumentUploadBox({
     maxFiles = 1,
 }: DocumentUploadBoxProps) {
     const { t } = useTranslation();
-    const resolvedTitle = title ?? t('image_upload.upload_photos');
+    const resolvedTitle = title ?? t('image_upload.upload_photos', 'Upload Document');
     const resolvedSubtitle = subtitle ?? t('service_detail.document_upload_subtitle', 'PDF up to 10MB');
     const [files, setFiles] = useState<PickedFile[]>([]);
 
+    const onFilesChangeRef = useRef(onFilesChange);
+    useEffect(() => {
+        onFilesChangeRef.current = onFilesChange;
+    }, [onFilesChange]);
+
+    const notifyParent = useCallback((newFiles: PickedFile[]) => {
+        onFilesChangeRef.current?.(newFiles.map(f => f.uri));
+    }, []);
+
     const handlePick = useCallback(async () => {
         if (files.length >= maxFiles) {
-            Alert.alert(t('image_upload.limit_reached'), t('image_upload.limit_message', { max: maxFiles }));
+            Alert.alert(
+                t('image_upload.limit_reached', 'Limit Reached'),
+                t('image_upload.limit_message', { max: maxFiles, defaultValue: `You can only upload up to ${maxFiles} documents.` })
+            );
             return;
         }
 
-        const result = await DocumentPicker.getDocumentAsync({
-            type: 'application/pdf',
-            multiple: false,
-        });
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/pdf',
+                multiple: false,
+            });
 
-        if (!result.canceled && result.assets && result.assets.length > 0) {
-            const asset = result.assets[0];
-            setFiles(prev => [...prev, { uri: asset.uri, name: asset.name || 'document.pdf' }].slice(0, maxFiles));
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const asset = result.assets[0];
+                setFiles(prev => {
+                    const next = [...prev, { uri: asset.uri, name: asset.name || 'document.pdf' }].slice(0, maxFiles);
+                    notifyParent(next);
+                    return next;
+                });
+            }
+        } catch (error) {
+            console.error('[DocumentUploadBox] Error picking document:', error);
+            Alert.alert(t('common.error', 'Error'), 'Could not open document picker. Please try again.');
         }
-    }, [files.length, maxFiles, t]);
-
-    React.useEffect(() => {
-        if (onFilesChange) {
-            onFilesChange(files.map(f => f.uri));
-        }
-    }, [files, onFilesChange]);
+    }, [files.length, maxFiles, notifyParent, t]);
 
     const removeFile = (index: number) => {
         setFiles(prev => {
             const updated = [...prev];
             updated.splice(index, 1);
+            notifyParent(updated);
             return updated;
         });
     };
 
     return (
         <View style={styles.container}>
-            <View style={styles.uploadDashedBox}>
+            <TouchableOpacity 
+                style={styles.uploadDashedBox} 
+                onPress={handlePick} 
+                activeOpacity={0.7}
+            >
                 <Ionicons name="document-attach-outline" size={40} color={Colors.primary} style={styles.uploadCloudIcon} />
                 <Text style={styles.uploadTitle}>{resolvedTitle}</Text>
                 <Text style={styles.uploadSubtitle}>{resolvedSubtitle}</Text>
 
-                <TouchableOpacity style={styles.uploadButton} onPress={handlePick} activeOpacity={0.8}>
-                    <Text style={styles.uploadButtonText}>{t('image_upload.select_image').toUpperCase()}</Text>
-                </TouchableOpacity>
-            </View>
+                <View style={styles.uploadButton}>
+                    <Text style={styles.uploadButtonText}>{t('image_upload.select_image', 'SELECT DOCUMENT').toUpperCase()}</Text>
+                </View>
+            </TouchableOpacity>
 
             {files.length > 0 && (
                 <View style={styles.fileListContainer}>
@@ -77,7 +97,10 @@ export default function DocumentUploadBox({
                         <View key={index} style={styles.fileRow}>
                             <Ionicons name="document-text-outline" size={18} color={Colors.primary} />
                             <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
-                            <TouchableOpacity onPress={() => removeFile(index)}>
+                            <TouchableOpacity 
+                                onPress={() => removeFile(index)}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
                                 <Ionicons name="close-circle" size={20} color={Colors.sosRed} />
                             </TouchableOpacity>
                         </View>
@@ -94,9 +117,9 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.xl,
     },
     uploadDashedBox: {
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderStyle: 'dashed',
-        borderColor: '#495057',
+        borderColor: '#9CA3AF',
         borderRadius: Radius.xl,
         width: '100%',
         paddingVertical: 20,

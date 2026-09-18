@@ -1,42 +1,55 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
-import { CustomAlertModal } from '@/components/common/CustomAlertModal';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useTranslation } from 'react-i18next';
-import { useUser } from '@/context/UserContext';
-import { useAddress } from '@/context/AddressContext';
-import { useTheme } from '@/context/ThemeContext';
-import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
-import { useThemeColors } from '@/hooks/use-theme-colors';
-import { useServiceInitialization } from '@/hooks/useServiceInitialization';
-import { mediaService } from '@/services/api/mediaService';
-import { bookingService } from '@/services/api/bookingService';
-import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
-import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
-import ImageUploadBox from '@/components/common/ImageUploadBox';
-import { type AddressData } from '@/components/AddressPickerSection';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+} from "react-native";
+import { CustomAlertModal } from "@/components/common/CustomAlertModal";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
+import { useUser } from "@/context/UserContext";
+import { useAddress } from "@/context/AddressContext";
+import { useTheme } from "@/context/ThemeContext";
+import { Colors, Fonts, FontSize, Spacing, Radius } from "@/constants/theme";
+import { useThemeColors } from "@/hooks/use-theme-colors";
+import { useServiceInitialization } from "@/hooks/useServiceInitialization";
+import { mediaService } from "@/services/api/mediaService";
+import { bookingService } from "@/services/api/bookingService";
+import ServiceDetailScreen from "@/components/services/ServiceDetailScreen";
+import CustomDateTimePicker from "@/components/common/CustomDateTimePicker";
+import ImageUploadBox from "@/components/common/ImageUploadBox";
+import { type AddressData } from "@/components/AddressPickerSection";
+import { apiClient } from "@/services/api/apiClient";
 
 interface HomeEssentialsBookingScreenProps {
   slug: string;
 }
 
-export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBookingScreenProps) {
+export default function HomeEssentialsBookingScreen({
+  slug,
+}: HomeEssentialsBookingScreenProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{ subscriptionId?: string }>();
   const colors = useThemeColors();
   const { isDarkMode } = useTheme();
-  
+
   const { getServiceBySlug, refreshData } = useUser();
   const { activeAddress } = useAddress();
   const dbService = getServiceBySlug(slug);
 
+  const [serviceChargeConfig, setServiceChargeConfig] = useState<any>(null);
+
   // Fully DB-driven — no hardcoded per-slug fallback text. If a Service row
   // is missing headline/subhead (shouldn't happen once admin-managed), this
   // falls through to a generic label rather than a stale hardcoded string.
-  const headline = dbService?.headline || dbService?.name || 'Home Essentials';
-  const subhead = dbService?.subhead || dbService?.tagline || 'Concierge Services';
-  const checkoutGroup = dbService?.checkoutGroup || 'D';
+  const headline = dbService?.headline || dbService?.name || "Home Essentials";
+  const subhead =
+    dbService?.subhead || dbService?.tagline || "Concierge Services";
+  const checkoutGroup = dbService?.checkoutGroup || "D";
 
   const {
     isReady,
@@ -44,63 +57,98 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
     serviceId,
     serviceName,
     servicePrice,
-    isLoading: isLoadingInit
+    isLoading: isLoadingInit,
   } = useServiceInitialization(slug);
 
   // Form states
-  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(
+    undefined,
+  );
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [landmark, setLandmark] = useState('');
-  const [comments, setComments] = useState('');
-  const [deliveryMethod, setDeliveryMethod] = useState<'online' | 'home_visit'>('online');
+  const [landmark, setLandmark] = useState("");
+  const [comments, setComments] = useState("");
+  const [deliveryMethod, setDeliveryMethod] = useState<"online" | "home_visit">(
+    "online",
+  );
   const [isBooking, setIsBooking] = useState(false);
   // selectedAddress now seeds from — and stays in sync with — the
   // centralized Active Service Location.
   const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
-    activeAddress ? {
-      id: activeAddress.id,
-      line1: activeAddress.line1,
-      line2: activeAddress.line2,
-      cityName: activeAddress.cityName,
-      pincode: activeAddress.pincode,
-      landmark: activeAddress.landmark,
-      latitude: activeAddress.latitude,
-      longitude: activeAddress.longitude,
-      state: activeAddress.state,
-    } : null
+    activeAddress
+      ? {
+          id: activeAddress.id,
+          line1: activeAddress.line1,
+          line2: activeAddress.line2,
+          cityName: activeAddress.cityName,
+          pincode: activeAddress.pincode,
+          landmark: activeAddress.landmark,
+          latitude: activeAddress.latitude,
+          longitude: activeAddress.longitude,
+          state: activeAddress.state,
+        }
+      : null,
   );
   const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
   // Native Alert.alert is globally muted app-wide (see app/_layout.tsx)
-  const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    iconName: string;
+  }>({
     visible: false,
-    title: '',
-    message: '',
-    iconName: 'warning-outline',
+    title: "",
+    message: "",
+    iconName: "warning-outline",
   });
   const alertCloseAction = useRef<(() => void) | null>(null);
-  const triggerAlert = (title: string, message: string, iconName = 'warning-outline', onCloseAction?: () => void) => {
+  const triggerAlert = (
+    title: string,
+    message: string,
+    iconName = "warning-outline",
+    onCloseAction?: () => void,
+  ) => {
     alertCloseAction.current = onCloseAction ?? null;
     setAlertConfig({ visible: true, title, message, iconName });
   };
   const closeAlert = () => {
-    setAlertConfig(prev => ({ ...prev, visible: false }));
+    setAlertConfig((prev) => ({ ...prev, visible: false }));
     const action = alertCloseAction.current;
     alertCloseAction.current = null;
     if (action) action();
   };
 
-  // Always fetch latest catalog data from DB when opening screen
+  // Always fetch latest catalog data and service charge from DB when opening screen
   useEffect(() => {
     refreshData();
-  }, []);
+    // Fetch dynamic category pricing rule from backend
+    (async () => {
+      try {
+        const category = slug.toUpperCase().replace(/-/g, "_");
+        const res = await apiClient.get<any>(
+          `/pricing/service-charge/${category}`,
+        );
+        if (res.success && res.data) {
+          setServiceChargeConfig(res.data);
+        }
+      } catch (e) {
+        // non-blocking
+      }
+    })();
+  }, [slug]);
 
   // Follow the centralized active address whenever it changes elsewhere
   // in the app, unless the user has already made their own pick here.
   useEffect(() => {
     if (!activeAddress) return;
-    setSelectedAddress(prev => {
-      if (prev && prev.id === activeAddress.id && prev.line1 === activeAddress.line1) return prev;
+    setSelectedAddress((prev) => {
+      if (
+        prev &&
+        prev.id === activeAddress.id &&
+        prev.line1 === activeAddress.line1
+      )
+        return prev;
       return {
         id: activeAddress.id,
         line1: activeAddress.line1,
@@ -123,92 +171,223 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
     setSelectedAddress(addr);
     if (addr.landmark) setLandmark(addr.landmark);
     setLandmarkInitialized(true);
-    // AddressPickerSection already calls selectActiveAddress internally.
   };
 
   // Determine field visibility based on checkout group
-  const showDatePicker = checkoutGroup === 'A' || checkoutGroup === 'D' || (checkoutGroup === 'C' && deliveryMethod === 'home_visit');
+  const showDatePicker =
+    checkoutGroup === "A" ||
+    checkoutGroup === "D" ||
+    (checkoutGroup === "C" && deliveryMethod === "home_visit");
   const hideLocationCard = false;
-  const showPhotoUpload = checkoutGroup === 'A' || checkoutGroup === 'B' || (checkoutGroup === 'D' && slug !== 'driving-cab' && slug !== 'anything-else');
-  const isZeroPayment = checkoutGroup === 'D';
+  const showPhotoUpload =
+    checkoutGroup === "A" ||
+    checkoutGroup === "B" ||
+    (checkoutGroup === "D" &&
+      slug !== "driving-cab" &&
+      slug !== "anything-else");
+  const isZeroPayment = checkoutGroup === "D";
 
-  // Set base charge dynamically for pricing card
+  // Dynamic Price resolution from:
+  // 1) Admin ServiceCharge override (onlineServiceFee / offlineServiceFee)
+  // 2) Admin Service formFieldsJson options
+  // 3) Admin Service basePrice
+  const resolvedOnlinePrice = React.useMemo(() => {
+    if (serviceChargeConfig?.onlineServiceFee != null) {
+      return Number(serviceChargeConfig.onlineServiceFee);
+    }
+    if (
+      dbService?.formFieldsJson &&
+      typeof dbService.formFieldsJson === "object"
+    ) {
+      const sections = Array.isArray((dbService.formFieldsJson as any).sections)
+        ? (dbService.formFieldsJson as any).sections
+        : [];
+      for (const s of sections) {
+        for (const f of s.fields || []) {
+          const opt = (f.options || []).find(
+            (o: any) =>
+              o?.label?.toLowerCase()?.includes("online") ||
+              o?.id?.toLowerCase()?.includes("online"),
+          );
+          if (opt && typeof opt.price === "number") return opt.price;
+        }
+      }
+    }
+    return dbService?.basePrice && dbService.basePrice > 0
+      ? dbService.basePrice
+      : 100;
+  }, [serviceChargeConfig, dbService]);
+
+  const resolvedVisitPrice = React.useMemo(() => {
+    if (serviceChargeConfig?.offlineServiceFee != null) {
+      return Number(serviceChargeConfig.offlineServiceFee);
+    }
+    if (
+      dbService?.formFieldsJson &&
+      typeof dbService.formFieldsJson === "object"
+    ) {
+      const sections = Array.isArray((dbService.formFieldsJson as any).sections)
+        ? (dbService.formFieldsJson as any).sections
+        : [];
+      for (const s of sections) {
+        for (const f of s.fields || []) {
+          const opt = (f.options || []).find(
+            (o: any) =>
+              o?.label?.toLowerCase()?.includes("offline") ||
+              o?.label?.toLowerCase()?.includes("visit") ||
+              o?.id?.toLowerCase()?.includes("offline") ||
+              o?.id?.toLowerCase()?.includes("visit"),
+          );
+          if (opt && typeof opt.price === "number") return opt.price;
+        }
+      }
+    }
+    return dbService?.basePrice && dbService.basePrice > 0
+      ? Math.max(dbService.basePrice, 200)
+      : 200;
+  }, [serviceChargeConfig, dbService]);
+
   const getPricingLabel = () => {
-    // Admin's "Display Pricing Text" is a per-service override — if set,
-    // it wins over the generic per-checkout-group text below (which was
-    // built before that admin field existed and never got wired to it).
     if (dbService?.pricingText) {
       return dbService.pricingText;
     }
 
-    const baseFee = dbService?.basePrice !== undefined && dbService?.basePrice !== null ? dbService.basePrice : (checkoutGroup === 'C' ? 499 : 299);
-    if (checkoutGroup === 'A') {
-      return t('service_detail.pricing_a', '₹299 Service Charge + Vendor Bill')
-        .replace('299', String(baseFee));
+    const baseFee =
+      dbService?.basePrice !== undefined &&
+      dbService?.basePrice !== null &&
+      dbService.basePrice > 0
+        ? dbService.basePrice
+        : 299;
+    if (checkoutGroup === "A") {
+      return t(
+        "service_detail.pricing_a",
+        "₹{{price}} Service Charge + Vendor Bill",
+        { price: baseFee },
+      );
     }
-    if (checkoutGroup === 'B') {
-      return t('service_detail.pricing_b', '₹299 Service Charge (Max 2 Bills)')
-        .replace('299', String(baseFee));
+    if (checkoutGroup === "B") {
+      return t(
+        "service_detail.pricing_b",
+        "₹{{price}} Service Charge (Max 2 Bills)",
+        { price: baseFee },
+      );
     }
-    if (checkoutGroup === 'C') {
-      if (deliveryMethod === 'online') {
-        return t('service_detail.pricing_c_online', '₹499 (Online Video Call)')
-          .replace('499', String(baseFee));
+    if (checkoutGroup === "C") {
+      if (deliveryMethod === "online") {
+        return t(
+          "service_detail.pricing_c_online",
+          "₹{{price}} (Online Video Call)",
+          { price: resolvedOnlinePrice },
+        );
       } else {
-        return t('service_detail.pricing_c_visit', '₹999 (Home Visit)')
-          .replace('999', String(baseFee + 500));
+        return t("service_detail.pricing_c_visit", "₹{{price}} (Home Visit)", {
+          price: resolvedVisitPrice,
+        });
       }
     }
-    return t('service_detail.pricing_d', 'Zero Service Charge (Inquiry)');
+    return t("service_detail.pricing_d", "Zero Service Charge (Inquiry)");
   };
 
   const getAmount = () => {
-    const baseFee = dbService?.basePrice !== undefined && dbService?.basePrice !== null ? dbService.basePrice : (checkoutGroup === 'C' ? 499 : 299);
-    if (checkoutGroup === 'A' || checkoutGroup === 'B') return baseFee;
-    if (checkoutGroup === 'C') return deliveryMethod === 'online' ? baseFee : (baseFee + 500);
+    const baseFee =
+      dbService?.basePrice !== undefined &&
+      dbService?.basePrice !== null &&
+      dbService.basePrice > 0
+        ? dbService.basePrice
+        : 299;
+    if (checkoutGroup === "A" || checkoutGroup === "B") return baseFee;
+    if (checkoutGroup === "C")
+      return deliveryMethod === "online"
+        ? resolvedOnlinePrice
+        : resolvedVisitPrice;
     return 0;
   };
 
   const isFormValid = React.useMemo(() => {
     if (!comments.trim()) return false;
-    if (!hideLocationCard && !(selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5)) return false;
+    if (
+      !hideLocationCard &&
+      !(selectedAddress?.line1 && selectedAddress.line1.trim().length >= 5)
+    )
+      return false;
     if (showDatePicker && !scheduledDate) return false;
-    if (checkoutGroup === 'B' && selectedImages.length === 0) return false;
+    if (checkoutGroup === "B" && selectedImages.length === 0) return false;
     return true;
-  }, [comments, hideLocationCard, selectedAddress, showDatePicker, scheduledDate, checkoutGroup, selectedImages]);
+  }, [
+    comments,
+    hideLocationCard,
+    selectedAddress,
+    showDatePicker,
+    scheduledDate,
+    checkoutGroup,
+    selectedImages,
+  ]);
 
   const handleBook = async () => {
     // 1. Validate comments field
     if (!comments.trim()) {
-      triggerAlert(t('common.required', 'Required'), t('service_detail.comments_required', 'Please enter comments or details of your request.'));
+      triggerAlert(
+        t("common.required", "Required"),
+        t(
+          "service_detail.comments_required",
+          "Please enter comments or details of your request.",
+        ),
+      );
       return;
     }
 
     // 2. Validate location if required
-    if (!hideLocationCard && (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5)) {
-      triggerAlert(t('common.required', 'Required'), t('service_detail.address_required', 'Please provide a valid address.'));
+    if (
+      !hideLocationCard &&
+      (!selectedAddress?.line1 || selectedAddress.line1.trim().length < 5)
+    ) {
+      triggerAlert(
+        t("common.required", "Required"),
+        t("service_detail.address_required", "Please provide a valid address."),
+      );
       return;
     }
 
     // 3. Validate date if required
     if (showDatePicker && !scheduledDate) {
-      triggerAlert(t('common.required', 'Required'), t('service_detail.date_required', 'Please select a date and time slot.'));
+      triggerAlert(
+        t("common.required", "Required"),
+        t(
+          "service_detail.date_required",
+          "Please select a date and time slot.",
+        ),
+      );
       return;
     }
 
     if (showDatePicker && scheduledDate && scheduledDate <= new Date()) {
-      triggerAlert(t('common.error', 'Error'), t('service_detail.invalid_time', 'Please select a future date and time.'));
+      triggerAlert(
+        t("common.error", "Error"),
+        t(
+          "service_detail.invalid_time",
+          "Please select a future date and time.",
+        ),
+      );
       return;
     }
 
     // 4. Validate photo upload if strictly required (Group B)
-    if (checkoutGroup === 'B' && selectedImages.length === 0) {
-      triggerAlert(t('common.required', 'Required'), t('service_detail.bill_photo_required', 'Please upload a photo of the bills.'));
+    if (checkoutGroup === "B" && selectedImages.length === 0) {
+      triggerAlert(
+        t("common.required", "Required"),
+        t(
+          "service_detail.bill_photo_required",
+          "Please upload a photo of the bills.",
+        ),
+      );
       return;
     }
 
     if (!isReady) {
-      triggerAlert(t('common.error', 'Error'), t('booking.init_incomplete', 'Service initialization failed.'));
+      triggerAlert(
+        t("common.error", "Error"),
+        t("booking.init_incomplete", "Service initialization failed."),
+      );
       return;
     }
 
@@ -218,19 +397,26 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       // Upload photos first
       let uploadedImageUrls: string[] = [];
       if (showPhotoUpload && selectedImages.length > 0) {
-        uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, slug);
+        uploadedImageUrls = await mediaService.uploadMultipleMedia(
+          selectedImages,
+          slug,
+        );
       }
 
       // Booking location comes from the address the user actually
       // confirmed on screen — never a fresh device GPS read.
       const addressLine = selectedAddress?.line1
-        ? [selectedAddress.line1, selectedAddress.line2].filter(Boolean).join(', ')
+        ? [selectedAddress.line1, selectedAddress.line2]
+            .filter(Boolean)
+            .join(", ")
         : undefined;
 
       const bookingPayloadObj = {
         serviceId,
         cityId,
-        scheduledDate: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
+        scheduledDate: scheduledDate
+          ? scheduledDate.toISOString()
+          : new Date().toISOString(),
         addressLine: hideLocationCard ? undefined : addressLine,
         landmark: landmark.trim() || undefined,
         latitude: selectedAddress?.latitude,
@@ -238,8 +424,8 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
         formDataJson: {
           comments: comments.trim(),
           attachments: uploadedImageUrls,
-          deliveryMethod: checkoutGroup === 'C' ? deliveryMethod : undefined
-        }
+          deliveryMethod: checkoutGroup === "C" ? deliveryMethod : undefined,
+        },
       };
 
       // Group D Zero-Payment: bypass Razorpay and call booking creation route immediately
@@ -247,39 +433,59 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
         const res = await bookingService.createBooking({
           ...bookingPayloadObj,
           amount: 0,
-          paymentMethod: 'REQUEST'
+          paymentMethod: "REQUEST",
         });
 
         if (res.success && res.data) {
           const bookingId = res.data.id;
           triggerAlert(
-            t('common.success', 'Success'),
-            t('service_detail.request_submitted', 'Your request has been successfully submitted!'),
-            'checkmark-circle-outline',
-            () => router.replace({
-              pathname: '/service-confirmation',
-              params: { bookingId }
-            })
+            t("common.success", "Success"),
+            t(
+              "service_detail.request_submitted",
+              "Your request has been successfully submitted!",
+            ),
+            "checkmark-circle-outline",
+            () =>
+              router.replace({
+                pathname: "/service-confirmation",
+                params: { bookingId },
+              }),
           );
         } else {
-          triggerAlert(t('common.error', 'Error'), res.message || 'Failed to submit request.');
+          triggerAlert(
+            t("common.error", "Error"),
+            res.message || "Failed to submit request.",
+          );
         }
       } else {
         // Groups A, B, C redirect to service-checkout screen
+        const selectedOption =
+          checkoutGroup === "C"
+            ? deliveryMethod === "online"
+              ? "Online"
+              : "Offline"
+            : undefined;
         router.push({
-          pathname: '/service-checkout',
+          pathname: "/service-checkout",
           params: {
             bookingPayload: JSON.stringify(bookingPayloadObj),
             amount: String(getAmount()),
             label: serviceName || headline,
+            serviceSlug: slug,
             checkoutGroup,
-            ...(params.subscriptionId && { subscriptionId: params.subscriptionId })
-          }
+            ...(selectedOption && { selectedOption }),
+            ...(params.subscriptionId && {
+              subscriptionId: params.subscriptionId,
+            }),
+          },
         });
       }
     } catch (error) {
-      console.error('Booking failed:', error);
-      triggerAlert(t('common.error', 'Error'), 'Failed to upload files. Please try again.');
+      console.error("Booking failed:", error);
+      triggerAlert(
+        t("common.error", "Error"),
+        "Failed to upload files. Please try again.",
+      );
     } finally {
       setIsBooking(false);
     }
@@ -288,22 +494,35 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   const styles = makeStyles(isDarkMode, colors);
 
   const bulletItems = [
-    t('service_detail.bullet_homemaker', 'Covered under Homemaker subscription plan benefits'),
-    t('service_detail.bullet_professional', 'Certified, verified, and safe professionals'),
-    t('service_detail.bullet_support', '24/7 dedicated support tracking'),
+    t(
+      "service_detail.bullet_homemaker",
+      "Covered under Homemaker subscription plan benefits",
+    ),
+    t(
+      "service_detail.bullet_professional",
+      "Certified, verified, and safe professionals",
+    ),
+    t("service_detail.bullet_support", "24/7 dedicated support tracking"),
   ];
 
   return (
     <ServiceDetailScreen
       headerTitle={headline}
       heroTitle={headline}
-      heroSubtitle={t('service_detail.home_essentials', 'Home Essentials')}
+      heroSubtitle={t("service_detail.home_essentials", "Home Essentials")}
       description={subhead}
       heroIcon={dbService?.icon}
       pricingLabel={getPricingLabel()}
-      pricingNote={checkoutGroup === 'D' ? undefined : t('service_detail.pricing_disclaimer', '*Pricing is subject to actual work assessment.')}
+      pricingNote={
+        checkoutGroup === "D"
+          ? undefined
+          : t(
+              "service_detail.pricing_disclaimer",
+              "*Pricing is subject to actual work assessment.",
+            )
+      }
       bulletItems={bulletItems}
-      address={selectedAddress?.line1 || ''}
+      address={selectedAddress?.line1 || ""}
       landmark={landmark}
       onLandmarkChange={setLandmark}
       onBook={handleBook}
@@ -313,27 +532,53 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       hideLocation={hideLocationCard}
       selectedAddress={selectedAddress}
       onAddressChange={handleAddressChange}
-      bookButtonLabel={isZeroPayment ? t('common.submit_request', 'Submit Request') : undefined}
+      bookButtonLabel={
+        isZeroPayment ? t("common.submit_request", "Submit Request") : undefined
+      }
     >
       {/* Group C: Tech Support Online vs Visit selection */}
-      {checkoutGroup === 'C' && (
+      {checkoutGroup === "C" && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('service_detail.delivery_method', 'Delivery Method')}</Text>
+          <Text style={styles.cardTitle}>
+            {t("service_detail.delivery_method", "Delivery Method")}
+          </Text>
           <View style={styles.toggleRow}>
             <TouchableOpacity
-              style={[styles.toggleBtn, deliveryMethod === 'online' && styles.toggleBtnActive]}
-              onPress={() => setDeliveryMethod('online')}
+              style={[
+                styles.toggleBtn,
+                deliveryMethod === "online" && styles.toggleBtnActive,
+              ]}
+              onPress={() => setDeliveryMethod("online")}
             >
-              <Text style={[styles.toggleBtnText, deliveryMethod === 'online' && styles.toggleBtnTextActive]}>
-                {t('service_detail.online_call', 'Online Video Call (₹499)')}
+              <Text
+                style={[
+                  styles.toggleBtnText,
+                  deliveryMethod === "online" && styles.toggleBtnTextActive,
+                ]}
+              >
+                {t(
+                  "service_detail.online_call",
+                  "Online Video Call (₹{{price}})",
+                  { price: resolvedOnlinePrice },
+                )}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.toggleBtn, deliveryMethod === 'home_visit' && styles.toggleBtnActive]}
-              onPress={() => setDeliveryMethod('home_visit')}
+              style={[
+                styles.toggleBtn,
+                deliveryMethod === "home_visit" && styles.toggleBtnActive,
+              ]}
+              onPress={() => setDeliveryMethod("home_visit")}
             >
-              <Text style={[styles.toggleBtnText, deliveryMethod === 'home_visit' && styles.toggleBtnTextActive]}>
-                {t('service_detail.home_visit', 'Home Visit (₹999)')}
+              <Text
+                style={[
+                  styles.toggleBtnText,
+                  deliveryMethod === "home_visit" && styles.toggleBtnTextActive,
+                ]}
+              >
+                {t("service_detail.home_visit", "Home Visit (₹{{price}})", {
+                  price: resolvedVisitPrice,
+                })}
               </Text>
             </TouchableOpacity>
           </View>
@@ -344,7 +589,7 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       {showDatePicker && (
         <View style={styles.card}>
           <CustomDateTimePicker
-            label={t('booking.schedule_appointment', 'Schedule Appointment')}
+            label={t("booking.schedule_appointment", "Schedule Appointment")}
             value={scheduledDate}
             onDateChange={setScheduledDate}
           />
@@ -353,11 +598,16 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
 
       {/* Comments input field (mandatory for all services) */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{t('service_detail.comments', 'Comments / Requirements')} *</Text>
+        <Text style={styles.cardTitle}>
+          {t("service_detail.comments", "Comments / Requirements")} *
+        </Text>
         <TextInput
           style={styles.textArea}
-          placeholder={t('service_detail.comments_placeholder', 'Describe your requirements or any instructions here...')}
-          placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+          placeholder={t(
+            "service_detail.comments_placeholder",
+            "Describe your requirements or any instructions here...",
+          )}
+          placeholderTextColor={isDarkMode ? "#64748B" : "#9CA3AF"}
           value={comments}
           onChangeText={setComments}
           multiline
@@ -368,8 +618,19 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       {/* Photo Upload Box */}
       {showPhotoUpload && (
         <ImageUploadBox
-          title={checkoutGroup === 'B' ? t('service_detail.upload_bill_photos', 'Upload Bill Copies') + ' *' : t('service_detail.upload_optional_photos', 'Upload Photos (Optional)')}
-          subtitle={t('service_detail.image_upload_subtitle', 'JPG, PNG up to 10MB')}
+          title={
+            checkoutGroup === "B"
+              ? t("service_detail.upload_bill_photos", "Upload Bill Copies") +
+                " *"
+              : t(
+                  "service_detail.upload_optional_photos",
+                  "Upload Photos (Optional)",
+                )
+          }
+          subtitle={t(
+            "service_detail.image_upload_subtitle",
+            "JPG, PNG up to 10MB",
+          )}
           onImagesChange={setSelectedImages}
           maxImages={5}
         />
@@ -380,68 +641,70 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
         title={alertConfig.title}
         message={alertConfig.message}
         iconName={alertConfig.iconName as any}
-        buttonText={t('common.ok', 'OK')}
+        buttonText={t("common.ok", "OK")}
         onClose={closeAlert}
       />
     </ServiceDetailScreen>
   );
 }
 
-const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
-  card: {
-    backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
-    borderRadius: 13,
-    padding: 18,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: isDarkMode ? 0.3 : 0.06,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  cardTitle: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 14,
-    color: isDarkMode ? '#F8FAFC' : '#2F2F2F',
-    marginBottom: 10,
-  },
-  textArea: {
-    fontFamily: Fonts.regular,
-    fontSize: 13,
-    borderWidth: 1,
-    borderColor: isDarkMode ? '#334155' : '#E5E7EB',
-    backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
-    color: isDarkMode ? '#F3F4F6' : '#1F2937',
-    borderRadius: 8,
-    padding: 10,
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderWidth: 1.5,
-    borderColor: isDarkMode ? '#334155' : '#E5E7EB',
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB',
-  },
-  toggleBtnActive: {
-    borderColor: colors.primary,
-    backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.15)' : 'rgba(2,116,63,0.06)',
-  },
-  toggleBtnText: {
-    fontFamily: Fonts.medium,
-    fontSize: 12,
-    color: isDarkMode ? '#94A3B8' : '#4B5563',
-  },
-  toggleBtnTextActive: {
-    color: colors.primary,
-    fontFamily: Fonts.semiBold,
-  },
-});
-
+const makeStyles = (isDarkMode: boolean, colors: any) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: isDarkMode ? "#1E293B" : "#FFFFFF",
+      borderRadius: 13,
+      padding: 18,
+      marginBottom: 15,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isDarkMode ? 0.3 : 0.06,
+      shadowRadius: 4,
+      elevation: 1,
+    },
+    cardTitle: {
+      fontFamily: Fonts.semiBold,
+      fontSize: 14,
+      color: isDarkMode ? "#F8FAFC" : "#2F2F2F",
+      marginBottom: 10,
+    },
+    textArea: {
+      fontFamily: Fonts.regular,
+      fontSize: 13,
+      borderWidth: 1,
+      borderColor: isDarkMode ? "#334155" : "#E5E7EB",
+      backgroundColor: isDarkMode ? "#0F172A" : "#FFFFFF",
+      color: isDarkMode ? "#F3F4F6" : "#1F2937",
+      borderRadius: 8,
+      padding: 10,
+      minHeight: 80,
+      textAlignVertical: "top",
+    },
+    toggleRow: {
+      flexDirection: "row",
+      gap: 10,
+    },
+    toggleBtn: {
+      flex: 1,
+      paddingVertical: 12,
+      borderWidth: 1.5,
+      borderColor: isDarkMode ? "#334155" : "#E5E7EB",
+      borderRadius: 8,
+      alignItems: "center",
+      backgroundColor: isDarkMode ? "#0F172A" : "#F9FAFB",
+    },
+    toggleBtnActive: {
+      borderColor: colors.primary,
+      backgroundColor: isDarkMode
+        ? "rgba(52, 199, 89, 0.15)"
+        : "rgba(2,116,63,0.06)",
+    },
+    toggleBtnText: {
+      fontFamily: Fonts.medium,
+      fontSize: 12,
+      color: isDarkMode ? "#94A3B8" : "#4B5563",
+    },
+    toggleBtnTextActive: {
+      color: colors.primary,
+      fontFamily: Fonts.semiBold,
+    },
+  });

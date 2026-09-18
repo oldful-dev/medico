@@ -19,6 +19,7 @@ interface CustomDateTimePickerProps {
   minimumDate?: Date;
   daysToShow?: number;
   timeSlots?: string[];
+  showTimeSlots?: boolean;
 }
 
 const DEFAULT_TIME_SLOTS = [
@@ -82,6 +83,7 @@ export default function CustomDateTimePicker({
   minimumDate,
   daysToShow = 14,
   timeSlots = DEFAULT_TIME_SLOTS,
+  showTimeSlots = true,
 }: CustomDateTimePickerProps) {
   const { t } = useTranslation();
   const { isDarkMode } = useTheme();
@@ -145,7 +147,9 @@ export default function CustomDateTimePicker({
       setSelectedTime(null);
       return;
     }
-    if (selectedDate && selectedTime && notify) {
+    if (!showTimeSlots && selectedDate && notify) {
+      notify(selectedDate);
+    } else if (selectedDate && selectedTime && notify) {
       notify(mergeDateTime(selectedDate, selectedTime));
     }
   };
@@ -197,39 +201,41 @@ export default function CustomDateTimePicker({
       </View>
 
       {/* ── Select Time ── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>{t("common.select_time")}</Text>
-        <View style={styles.timeGrid}>
-          {timeSlots.map((slot, idx) => {
-            const active = selectedTime === slot;
-            const referenceDate = selectedDateIdx !== null ? datePills[selectedDateIdx] : datePills[0];
-            const isPast = referenceDate ? isSlotPast(referenceDate, slot) : false;
-            return (
-              <TouchableOpacity
-                key={idx}
-                style={[
-                  styles.timeSlot,
-                  active && styles.timeSlotSelected,
-                  isPast && styles.timeSlotDisabled,
-                ]}
-                onPress={() => handleTimeSelect(slot)}
-                disabled={isPast}
-                activeOpacity={0.75}
-              >
-                <Text
+      {showTimeSlots && (
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>{t("common.select_time")}</Text>
+          <View style={styles.timeGrid}>
+            {timeSlots.map((slot, idx) => {
+              const active = selectedTime === slot;
+              const referenceDate = selectedDateIdx !== null ? datePills[selectedDateIdx] : datePills[0];
+              const isPast = referenceDate ? isSlotPast(referenceDate, slot) : false;
+              return (
+                <TouchableOpacity
+                  key={idx}
                   style={[
-                    styles.timeSlotText,
-                    active && styles.timeSlotTextSelected,
-                    isPast && styles.timeSlotTextDisabled,
+                    styles.timeSlot,
+                    active && styles.timeSlotSelected,
+                    isPast && styles.timeSlotDisabled,
                   ]}
+                  onPress={() => handleTimeSelect(slot)}
+                  disabled={isPast}
+                  activeOpacity={0.75}
                 >
-                  {slot}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+                  <Text
+                    style={[
+                      styles.timeSlotText,
+                      active && styles.timeSlotTextSelected,
+                      isPast && styles.timeSlotTextDisabled,
+                    ]}
+                  >
+                    {slot}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }

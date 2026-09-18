@@ -40,7 +40,8 @@ export default {
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.CALL_PHONE"
+        "android.permission.CALL_PHONE",
+        "android.permission.CAMERA"
       ],
       "queries": [
         {
@@ -84,6 +85,13 @@ export default {
       "@react-native-community/datetimepicker",
       "@react-native-google-signin/google-signin",
       "./plugins/withAndroidHardening.js",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Ayuxa needs photo library access to let you upload prescriptions, lab reports, and your profile picture.",
+          "cameraPermission": "Ayuxa needs camera access to let you take photos of prescriptions, lab reports, and your profile picture."
+        }
+      ],
       [
         "expo-secure-store",
         {

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -11,9 +11,7 @@ import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/th
 const ANDROID_PACKAGE = 'com.ayuxacare.app';
 // TODO: replace with the real numeric App Store ID once the iOS app is live.
 const IOS_APP_STORE_ID = '';
-// TODO: replace with the real Google Business Profile review link
-// (Google Maps listing → Share → "Ask for reviews" gives this URL).
-const GOOGLE_BUSINESS_REVIEW_URL = 'https://g.page/r/REPLACE_WITH_AYUXA_PLACE_ID/review';
+const GOOGLE_BUSINESS_REVIEW_URL = 'https://g.page/r/CVekAmbsvOcKECE/review';
 
 const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
 const APP_STORE_URL = IOS_APP_STORE_ID ? `https://apps.apple.com/app/id${IOS_APP_STORE_ID}` : '';

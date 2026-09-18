@@ -1,8 +1,18 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, ScrollView } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    Image,
+    Alert,
+    ScrollView,
+    Modal,
+    Pressable,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Radius, Spacing, Shadow } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
 
 interface ImageUploadBoxProps {
@@ -19,89 +29,111 @@ export default function ImageUploadBox({
     maxImages = 5,
 }: ImageUploadBoxProps) {
     const { t } = useTranslation();
-    const resolvedTitle = title ?? t('image_upload.upload_photos');
-    const resolvedSubtitle = subtitle ?? t('image_upload.file_hint');
+    const resolvedTitle = title ?? t('image_upload.upload_photos', 'Upload Photos');
+    const resolvedSubtitle = subtitle ?? t('image_upload.file_hint', 'JPG, PNG up to 10MB');
     const [images, setImages] = useState<string[]>([]);
+    const [modalVisible, setModalVisible] = useState(false);
+
+    const onImagesChangeRef = useRef(onImagesChange);
+    useEffect(() => {
+        onImagesChangeRef.current = onImagesChange;
+    }, [onImagesChange]);
+
+    const notifyParent = useCallback((newImages: string[]) => {
+        onImagesChangeRef.current?.(newImages);
+    }, []);
+
+    const openCamera = useCallback(async () => {
+        setModalVisible(false);
+        try {
+            const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+            if (permissionResult.granted === false) {
+                Alert.alert(
+                    t('common.permission_required', 'Permission Required'),
+                    t('image_upload.camera_permission', 'Camera permission is required to take photos.')
+                );
+                return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ['images'],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const uri = result.assets[0].uri;
+                setImages(prev => {
+                    const next = [...prev, uri].slice(0, maxImages);
+                    notifyParent(next);
+                    return next;
+                });
+            }
+        } catch (error) {
+            console.error('[ImageUploadBox] Error launching camera:', error);
+            Alert.alert(t('common.error', 'Error'), t('image_upload.camera_error', 'Could not open camera. Please try again.'));
+        }
+    }, [maxImages, notifyParent, t]);
+
+    const openGallery = useCallback(async () => {
+        setModalVisible(false);
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsMultipleSelection: maxImages > 1,
+                selectionLimit: Math.max(1, maxImages - images.length),
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const newUris = result.assets.map((asset: ImagePicker.ImagePickerAsset) => asset.uri);
+                setImages(prev => {
+                    const next = [...prev, ...newUris].slice(0, maxImages);
+                    notifyParent(next);
+                    return next;
+                });
+            }
+        } catch (error) {
+            console.error('[ImageUploadBox] Error launching gallery:', error);
+            Alert.alert(t('common.error', 'Error'), t('image_upload.gallery_error', 'Could not open photo gallery. Please try again.'));
+        }
+    }, [images.length, maxImages, notifyParent, t]);
 
     const handleAddImage = () => {
         if (images.length >= maxImages) {
-            Alert.alert(t('image_upload.limit_reached'), t('image_upload.limit_message', { max: maxImages }));
+            Alert.alert(
+                t('image_upload.limit_reached', 'Limit Reached'),
+                t('image_upload.limit_message', { max: maxImages, defaultValue: `You can only upload up to ${maxImages} images.` })
+            );
             return;
         }
 
-        Alert.alert(
-            t('image_upload.upload_photo'),
-            '',
-            [
-                { text: t('image_upload.take_photo'), onPress: () => { setTimeout(openCamera, 300); } },
-                { text: t('image_upload.choose_gallery'), onPress: () => { setTimeout(openGallery, 300); } },
-                { text: t('common.cancel'), style: 'cancel' },
-            ],
-            { cancelable: true }
-        );
+        setModalVisible(true);
     };
-
-    const openCamera = useCallback(async () => {
-        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-        if (permissionResult.granted === false) {
-            Alert.alert(t('common.permission_required'), t('image_upload.camera_permission'));
-            return;
-        }
-
-        const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: 'images',
-            quality: 0.8,
-        });
-
-        if (!result.canceled && result.assets && result.assets.length > 0) {
-            const uri = result.assets[0].uri;
-            setImages(prev => [...prev, uri].slice(0, maxImages));
-        }
-    }, [maxImages, t]);
-
-    const openGallery = useCallback(async () => {
-        // launchImageLibraryAsync uses the system Photo Picker on Android
-        // 13+ / modern iOS, which needs no runtime permission at all — do
-        // NOT request MediaLibrary permission first, that's what pulls in
-        // READ_MEDIA_IMAGES and trips Play Store's photo-picker policy check.
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: 'images',
-            allowsMultipleSelection: true,
-            selectionLimit: maxImages - images.length,
-            quality: 0.8,
-        });
-
-        if (!result.canceled && result.assets && result.assets.length > 0) {
-            const newUris = result.assets.map((asset: ImagePicker.ImagePickerAsset) => asset.uri);
-            setImages(prev => [...prev, ...newUris].slice(0, maxImages));
-        }
-    }, [images.length, maxImages, t]);
-
-    React.useEffect(() => {
-        if (onImagesChange) {
-            onImagesChange(images);
-        }
-    }, [images, onImagesChange]);
 
     const removeImage = (index: number) => {
         setImages(prev => {
             const updated = [...prev];
             updated.splice(index, 1);
+            notifyParent(updated);
             return updated;
         });
     };
 
     return (
         <View style={styles.container}>
-            <View style={styles.uploadDashedBox}>
+            <TouchableOpacity 
+                style={styles.uploadDashedBox} 
+                onPress={handleAddImage} 
+                activeOpacity={0.7}
+            >
                 <Ionicons name="cloud-upload-outline" size={40} color={Colors.primary} style={styles.uploadCloudIcon} />
                 <Text style={styles.uploadTitle}>{resolvedTitle}</Text>
                 <Text style={styles.uploadSubtitle}>{resolvedSubtitle}</Text>
 
-                <TouchableOpacity style={styles.uploadButton} onPress={handleAddImage} activeOpacity={0.8}>
-                    <Text style={styles.uploadButtonText}>{t('image_upload.select_image').toUpperCase()}</Text>
-                </TouchableOpacity>
-            </View>
+                <View style={styles.uploadButton}>
+                    <Text style={styles.uploadButtonText}>{t('image_upload.select_image', 'SELECT IMAGE').toUpperCase()}</Text>
+                </View>
+            </TouchableOpacity>
 
             {images.length > 0 && (
                 <View style={styles.imagePreviewContainer}>
@@ -112,6 +144,7 @@ export default function ImageUploadBox({
                                 <TouchableOpacity
                                     style={styles.removeIconBtn}
                                     onPress={() => removeImage(index)}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                                 >
                                     <Ionicons name="close-circle" size={24} color={Colors.sosRed} />
                                 </TouchableOpacity>
@@ -120,6 +153,51 @@ export default function ImageUploadBox({
                     </ScrollView>
                 </View>
             )}
+
+            {/* Selection Modal Sheet */}
+            <Modal
+                visible={modalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+                    <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
+                        <View style={styles.modalHandle} />
+                        <Text style={styles.modalTitle}>{t('image_upload.upload_photo', 'Upload Photo')}</Text>
+
+                        <TouchableOpacity style={styles.modalOption} onPress={openCamera} activeOpacity={0.7}>
+                            <View style={[styles.modalOptionIcon, { backgroundColor: '#E8F5E9' }]}>
+                                <Ionicons name="camera-outline" size={22} color={Colors.primary} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.modalOptionText}>{t('image_upload.take_photo', 'Take Photo')}</Text>
+                                <Text style={styles.modalOptionSub}>{t('image_upload.take_photo_sub', 'Use camera to capture image')}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.modalOption} onPress={openGallery} activeOpacity={0.7}>
+                            <View style={[styles.modalOptionIcon, { backgroundColor: '#E0F2FE' }]}>
+                                <Ionicons name="images-outline" size={22} color="#0284C7" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.modalOptionText}>{t('image_upload.choose_gallery', 'Choose from Gallery')}</Text>
+                                <Text style={styles.modalOptionSub}>{t('image_upload.choose_gallery_sub', 'Select from photo library')}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.modalCancelBtn}
+                            onPress={() => setModalVisible(false)}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={styles.modalCancelText}>{t('common.cancel', 'Cancel')}</Text>
+                        </TouchableOpacity>
+                    </Pressable>
+                </Pressable>
+            </Modal>
         </View>
     );
 }
@@ -130,9 +208,9 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.xl,
     },
     uploadDashedBox: {
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderStyle: 'dashed',
-        borderColor: '#495057',
+        borderColor: '#9CA3AF',
         borderRadius: Radius.xl,
         width: '100%',
         paddingVertical: 20,
@@ -200,5 +278,75 @@ const styles = StyleSheet.create({
         right: -8,
         backgroundColor: Colors.bgCard,
         borderRadius: Radius.full,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        paddingBottom: 34,
+        gap: 12,
+        ...Shadow.card,
+    },
+    modalHandle: {
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#D1D5DB',
+        alignSelf: 'center',
+        marginBottom: 8,
+    },
+    modalTitle: {
+        fontFamily: Fonts.bold,
+        fontSize: FontSize.heading3,
+        color: Colors.textDark,
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    modalOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 14,
+        borderRadius: Radius.lg,
+        backgroundColor: '#F9FAFB',
+        gap: 14,
+        borderWidth: 1,
+        borderColor: '#F3F4F6',
+    },
+    modalOptionIcon: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalOptionText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
+    },
+    modalOptionSub: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption,
+        color: Colors.textMuted,
+        marginTop: 2,
+    },
+    modalCancelBtn: {
+        marginTop: 8,
+        paddingVertical: 14,
+        borderRadius: Radius.lg,
+        backgroundColor: '#F3F4F6',
+        alignItems: 'center',
+    },
+    modalCancelText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
 });

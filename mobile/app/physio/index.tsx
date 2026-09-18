@@ -68,7 +68,8 @@ export default function PhysioScreen() {
     // (that was the pre-split combined Physio & Fitness service), so
     // serviceId never resolved and isReady stayed false forever, blocking
     // every booking attempt with "Service initialization incomplete."
-    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit, dbService } = useServiceInitialization('physio-diag');
+    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit, dbService } = 
+        useServiceInitialization('physio-diag', ['physio', 'physio-fitness']);
     const [isBooking, setIsBooking] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
