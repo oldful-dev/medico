@@ -84,6 +84,66 @@ async function getPlanTypeForCategory(category) {
     return null;
 }
 
+/**
+ * Resolves the Service record and its effective ServiceCharge config for a
+ * given category/slug string, via the same 3-tier cascade calculateCheckout
+ * uses: exact serviceCategory key -> service.category -> service.serviceType.
+ * Shared so a pre-checkout price preview (getServiceChargeForCategory) reads
+ * the identical config calculateCheckout will actually charge, instead of a
+ * second, drift-prone lookup.
+ */
+async function resolveServiceCharge(serviceCategory) {
+    let serviceRecord = null;
+    if (serviceCategory) {
+        serviceRecord = await prisma.service.findFirst({
+            where: {
+                OR: [
+                    { slug: serviceCategory.toLowerCase().replace(/_/g, '-') },
+                    { slug: serviceCategory.toLowerCase() },
+                    { name: { equals: serviceCategory, mode: 'insensitive' } },
+                ]
+            }
+        });
+    }
+
+    const lookupCategory = (serviceCategory?.toUpperCase?.() || serviceCategory)?.replace(/-/g, '_');
+    let config = await prisma.serviceCharge.findUnique({
+        where: { serviceCategory: lookupCategory }
+    });
+
+    // Fallback: If no config exists for this specific slug/name, try to match by its parent category
+    if (!config && serviceRecord) {
+        if (serviceRecord.category) {
+            config = await prisma.serviceCharge.findUnique({
+                where: { serviceCategory: serviceRecord.category.toUpperCase() }
+            });
+        }
+        if (!config && serviceRecord.serviceType) {
+            config = await prisma.serviceCharge.findUnique({
+                where: { serviceCategory: serviceRecord.serviceType.toUpperCase() }
+            });
+        }
+    }
+
+    return { serviceRecord, config };
+}
+exports.resolveServiceCharge = resolveServiceCharge;
+
+// @desc    Look up the effective ServiceCharge config for a category/slug —
+//          used for a pre-checkout price preview (e.g. Tech Helper's
+//          online/offline fee display) so it reflects the same admin-
+//          configured values calculateCheckout will charge at checkout time.
+// @route   GET /api/v1/pricing/service-charge/:category
+// @access  Private
+exports.getServiceChargeForCategory = async (req, res) => {
+    try {
+        const { config } = await resolveServiceCharge(req.params.category);
+        res.json({ success: true, data: config || null });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to resolve service charge config' });
+    }
+};
+
 // @desc    Calculate checkout total with subscription benefits (category-aware)
 // @route   POST /api/v1/checkout/calculate
 // @access  Private
@@ -92,38 +152,7 @@ exports.calculateCheckout = async (req, res) => {
         const { serviceCategory, vendorFee = 0, diagnosticFee = 0, selectedOption = null } = req.body;
         const userId = req.user.id;
 
-        let serviceRecord = null;
-        if (serviceCategory) {
-            serviceRecord = await prisma.service.findFirst({
-                where: {
-                    OR: [
-                        { slug: serviceCategory.toLowerCase().replace(/_/g, '-') },
-                        { slug: serviceCategory.toLowerCase() },
-                        { name: { equals: serviceCategory, mode: 'insensitive' } },
-                    ]
-                }
-            });
-        }
-
-        // Fetch service charge configuration
-        const lookupCategory = (serviceCategory?.toUpperCase?.() || serviceCategory)?.replace(/-/g, '_');
-        let config = await prisma.serviceCharge.findUnique({
-            where: { serviceCategory: lookupCategory }
-        });
-
-        // Fallback: If no config exists for this specific slug/name, try to match by its parent category
-        if (!config && serviceRecord) {
-            if (serviceRecord.category) {
-                config = await prisma.serviceCharge.findUnique({
-                    where: { serviceCategory: serviceRecord.category.toUpperCase() }
-                });
-            }
-            if (!config && serviceRecord.serviceType) {
-                config = await prisma.serviceCharge.findUnique({
-                    where: { serviceCategory: serviceRecord.serviceType.toUpperCase() }
-                });
-            }
-        }
+        const { serviceRecord, config } = await resolveServiceCharge(serviceCategory);
 
         let serviceFeeVal = Number(vendorFee);
         let bookingFee = 299;

@@ -27,13 +27,19 @@ const resolvePrice = (svc: any): number => {
     return 0;
 };
 
-export function useServiceInitialization(slug: string) {
+export function useServiceInitialization(slug: string, fallbackSlugs: string[] = []) {
     const { profile, getServiceBySlug, selectedCityId, services, isLoading: isCatalogLoading } = useUser();
 
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
     const [serviceName, setServiceName] = useState('');
     const [servicePrice, setServicePrice] = useState(0);
+    // Whichever slug in [slug, ...fallbackSlugs] actually resolved — not
+    // necessarily `slug` itself. Callers that pass the resolved service's own
+    // slug onward (e.g. to /service-checkout) need this, not the primary arg,
+    // or a checkout-side lookup can miss the real Service/ServiceCharge row
+    // and silently fall back to hardcoded defaults.
+    const [dbService, setDbService] = useState<any>(null);
 
     // ── Service & city resolution — drives isLoading ───────────────────────
     useEffect(() => {
@@ -44,13 +50,16 @@ export function useServiceInitialization(slug: string) {
             setCityId(selectedCityId);
         }
 
-        // Try context catalog first (fast path — usually already loaded)
-        const svc = getServiceBySlug(slug);
-        if (svc) {
-            setServiceId(svc.id);
-            setServiceName(svc.name || '');
-            setServicePrice(resolvePrice(svc));
-            return;
+        const allSlugs = [slug, ...fallbackSlugs];
+        for (const s of allSlugs) {
+            const svc = getServiceBySlug(s);
+            if (svc) {
+                setServiceId(svc.id);
+                setServiceName(svc.name || '');
+                setServicePrice(resolvePrice(svc));
+                setDbService(svc);
+                return;
+            }
         }
 
         // Fallback: direct API call when context service is not resolved yet
@@ -58,11 +67,15 @@ export function useServiceInitialization(slug: string) {
             try {
                 const res = await apiClient.get<any[]>('/services');
                 if (res.success && res.data) {
-                    const found = res.data.find((s: any) => s.slug === slug);
-                    if (found) {
-                        setServiceId(found.id);
-                        setServiceName(found.name || '');
-                        setServicePrice(resolvePrice(found));
+                    for (const s of allSlugs) {
+                        const found = res.data.find((item: any) => item.slug === s);
+                        if (found) {
+                            setServiceId(found.id);
+                            setServiceName(found.name || '');
+                            setServicePrice(resolvePrice(found));
+                            setDbService(found);
+                            return;
+                        }
                     }
                 }
             } catch (err) {
@@ -80,6 +93,6 @@ export function useServiceInitialization(slug: string) {
         servicePrice,
         isLoading: isCatalogLoading,
         isReady,
-        dbService: getServiceBySlug(slug),
+        dbService,
     };
 }

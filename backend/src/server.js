@@ -242,6 +242,7 @@ app.use('/api/plans', planRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/payments', paymentLimiter, paymentRoutes);
 app.use('/api/checkout', require('./routes/checkout.routes'));
+app.use('/api/pricing', require('./routes/pricing.routes'));
 
 
 // Communication
