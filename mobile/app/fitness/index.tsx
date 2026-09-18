@@ -49,7 +49,10 @@ export default function FitnessScreen() {
     );
     const [landmarkInitialized, setLandmarkInitialized] = useState(false);
 
-    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit, dbService } = useServiceInitialization('fitness-wellness');
+    // Was 'fitness-wellness' — no Service row has ever existed with that
+    // slug, so serviceId never resolved and isReady stayed false forever,
+    // blocking every booking attempt with "Service initialization incomplete."
+    const { cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit, dbService } = useServiceInitialization('fitness-diag');
     const [isBooking, setIsBooking] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({

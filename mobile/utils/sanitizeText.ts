@@ -46,7 +46,8 @@ export function cleanNotificationText(text: string | null | undefined): string {
             'WELLNESS_CHECKIN', 'MEDICINE_OUT_FOR_DELIVERY', 'LAB_REPORT_READY', 'WELCOME_USER',
             'SOS_FAMILY', 'PLAN_EXPIRED_USER', 'ORDER_CANCELLED_USER', 'PLAN_CANCELLED_WITH_CONTACT',
             'CAREGIVER_OTP', 'SOS_PARTNER', 'SHIFT_CANCELLED_PARTNER', 'SOS_ADMIN',
-            'ADMIN_LOGIN_OTP', 'PLAN_CANCELLED_ADMIN', 'ADMIN_NEW_ORDER',
+            'ADMIN_LOGIN_OTP', 'PLAN_CANCELLED_ADMIN', 'ADMIN_NEW_ORDER', 'IMPORTANT_UPDATE',
+            'SOS_RESOLVED_CLIENT', 'SOS_RESOLVED_FAMILY',
         ];
         if (knownTemplates.includes(templateKey)) {
             let params: string[] = [];
@@ -113,6 +114,12 @@ export function cleanNotificationText(text: string | null | undefined): string {
                     return `Dear ${getVar(0) || 'there'}, your shift with client ${getVar(1) || ''} has been cancelled.`;
                 case 'ADMIN_NEW_ORDER':
                     return `New order received — please check the admin portal.`;
+                case 'IMPORTANT_UPDATE':
+                    return `Dear ${getVar(0) || 'there'}, we have an important update for you. Please check the Ayuxa app for details.`;
+                case 'SOS_RESOLVED_CLIENT':
+                    return `Dear ${getVar(0) || 'there'}, we are writing to confirm that the SOS alert recently triggered via the AYUXA app has been successfully resolved.`;
+                case 'SOS_RESOLVED_FAMILY':
+                    return `Dear ${getVar(0) || 'there'}, we are writing to confirm that the SOS alert recently triggered by your family member "${getVar(1) || ''}" via the AYUXA app has been successfully resolved.`;
                 default:
                     break;
             }
