@@ -59,4 +59,8 @@ router.put('/admin/:id/status', authenticateAdmin, authorize(...ORDER_ADMIN_ROLE
 // Re-attempt Delhivery shipment creation after a failed auto-fulfillment
 router.post('/admin/:id/retry-fulfillment', authenticateAdmin, authorize(...ORDER_ADMIN_ROLES), ctrl.retryFulfillment);
 
+// GET /api/orders/admin/delhivery-balance-status
+// Whether the last fulfillment attempt failed due to insufficient Delhivery wallet balance
+router.get('/admin/delhivery-balance-status', authenticateAdmin, authorize(...ORDER_ADMIN_ROLES), ctrl.getDelhiveryBalanceStatus);
+
 module.exports = router;

@@ -137,6 +137,22 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     showToast(`🛍️ New Order: ₹${data.amount} by ${data.userName}`, 'success');
                 });
 
+                // Delhivery low wallet balance — symptom-based, see
+                // backend/src/utils/delhiveryBalanceAlert.js
+                socket.off("delhivery_low_balance");
+                socket.on("delhivery_low_balance", (data) => {
+                    handleNewAlert({
+                        id: Date.now() + Math.random(),
+                        type: 'store',
+                        title: `Delhivery wallet balance too low`,
+                        description: data.message || 'Recharge the Delhivery wallet to keep shipping orders.',
+                        href: '/store',
+                        time: new Date()
+                    });
+                    playTing();
+                    showToast(`⚠️ Delhivery wallet balance too low — recharge to keep shipping`, 'error');
+                });
+
                 // Support & Ticket alerts
                 socket.off("new_ticket");
                 socket.on("new_ticket", (data) => {
@@ -237,6 +253,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                 activeSocket.off("new_sos");
                 activeSocket.off("new_booking");
                 activeSocket.off("new_product_order");
+                activeSocket.off("delhivery_low_balance");
                 activeSocket.off("new_ticket");
                 activeSocket.off("ticket_message_added");
                 activeSocket.off("booking_status_changed");

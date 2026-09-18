@@ -15,6 +15,7 @@ const prisma = require('../config/database');
 const { logger } = require('../config/logger');
 const delhivery = require('./delhivery.service');
 const { recordStatusTransition } = require('../utils/statusTransitions');
+const { reportFulfillmentError, clearAlert } = require('../utils/delhiveryBalanceAlert');
 
 /**
  * Attempt to create a Delhivery shipment for a ProductOrder that hasn't
@@ -130,6 +131,7 @@ const attemptFulfillment = async (orderId, changedBy = 'system') => {
         });
 
         logger.info(`[Fulfillment] Delhivery order created for ${orderRecord.orderCode} → AWB:${awbCode}`);
+        clearAlert();
         return { success: true, awbCode };
     } catch (err) {
         const errorMessage = err?.message || String(err);
@@ -145,6 +147,8 @@ const attemptFulfillment = async (orderId, changedBy = 'system') => {
             fromStatus: orderRecord.status, toStatus: orderRecord.status, // no status change — the shipment attempt failed
             changedBy, reason: `Delhivery fulfillment failed: ${errorMessage.slice(0, 200)}`,
         });
+
+        reportFulfillmentError(errorMessage, orderRecord.orderCode);
 
         return { success: false, error: errorMessage };
     }

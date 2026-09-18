@@ -56,7 +56,26 @@ export default function StorePage() {
     const [feeConfigLoading, setFeeConfigLoading] = useState(false);
     const [feeConfigSaving, setFeeConfigSaving] = useState(false);
 
+    // Delhivery low-balance banner — symptom-based (no public balance API on
+    // this account), see backend/src/utils/delhiveryBalanceAlert.js
+    const [delhiveryLowBalance, setDelhiveryLowBalance] = useState(null);
+
     useEffect(() => { loadData(); }, []);
+
+    useEffect(() => {
+        productAPI.getDelhiveryBalanceStatus()
+            .then(res => setDelhiveryLowBalance(res.data?.data?.isLowBalance ? res.data.data : null))
+            .catch(() => {});
+
+        const onLow = (data) => setDelhiveryLowBalance({ isLowBalance: true, lastOrderCode: data?.orderCode });
+        const onCleared = () => setDelhiveryLowBalance(null);
+        onSocketEvent('delhivery_low_balance', onLow);
+        onSocketEvent('delhivery_low_balance_cleared', onCleared);
+        return () => {
+            offSocketEvent('delhivery_low_balance', onLow);
+            offSocketEvent('delhivery_low_balance_cleared', onCleared);
+        };
+    }, []);
 
     // ── Real-time new_product_order socket listener ────────────────
     useEffect(() => {
@@ -270,6 +289,20 @@ export default function StorePage() {
                 <h2>Wellness Store CMS</h2>
                 <p>Manage products, categories, and inventory</p>
             </div>
+
+            {delhiveryLowBalance?.isLowBalance && (
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b',
+                    borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13,
+                }}>
+                    <span style={{ fontSize: 16 }}>⚠️</span>
+                    <span>
+                        <strong>Delhivery wallet balance is too low.</strong> Orders can&apos;t be shipped until it&apos;s recharged.
+                        {delhiveryLowBalance.lastOrderCode && ` Last failed: ${delhiveryLowBalance.lastOrderCode}.`}
+                    </span>
+                </div>
+            )}
 
             {/* Tabs */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>

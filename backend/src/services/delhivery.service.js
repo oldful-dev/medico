@@ -162,7 +162,11 @@ async function createOrder(payload) {
 
     if (!success || !waybill) {
         logger.error('[Delhivery] Order creation failed:', JSON.stringify(data));
-        throw new Error(data.rmk || 'Delhivery order creation failed');
+        // data.rmk is a generic wrapper ("An internal Error has occurred...") —
+        // the actual reason (e.g. "insufficient balance") is nested in each
+        // package's own remarks array, so surface that first when present.
+        const detail = Array.isArray(pkg.remarks) ? pkg.remarks.join('; ') : '';
+        throw new Error(detail || data.rmk || 'Delhivery order creation failed');
     }
 
     logger.info(`[Delhivery] Shipment created. Waybill: ${waybill}, RefNum: ${pkg.refnum || payload.order_id}`);

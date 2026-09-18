@@ -867,6 +867,26 @@ const retryFulfillment = async (req, res, next) => {
     }
 };
 
+// ──────────────────────────────────────────────
+//  ADMIN: DELHIVERY BALANCE ALERT STATUS
+// ──────────────────────────────────────────────
+
+/**
+ * GET /api/orders/admin/delhivery-balance-status
+ * Delhivery has no public wallet-balance API on this account, so this
+ * reflects the symptom instead — whether the last fulfillment attempt
+ * failed with an "insufficient balance" error (see utils/delhiveryBalanceAlert.js).
+ */
+const getDelhiveryBalanceStatus = async (req, res, next) => {
+    try {
+        const { ALERT_CONFIG_KEY } = require('../utils/delhiveryBalanceAlert');
+        const row = await prisma.uIConfig.findUnique({ where: { key: ALERT_CONFIG_KEY } });
+        sendResponse(res, 200, row?.configJson || { isLowBalance: false });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getShippingRate,
     checkoutCart,
@@ -878,4 +898,5 @@ module.exports = {
     updateOrderStatus,
     downloadOrderInvoice,
     retryFulfillment,
+    getDelhiveryBalanceStatus,
 };
