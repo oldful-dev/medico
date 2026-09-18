@@ -39,11 +39,25 @@ export const PRESET_SYSTEM_ROUTES = [
   { label: "Emergency SOS", value: "/sos-emergency" },
 ];
 
-export default function RouteSelector({ value, onChange, placeholder = "Select or type route...", className = "", compact = false }) {
-  const [dbRoutes, setDbRoutes] = useState([]);
+const mapServicesToRoutes = (services) =>
+  (services || []).map(s => ({
+    label: `${s.name}`,
+    value: s.route || (s.slug === 'home-essentials' ? '/all-home-essentials' : `/${s.slug}`),
+  }));
+
+// `services`: when a page already renders many RouteSelectors at once (e.g.
+// Server UI, one per service item across every section), pass its own
+// already-fetched service list here instead of leaving each instance to
+// independently call GET /api/services on mount — with a dozen+ items that
+// was a dozen+ duplicate calls firing in the same second.
+export default function RouteSelector({ value, onChange, placeholder = "Select or type route...", className = "", compact = false, services = null }) {
+  const [fetchedRoutes, setFetchedRoutes] = useState([]);
   const [isCustom, setIsCustom] = useState(false);
 
   useEffect(() => {
+    // When the caller passes its own already-fetched `services`, skip the
+    // self-fetch entirely — derived below instead of stored in state.
+    if (services) return;
     // Fetched once on mount, so a service added/deleted elsewhere after this
     // dropdown first mounted wouldn't show up until the whole page reloaded
     // — refetch on window focus too (e.g. after switching back from Home
@@ -52,14 +66,7 @@ export default function RouteSelector({ value, onChange, placeholder = "Select o
       serviceAPI.getAll()
         .then(res => {
           if (res.data?.data) {
-            const fetched = res.data.data.map(s => {
-              const route = s.route || (s.slug === 'home-essentials' ? '/all-home-essentials' : `/${s.slug}`);
-              return {
-                label: `${s.name}`,
-                value: route,
-              };
-            });
-            setDbRoutes(fetched);
+            setFetchedRoutes(mapServicesToRoutes(res.data.data));
           }
         })
         .catch(() => {});
@@ -67,7 +74,9 @@ export default function RouteSelector({ value, onChange, placeholder = "Select o
     loadRoutes();
     window.addEventListener("focus", loadRoutes);
     return () => window.removeEventListener("focus", loadRoutes);
-  }, []);
+  }, [services]);
+
+  const dbRoutes = services ? mapServicesToRoutes(services) : fetchedRoutes;
 
   // Merge PRESET and DB routes without duplicates
   const allOptions = [...PRESET_SYSTEM_ROUTES];

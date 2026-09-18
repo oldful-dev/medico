@@ -1116,10 +1116,11 @@ export default function ServerUIPage() {
                           </div>
                           <div className="form-group">
                             <label className="form-label">CTA Route Path</label>
-                            <RouteSelector 
-                              value={banner.cta_route || ""} 
+                            <RouteSelector
+                              value={banner.cta_route || ""}
                               onChange={(val) => updateBanner(index, "cta_route", val)}
                               placeholder="/doctor-visit"
+                              services={dbServices}
                             />
                           </div>
                         </div>
@@ -1248,10 +1249,11 @@ export default function ServerUIPage() {
                               </div>
                               <div className="form-group">
                                 <label className="form-label">Target Expo Route Path</label>
-                                <RouteSelector 
-                                  value={section.view_all_route || ""} 
+                                <RouteSelector
+                                  value={section.view_all_route || ""}
                                   onChange={(val) => updateSection(sIdx, "view_all_route", val)}
                                   placeholder="/trip-travels"
+                                  services={dbServices}
                                 />
                               </div>
                               <div className="form-group">
@@ -1322,11 +1324,12 @@ export default function ServerUIPage() {
                                       />
                                     </div>
                                     <div>
-                                      <RouteSelector 
+                                      <RouteSelector
                                         compact
-                                        value={service.route || ""} 
+                                        value={service.route || ""}
                                         onChange={(val) => updateService(sIdx, svIdx, "route", val)}
                                         placeholder="Expo Route"
+                                        services={dbServices}
                                       />
                                     </div>
                                     <div>
