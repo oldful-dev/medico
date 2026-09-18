@@ -12,6 +12,7 @@ const { generateInvoicePDF } = require('../utils/pdfGenerator');
 const { PRODUCT_ORDER_STATUSES, PRODUCT_ORDER_TRANSITIONS, isValidTransition, recordStatusTransition } = require('../utils/statusTransitions');
 const { attemptFulfillment } = require('../services/fulfillment.service');
 const { getDeliveryFeeConfig, calculateDeliveryFee } = require('../utils/deliveryFee');
+const { emitToAdmins } = require('../services/socket.service');
 
 const isCODMethod = (paymentMethod) => String(paymentMethod || '').toUpperCase() === 'CASH';
 
@@ -327,6 +328,22 @@ const checkoutCart = async (req, res, next) => {
                 });
             } catch (pushErr) {
                 logger.warn('[OrderCtrl] Order confirmation push failed (non-fatal):', pushErr.message);
+            }
+
+            // Prepaid orders get this same admin alert from payment.service.js's
+            // processPaymentSuccess once payment clears — COD has no such step,
+            // so it must be emitted here or admins never see COD orders live.
+            try {
+                emitToAdmins('new_product_order', {
+                    orderId: order.id,
+                    orderCode: order.orderCode,
+                    amount: order.amount,
+                    userName: notifyUser?.name,
+                    productName: lineItems[0]?.name || 'Wellness Product',
+                    status: 'PENDING',
+                });
+            } catch (socketErr) {
+                logger.warn('[OrderCtrl] Admin socket emit failed (non-fatal):', socketErr.message);
             }
         }
 
