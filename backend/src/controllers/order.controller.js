@@ -293,21 +293,30 @@ const checkoutCart = async (req, res, next) => {
         // COD orders are placed immediately (no Razorpay payment step) — send the
         // "order confirmed" notification here. Prepaid orders get theirs once
         // payment actually succeeds, via payment.service.js's processPaymentSuccess.
+        //
+        // req.user is the raw JWT payload ({ id, type, sessionId }) — it has no
+        // name/phone/smsEnabled, so those must be fetched from the DB first.
         if (isCODMethod(paymentMethod)) {
-            try {
-                const { sendBookingConfirmed } = require('../services/whatsapp');
-                const waSuccess = await sendBookingConfirmed({
-                    phone: req.user.phone, name: req.user.name, orderId: order.orderCode, userId: req.user.id,
-                }).catch(err => {
-                    logger.warn('[OrderCtrl] WA BOOKING_CONFIRMED failed (non-fatal):', err.message);
-                    return false;
-                });
-                if (!waSuccess && req.user.smsEnabled !== false) {
-                    const { sendSMS } = require('../services/sms');
-                    await sendSMS({ template: 'ORDER_CONFIRMED', mobile: req.user.phone, variables: [req.user.name, order.orderCode, '08047280789'], userId: req.user.id });
+            const notifyUser = await prisma.user.findUnique({
+                where: { id: req.user.id },
+                select: { id: true, name: true, phone: true, smsEnabled: true },
+            });
+            if (notifyUser?.phone) {
+                try {
+                    const { sendBookingConfirmed } = require('../services/whatsapp');
+                    const waSuccess = await sendBookingConfirmed({
+                        phone: notifyUser.phone, name: notifyUser.name, orderId: order.orderCode, userId: notifyUser.id,
+                    }).catch(err => {
+                        logger.warn('[OrderCtrl] WA BOOKING_CONFIRMED failed (non-fatal):', err.message);
+                        return false;
+                    });
+                    if (!waSuccess && notifyUser.smsEnabled !== false) {
+                        const { sendSMS } = require('../services/sms');
+                        await sendSMS({ template: 'ORDER_CONFIRMED', mobile: notifyUser.phone, variables: [notifyUser.name, order.orderCode, '08047280789'], userId: notifyUser.id });
+                    }
+                } catch (notifyErr) {
+                    logger.warn('[OrderCtrl] Order confirmation notification failed (non-fatal):', notifyErr.message);
                 }
-            } catch (notifyErr) {
-                logger.warn('[OrderCtrl] Order confirmation notification failed (non-fatal):', notifyErr.message);
             }
             try {
                 const { sendPushToUser } = require('../utils/pushNotification.service');
