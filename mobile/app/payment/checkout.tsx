@@ -109,7 +109,10 @@ export default function CheckoutScreen() {
     const isBloodTest = bloodTestItems.length > 0;
     const isWellness = wellnessItems.length > 0;
 
-    const isSubscription = !!params.subscriptionId || !!params.upgradeSubId;
+    // cart.tsx also passes subscriptionId on wellness/blood-test checkouts just to
+    // enable membership-benefit pricing lookups — that must not be treated as "this
+    // purchase IS the subscription," or COD gets wrongly hidden for product/lab orders.
+    const isSubscription = (!!params.subscriptionId || !!params.upgradeSubId) && !isBloodTest && !isWellness;
 
     const bloodTestBaseAmount = bloodTestItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
     const wellnessBaseAmount = wellnessItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
