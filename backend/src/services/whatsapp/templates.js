@@ -88,11 +88,11 @@ const WHATSAPP_TEMPLATES = {
     },
     // Corrected re-registration of the welcome flow — the original send was
     // meant to go out as "Ayuxa" (this AYUXA waba), not "Ayuxa Backend"
-    // (AYUXA_FAMILY); Fast2SMS registered it here correctly. STILL PENDING
-    // approval as of registration — do not wire into sendWelcomeNotifications
-    // until confirmed approved (sending an unapproved template fails outright).
-    // The live welcome flow keeps using WELCOME_USER (AYUXA_RELEASE, 20828)
-    // until this is confirmed working.
+    // (AYUXA_FAMILY); Fast2SMS registered it here correctly. Approved and
+    // live — this is now the welcome flow's WhatsApp template (see
+    // utils/notifications.js's sendWelcomeNotifications). Replaces the old
+    // WELCOME_USER (AYUXA_RELEASE, 20828), which was never an approved
+    // template on that number.
     WELCOME_FLOW_V2: {
         waba: 'AYUXA',
         messageId: 33129,
@@ -101,8 +101,7 @@ const WHATSAPP_TEMPLATES = {
         variables: 2,              // Var1=name, Var2=Ayuxa ID
         mediaRequired: false,
         docRequired: true,        // document header — same SLA PDF as WELCOME_USER
-        pending: true,
-        description: 'Welcome message with SLA document, corrected to send as "Ayuxa" — PENDING Fast2SMS approval',
+        description: 'Welcome message with SLA document, sends as "Ayuxa"',
     },
 
     // ════════════════════════════════════════════
@@ -281,6 +280,13 @@ const WHATSAPP_TEMPLATES = {
     //  AYUXA_RELEASE — Marketing / promotions
     // ════════════════════════════════════════════
 
+    // LIKELY BROKEN — messageId 20828 does not appear in the approved
+    // Fast2SMS WhatsApp template list for AYUXA_RELEASE (verified against
+    // the portal export, same as WELLNESS_REMINDER/20830 and
+    // BIRTHDAY_WISHES/20829 below — this whole AYUXA_RELEASE number had
+    // zero templates in every export shared this session). Superseded by
+    // WELCOME_FLOW_V2 (AYUXA, 33129) for the live welcome flow. Kept only
+    // because interakt.service.js (legacy shim) still references it.
     WELCOME_USER: {
         waba: 'AYUXA_RELEASE',
         messageId: 20828,

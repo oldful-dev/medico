@@ -155,12 +155,18 @@ const sendWelcomeNotifications = async (user) => {
         userId: user.id,
     });
 
-    // Welcome WhatsApp — WELCOME_USER (AYUXA_RELEASE, msgId 20828) — no body vars, doc required.
+    // Welcome WhatsApp — WELCOME_FLOW_V2 (AYUXA, msgId 33129) — Var1=name,
+    // Var2=Ayuxa ID, doc required. Replaces the old WELCOME_USER
+    // (AYUXA_RELEASE, 20828), which was never a real approved template on
+    // that number (confirmed against the Fast2SMS portal export — it does
+    // not appear there at all) and was failing silently every send.
     // SLA doc lives in the public ayuxa-assets GCS bucket (uploaded via
     // scripts/upload-welcome-sla.js) — same asset attached to the welcome email.
     const WELCOME_DOC_URL = 'https://assets.ayuxacare.com/b942e2cd-7567-4f9c-ac9b-80dc87c61919.pdf';
-    const waSuccess = await wa.sendWelcome({
+    const waSuccess = await wa.sendWelcomeFlowV2({
         phone: user.phone,
+        name: user.name,
+        ayuxaId: user.uniqueUserId,
         userId: user.id,
         mediaUrl: WELCOME_DOC_URL,
         docFilename: 'Ayuxa_Welcome.pdf',

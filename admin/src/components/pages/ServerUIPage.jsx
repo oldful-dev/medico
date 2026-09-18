@@ -61,7 +61,13 @@ export default function ServerUIPage() {
   const [dbServices, setDbServices] = useState([]);
   const [dbCategoriesByModule, setDbCategoriesByModule] = useState({});
 
-  useEffect(() => {
+  // Services are managed on Home Essentials / Diagnostic & Fitness / Tours &
+  // Travel's own pages, not here — so this snapshot goes stale the moment
+  // an admin adds/edits/deletes one on another page without reloading this
+  // one. Refetch on mount AND whenever the tab/window regains focus (e.g.
+  // switching back after deleting something elsewhere), so the "Add
+  // existing service" picker and DB-status badges don't lie.
+  const loadDbServices = useCallback(() => {
     serviceAPI.getAll()
       .then(res => setDbServices(res.data?.data || []))
       .catch(() => setDbServices([]));
@@ -71,6 +77,12 @@ export default function ServerUIPage() {
       )
     ).then(entries => setDbCategoriesByModule(Object.fromEntries(entries)));
   }, []);
+
+  useEffect(() => {
+    loadDbServices();
+    window.addEventListener("focus", loadDbServices);
+    return () => window.removeEventListener("focus", loadDbServices);
+  }, [loadDbServices]);
 
   // Mirrors backend/src/utils/sduiSync.js's matchConfigToDb — a config item's
   // `id`/`route` is matched to a Service row's `slug`/`route` the same way,
@@ -616,9 +628,20 @@ export default function ServerUIPage() {
             </p>
           )}
         </div>
-        <a href="/banners" className="btn btn-outline-primary" style={{ display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
-          <Sparkles size={16} /> Manage Top Carousel Banners
-        </a>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            className="btn btn-outline-secondary"
+            onClick={() => { loadDbServices(); showToast("Service list refreshed from database", "success"); }}
+            title="Services are managed on their own pages (Home Essentials / Diagnostic & Fitness / Tours & Travel) — refresh here after adding/deleting one there"
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <RefreshCw size={16} /> Refresh Services
+          </button>
+          <a href="/banners" className="btn btn-outline-primary" style={{ display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+            <Sparkles size={16} /> Manage Top Carousel Banners
+          </a>
+        </div>
       </div>
 
       {loading ? (
