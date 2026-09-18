@@ -218,9 +218,12 @@ const checkoutCart = async (req, res, next) => {
             }
         }
 
+        // product.price is tax-inclusive (shown as "Inclusive of all taxes" on the
+        // product page) — tax is recorded for the invoice breakdown only, never
+        // added on top of subtotal, or the customer is charged GST twice.
         const gstRate = parseFloat(process.env.GST_RATE) || 18;
-        const tax = Math.round((subtotal * gstRate) / 100);
-        const totalAmount = subtotal + tax + shippingCharge;
+        const tax = Math.round((subtotal * gstRate) / (100 + gstRate));
+        const totalAmount = subtotal + shippingCharge;
 
         // ─── 5. Create ProductOrder in DB ──────────────────────────────
         let order;
@@ -475,15 +478,14 @@ const fulfillOrder = async (req, res, next) => {
             order_items: lineItems.map(i => {
                 const dbP = dbProducts.find(p => p.id === i.productId);
                 const qty = i.quantity || i.units || 1;
+                // i.price is already tax-inclusive — don't add GST again for the manifest.
                 const unitPrice = parseFloat(i.price) || (parseFloat(i.lineTotal) / qty) || (parseFloat(order.subtotal) / (order.quantity || 1));
                 const gstRate = parseFloat(process.env.GST_RATE) || 18;
-                const unitTax = Math.round((unitPrice * gstRate) / 100);
-                const sellingPriceInclusive = unitPrice + unitTax;
                 return {
                     name: i.name,
                     sku: i.sku || dbP?.sku || i.productId || order.orderCode,
                     units: qty,
-                    selling_price: String(sellingPriceInclusive),
+                    selling_price: String(unitPrice),
                     discount: '0',
                     tax: String(gstRate),
                     hsn: '',
@@ -495,7 +497,7 @@ const fulfillOrder = async (req, res, next) => {
             giftwrap_charges: 0,
             transaction_charges: 0,
             total_discount: order.discount || 0,
-            sub_total: (order.subtotal || order.amount) + (order.tax || 0),
+            sub_total: order.subtotal || order.amount,
             length: maxLength,
             breadth: maxWidth,
             height: maxHeight,

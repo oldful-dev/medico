@@ -484,9 +484,10 @@ export default function CheckoutScreen() {
     const bloodTestTax = showWaiver ? 0 : taxes;
     const bloodTestTotal = bloodTestBaseAmount + bloodTestAyuxaFee + deliveryFeeDisplay + bloodTestTax;
 
-    const wellnessTax = Math.round(wellnessBaseAmount * 0.18);
+    // Product price is already tax-inclusive (see wellness.tax_inclusive label on
+    // the product page) — do not add GST again here, that double-charges the customer.
     const wellnessShipping = Math.round(shippingDetails?.rate || 0);
-    const wellnessTotal = wellnessBaseAmount + wellnessTax + wellnessShipping;
+    const wellnessTotal = wellnessBaseAmount + wellnessShipping;
 
     const isLegacyService = !isBloodTest && !isWellness;
     const legacyServiceTotal = isSubscription
@@ -1429,12 +1430,8 @@ export default function CheckoutScreen() {
                             ))}
                             <View style={styles.breakdownSection}>
                                 <View style={styles.breakdownRow}>
-                                    <Text style={styles.breakdownLabel}>{t('checkout.subtotal') || 'Subtotal'}</Text>
+                                    <Text style={styles.breakdownLabel}>{t('wellness.tax_inclusive') || 'Inclusive of all taxes'}</Text>
                                     <Text style={styles.breakdownValue}>{rupee}{wellnessBaseAmount.toLocaleString('en-IN')}</Text>
-                                </View>
-                                <View style={styles.breakdownRow}>
-                                    <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst') || 'GST (18%)'}</Text>
-                                    <Text style={styles.breakdownValue}>{rupee}{wellnessTax.toLocaleString('en-IN')}</Text>
                                 </View>
                                 <View style={styles.breakdownRow}>
                                     <Text style={styles.breakdownLabel}>{t('wellness.shipping_charge') || 'Shipping Charge'}</Text>
