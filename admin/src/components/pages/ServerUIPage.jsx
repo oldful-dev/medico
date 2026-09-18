@@ -299,7 +299,7 @@ export default function ServerUIPage() {
     try {
       setSaving(true);
       const configToSave = editorMode === "json" ? JSON.parse(rawJson) : parsedConfig;
-      await appConfigAPI.updateHomeConfig(configToSave);
+      await appConfigAPI.updateHomeConfig(configToSave, liveVersion);
       setOriginalConfig(configToSave);
       setRawJson(JSON.stringify(configToSave, null, 2));
       // Publish clears the draft server-side and resets the fetch counter —
@@ -310,6 +310,17 @@ export default function ServerUIPage() {
       showToast("Home layout configuration published successfully", "success");
     } catch (e) {
       console.error(e);
+      // 409: someone else (another tab, another admin, or a direct DB/script
+      // fix) published a newer version since this page loaded — publishing
+      // this stale copy would silently erase their change (this is exactly
+      // how essentials/tours_travel sections vanished in production before).
+      if (e.response?.status === 409) {
+        showToast(
+          "Someone else published a newer version since you loaded this page. Reload before publishing, or you'll overwrite their change.",
+          "error"
+        );
+        return;
+      }
       const apiErrors = e.response?.data?.errors;
       showToast(
         apiErrors?.length ? `Rejected: ${apiErrors.join("; ")}` : "Failed to publish home layout configuration",
@@ -517,6 +528,19 @@ export default function ServerUIPage() {
   // it happens (use the "Restore" button afterward to bring it back with
   // its real id instead of "Add Grid Service Section").
   const SYNC_LINKED_SECTION_IDS = new Set(['ayuxa_services', 'tours_travel', 'essentials']);
+
+  // Which Service.category a section's "Add existing service" picker should
+  // be scoped to — e.g. the Diagnostics & Fitness section must only offer
+  // services actually created via /diagnostic-fitness (category
+  // DIAGNOSTICS_FITNESS), not every service in the database. No entry here
+  // (e.g. quick_services, a custom banner section) means the picker falls
+  // back to showing nothing scoped, since there's no single admin page that
+  // owns it.
+  const SECTION_CATEGORY = {
+      ayuxa_services: 'DIAGNOSTICS_FITNESS',
+      essentials: 'HOME_ESSENTIALS',
+      tours_travel: 'TOURS_TRAVEL',
+  };
 
   const removeSection = (index) => {
     const section = (parsedConfig.sections || [])[index];
@@ -1387,32 +1411,51 @@ export default function ServerUIPage() {
                               );})}
                             </div>
 
-                            {/* Add an existing service (from Diagnostic &
-                                Fitness / Home Essentials / Tours & Travel /
-                                Core Services) as a one-time snapshot into
-                                this section. Not a live link — see
+                            {/* Add an existing service into this section as a
+                                one-time snapshot — scoped to the one admin
+                                page that actually owns this section's
+                                category, so e.g. the Diagnostics & Fitness
+                                section can only pull in services created via
+                                /diagnostic-fitness, never a Home Essentials
+                                or Care service. Not a live link — see
                                 addServiceFromDb's comment. */}
-                            <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-                              <select
-                                className="form-input"
-                                style={{ flex: 1, height: 32, fontSize: 12 }}
-                                value=""
-                                onChange={(e) => {
-                                  const dbSvc = dbServices.find(s => s.id === e.target.value);
-                                  if (dbSvc) addServiceFromDb(sIdx, dbSvc);
-                                }}
-                              >
-                                <option value="">+ Add existing service to this section...</option>
-                                {dbServices
-                                  .slice()
-                                  .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-                                  .map(s => (
-                                    <option key={s.id} value={s.id}>
-                                      {s.name} ({s.category}{s.isEnabled ? "" : " — disabled"})
+                            {(() => {
+                              const scopedCategory = SECTION_CATEGORY[section.id];
+                              const pickable = scopedCategory
+                                ? dbServices.filter(s => s.category === scopedCategory)
+                                : [];
+                              return (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 10 }}>
+                                  <select
+                                    className="form-input"
+                                    style={{ flex: 1, height: 32, fontSize: 12 }}
+                                    value=""
+                                    disabled={!scopedCategory}
+                                    onChange={(e) => {
+                                      const dbSvc = pickable.find(s => s.id === e.target.value);
+                                      if (dbSvc) addServiceFromDb(sIdx, dbSvc);
+                                    }}
+                                  >
+                                    <option value="">
+                                      {scopedCategory ? "+ Add existing service to this section..." : "No matching admin page for this section"}
                                     </option>
-                                  ))}
-                              </select>
-                            </div>
+                                    {pickable
+                                      .slice()
+                                      .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                                      .map(s => (
+                                        <option key={s.id} value={s.id}>
+                                          {s.name}{s.isEnabled ? "" : " — disabled"}
+                                        </option>
+                                      ))}
+                                  </select>
+                                  {scopedCategory && pickable.length === 0 && (
+                                    <p className="text-xs text-muted" style={{ margin: 0 }}>
+                                      No {scopedCategory.replace(/_/g, " ")} services exist yet — add one on its own admin page first.
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
 

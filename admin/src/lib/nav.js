@@ -2,7 +2,7 @@ import {
     LayoutDashboard, Users, Shield, MapPin, Settings, CalendarCheck,
     HeartPulse, CreditCard, DollarSign, AlertTriangle, Bell, FileText,
     ShoppingBag, Image as ImageIcon, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, Clock, Activity, Sparkles, PartyPopper,
-    Trash2, Banknote, TestTube2, Smartphone, Globe, HelpCircle
+    Trash2, Banknote, TestTube2, Smartphone, Globe, HelpCircle, Zap
 } from "lucide-react";
 
 export const NAV_SECTIONS = [
@@ -30,6 +30,7 @@ export const NAV_SECTIONS = [
         title: "Operations",
         items: [
             { id: "core-services", href: "/core-services", label: "Core Services", icon: Settings, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
+            { id: "quick-services", href: "/quick-services", label: "Quick Services", icon: Zap, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "home-essentials", href: "/home-essentials", label: "Home Essential", icon: HeartPulse, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "diagnostic-fitness", href: "/diagnostic-fitness", label: "Diagnostic & Fitness", icon: HeartPulse, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "bookings", href: "/bookings", label: "Booking Management", icon: CalendarCheck, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },

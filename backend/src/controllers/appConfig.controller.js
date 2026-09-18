@@ -873,7 +873,7 @@ const updateHomeConfigDraft = async (req, res, next) => {
  */
 const updateHomeConfig = async (req, res, next) => {
     try {
-        const { config } = req.body;
+        const { config, expectedVersion } = req.body;
         if (!config || typeof config !== 'object') {
             return res.status(400).json({ success: false, message: 'config object required' });
         }
@@ -881,6 +881,25 @@ const updateHomeConfig = async (req, res, next) => {
         if (!valid) {
             logger.warn('SDUI home config publish rejected — invalid shape', { adminId: req.admin?.id, errors });
             return res.status(400).json({ success: false, message: 'Invalid config shape', errors });
+        }
+
+        // Optimistic concurrency check: if the admin's editor loaded version
+        // N and the live row is now something other than N, someone else
+        // (another tab, another admin, or a direct data fix) published in
+        // between — publishing this stale copy would silently discard their
+        // change with no warning. This is exactly how the essentials/
+        // tours_travel sections vanished from production before: a Server UI
+        // tab that had been open since before those sections were restored
+        // published its old in-memory copy and wiped them out again.
+        if (expectedVersion !== undefined && expectedVersion !== null) {
+            const current = await prisma.uIConfig.findUnique({ where: { key: 'home_config' }, select: { version: true } });
+            if (current && current.version !== expectedVersion) {
+                return res.status(409).json({
+                    success: false,
+                    message: `Home config has changed since you loaded it (now version ${current.version}, you loaded version ${expectedVersion}). Reload before publishing.`,
+                    currentVersion: current.version,
+                });
+            }
         }
 
         await snapshotBeforeOverwrite('home_config', req.admin?.id);

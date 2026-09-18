@@ -89,7 +89,7 @@ export default function PricingPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingCharge, setEditingCharge] = useState(null);
     const [form, setForm] = useState({
-        serviceCategory: "DOCTOR_HOME_VISIT",
+        serviceCategory: "CARE",
         serviceFee: 0,
         bookingFee: 0,
         platformFee: 0,
@@ -139,8 +139,9 @@ export default function PricingPage() {
 
     function openAdd() {
         setEditingCharge(null);
+        const firstAvailable = getAvailableCategoriesForNew()[0]?.value || CATEGORIES[0].value;
         setForm({
-            serviceCategory: "DOCTOR_HOME_VISIT",
+            serviceCategory: firstAvailable,
             serviceFee: 0,
             bookingFee: 0,
             platformFee: 0,
@@ -237,27 +238,28 @@ export default function PricingPage() {
         }
     }
 
-    // Dropdown only ever offers the real categories plus one option per real,
-    // enabled service (keyed by slug) — no more guessed/free-typed category
-    // strings, which is how the old table piled up duplicates like AC_REPAIR
-    // vs AC_REPAIR_ or five different tours/travel spellings.
-    function getDropdownCategories() {
-        const list = [...CATEGORIES];
-        services.filter(s => s.isEnabled).forEach(s => {
-            if (!s.slug) return;
-            const key = s.slug.toUpperCase().replace(/-/g, '_');
-            if (list.some(item => item.value === key)) return;
-            const iconVal = (s.icon && s.icon.trim().length <= 4) ? s.icon : '🔹';
-            list.push({ value: key, label: `${iconVal} ${s.name}` });
-        });
-        return list;
+    // Pricing is category-level only — the "Set Service Charge" dropdown
+    // offers exactly the 4 real Service.category values, filtered to ones
+    // that don't already have a configuration (each category gets at most
+    // one row). This used to also list every enabled service by slug,
+    // which is how the modal showed 30+ services with no scoping — a
+    // service's own price lives on its own admin page (Home Essentials /
+    // Diagnostic & Fitness / etc.); Pricing only sets the shared
+    // booking/platform/tax fees for a whole category, matching
+    // calculateCheckout's category-level fallback (checkout.controller.js).
+    function getAvailableCategoriesForNew() {
+        const configured = new Set(serviceCharges.map(c => c.serviceCategory));
+        return CATEGORIES.filter(c => !configured.has(c.value));
     }
 
+    // Legacy per-service rows (scope: SERVICE, keyed by slug) may still exist
+    // until migrated — keep resolving their label for display in the table,
+    // even though new rows can no longer be created that way.
     function getCategoryLabel(val) {
         const cat = CATEGORIES.find(c => c.value === val);
         if (cat) return cat.label;
-        const dynamicCat = getDropdownCategories().find(c => c.value === val);
-        return dynamicCat ? dynamicCat.label : val;
+        const svc = services.find(s => s.slug?.toUpperCase().replace(/-/g, '_') === val);
+        return svc ? `🔹 ${svc.name}` : val;
     }
 
     // Group charge rows for display: a CATEGORY-scope row groups under its own
@@ -576,10 +578,19 @@ export default function PricingPage() {
                                         onChange={e => setForm({ ...form, serviceCategory: e.target.value })}
                                         style={{ background: "var(--bg-input)", color: "var(--text-primary)" }}
                                     >
-                                        {getDropdownCategories().map(c => (
-                                            <option key={c.value} value={c.value}>{c.label}</option>
-                                        ))}
+                                        {editingCharge ? (
+                                            <option value={form.serviceCategory}>{getCategoryLabel(form.serviceCategory)}</option>
+                                        ) : (
+                                            getAvailableCategoriesForNew().map(c => (
+                                                <option key={c.value} value={c.value}>{c.label}</option>
+                                            ))
+                                        )}
                                     </select>
+                                    {!editingCharge && getAvailableCategoriesForNew().length === 0 && (
+                                        <p className="text-xs text-muted" style={{ margin: "4px 0 0" }}>
+                                            All 4 categories already have a pricing configuration — edit an existing one instead.
+                                        </p>
+                                    )}
                                 </div>
 
                                 {!isDiagnostic(form.serviceCategory) && (

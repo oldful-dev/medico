@@ -8,6 +8,17 @@ const { createAuditLog } = require('../middleware/audit');
 
 const FEE_FIELDS = ['serviceFee', 'bookingFee', 'platformFee', 'convenienceFee', 'emergencyFee', 'visitFee', 'nightCharge', 'surgeCharge', 'taxPercentage'];
 
+// Pricing is category-level only — the 4 real Service.category values.
+// Per-service override rows (scope: SERVICE, keyed by slug) used to be
+// creatable too, which is how a flat dropdown mixing 4 categories with
+// every enabled service's slug ended up showing "all services" with no
+// scoping. calculateCheckout already falls back category -> serviceType
+// (see checkout.controller.js), so a category-level row is enough to price
+// every service in it; a specific service can still get its own basePrice
+// on its own admin page (Home Essentials / Diagnostic & Fitness / etc.)
+// without needing a separate ServiceCharge row.
+const VALID_CATEGORIES = ['CARE', 'DIAGNOSTICS_FITNESS', 'HOME_ESSENTIALS', 'TOURS_TRAVEL'];
+
 // GET /api/admin/service-charges
 const getServiceCharges = async (req, res, next) => {
     try {
@@ -106,6 +117,10 @@ const createServiceCharge = async (req, res, next) => {
             offlineServiceFee
         } = req.body;
 
+        if (!VALID_CATEGORIES.includes(serviceCategory)) {
+            return res.status(400).json({ success: false, message: `Invalid category "${serviceCategory}". Must be one of: ${VALID_CATEGORIES.join(', ')}.` });
+        }
+
         const existing = await prisma.serviceCharge.findUnique({
             where: { serviceCategory }
         });
@@ -115,6 +130,7 @@ const createServiceCharge = async (req, res, next) => {
 
         const charge = await prisma.serviceCharge.create({
             data: {
+                scope: 'CATEGORY',
                 serviceCategory,
                 serviceFee: isRequestBased ? 0 : parseFloat(serviceFee || 0),
                 bookingFee: parseFloat(bookingFee || 0),
@@ -132,27 +148,6 @@ const createServiceCharge = async (req, res, next) => {
                 offlineServiceFee: offlineServiceFee !== undefined && offlineServiceFee !== '' ? parseFloat(offlineServiceFee) : null,
             },
         });
-
-        // Sync with corresponding Service basePrice
-        try {
-            const serviceCategoryLower = serviceCategory.toLowerCase().replace(/_/g, '-');
-            const service = await prisma.service.findFirst({
-                where: {
-                    OR: [
-                        { slug: serviceCategoryLower },
-                        { name: { equals: serviceCategory, mode: 'insensitive' } }
-                    ]
-                }
-            });
-            if (service) {
-                await prisma.service.update({
-                    where: { id: service.id },
-                    data: { basePrice: parseFloat(serviceFee || 0) }
-                });
-            }
-        } catch (syncErr) {
-            console.error('Failed to sync Service basePrice during creation:', syncErr);
-        }
 
         sendResponse(res, 201, charge, 'Service charge configuration created successfully');
     } catch (error) {
@@ -227,39 +222,6 @@ const updateServiceCharge = async (req, res, next) => {
                 newValue,
                 ipAddress: req.ip,
             });
-        }
-
-        // Sync with corresponding Service basePrice if serviceFee was updated
-        if (serviceFee !== undefined) {
-            try {
-                const serviceCategoryLower = existing.serviceCategory.toLowerCase().replace(/_/g, '-');
-                const service = await prisma.service.findFirst({
-                    where: {
-                        OR: [
-                            { slug: serviceCategoryLower },
-                            { name: { equals: existing.serviceCategory, mode: 'insensitive' } }
-                        ]
-                    }
-                });
-                if (service && service.basePrice !== parseFloat(serviceFee || 0)) {
-                    const newBasePrice = parseFloat(serviceFee || 0);
-                    await prisma.service.update({
-                        where: { id: service.id },
-                        data: { basePrice: newBasePrice }
-                    });
-                    await createAuditLog({
-                        adminId: req.user?.id,
-                        action: 'PRICE_SYNC',
-                        entity: 'Service',
-                        entityId: service.id,
-                        oldValue: { basePrice: service.basePrice },
-                        newValue: { basePrice: newBasePrice, syncedFrom: `ServiceCharge:${charge.id}` },
-                        ipAddress: req.ip,
-                    });
-                }
-            } catch (syncErr) {
-                console.error('Failed to sync Service basePrice during update:', syncErr);
-            }
         }
 
         sendResponse(res, 200, charge, 'Service charge configuration updated successfully');

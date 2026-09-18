@@ -26,6 +26,11 @@ export const PRESET_SYSTEM_ROUTES = [
   { label: "Paper & Legal Helper", value: "/paper-legal" },
   { label: "Anything Else Request", value: "/anything-else" },
   { label: "Trip & Travels", value: "/trip-travels" },
+  { label: "Local Meetups", value: "/meetup" },
+  { label: "Insurance", value: "/insurance" },
+  { label: "Washroom Sanitation", value: "/sanitisation" },
+  { label: "Tech Helper", value: "/tech-helper" },
+  { label: "Transportation", value: "/transportation" },
   { label: "Smart Membership Upgrade", value: "/smart-upgrade" },
   { label: "Cart / Checkout", value: "/cart" },
   { label: "My Bookings History", value: "/my-bookings" },
@@ -39,20 +44,29 @@ export default function RouteSelector({ value, onChange, placeholder = "Select o
   const [isCustom, setIsCustom] = useState(false);
 
   useEffect(() => {
-    serviceAPI.getAll()
-      .then(res => {
-        if (res.data?.data) {
-          const fetched = res.data.data.map(s => {
-            const route = s.route || (s.slug === 'home-essentials' ? '/all-home-essentials' : `/${s.slug}`);
-            return {
-              label: `${s.name}`,
-              value: route,
-            };
-          });
-          setDbRoutes(fetched);
-        }
-      })
-      .catch(() => {});
+    // Fetched once on mount, so a service added/deleted elsewhere after this
+    // dropdown first mounted wouldn't show up until the whole page reloaded
+    // — refetch on window focus too (e.g. after switching back from Home
+    // Essentials / Diagnostic & Fitness where the change was made).
+    const loadRoutes = () => {
+      serviceAPI.getAll()
+        .then(res => {
+          if (res.data?.data) {
+            const fetched = res.data.data.map(s => {
+              const route = s.route || (s.slug === 'home-essentials' ? '/all-home-essentials' : `/${s.slug}`);
+              return {
+                label: `${s.name}`,
+                value: route,
+              };
+            });
+            setDbRoutes(fetched);
+          }
+        })
+        .catch(() => {});
+    };
+    loadRoutes();
+    window.addEventListener("focus", loadRoutes);
+    return () => window.removeEventListener("focus", loadRoutes);
   }, []);
 
   // Merge PRESET and DB routes without duplicates

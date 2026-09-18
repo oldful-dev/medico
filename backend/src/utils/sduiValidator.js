@@ -53,6 +53,7 @@ const validateHomeConfig = (config) => {
     if (!Array.isArray(config.sections)) {
         errors.push('sections must be an array');
     } else {
+        const seenSectionIds = new Set();
         config.sections.forEach((section, i) => {
             if (!isPlainObject(section)) {
                 errors.push(`sections[${i}] must be an object`);
@@ -61,6 +62,32 @@ const validateHomeConfig = (config) => {
             if (typeof section.id !== 'string') errors.push(`sections[${i}].id must be a string`);
             if (typeof section.type !== 'string') errors.push(`sections[${i}].type must be a string`);
             if (typeof section.enabled !== 'boolean') errors.push(`sections[${i}].enabled must be a boolean`);
+
+            // Two real production incidents were both silently-saved
+            // structural corruption a shape-only check like the above
+            // never caught: a section's id got duplicated/randomized when
+            // deleted and re-added, and every item across two sections
+            // ended up sharing one id ("nurse_care"), breaking React's
+            // reconciliation on the mobile app. Reject both outright.
+            if (typeof section.id === 'string') {
+                if (seenSectionIds.has(section.id)) {
+                    errors.push(`sections[${i}].id "${section.id}" is a duplicate of another section — every section must have a unique id.`);
+                }
+                seenSectionIds.add(section.id);
+            }
+            if (Array.isArray(section.services)) {
+                const seenItemIds = new Set();
+                section.services.forEach((item, j) => {
+                    if (!isPlainObject(item) || typeof item.id !== 'string') {
+                        errors.push(`sections[${i}].services[${j}].id must be a string`);
+                        return;
+                    }
+                    if (seenItemIds.has(item.id)) {
+                        errors.push(`sections[${i}].services[${j}].id "${item.id}" is a duplicate within section "${section.id}" — every item in a section must have a unique id.`);
+                    }
+                    seenItemIds.add(item.id);
+                });
+            }
         });
     }
 

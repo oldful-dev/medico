@@ -246,6 +246,7 @@ const syncDbServicesToUIConfig = async () => {
         const CATEGORY_GROUPED_SECTIONS = {
             tours_travel: 'TOURS_TRAVEL',
             ayuxa_services: 'DIAGNOSTICS_FITNESS',
+            quick_services: 'QUICK_SERVICES',
         };
 
         for (const section of (config.sections || [])) {

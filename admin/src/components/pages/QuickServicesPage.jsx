@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Search, HeartPulse } from "lucide-react";
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Search, Zap } from "lucide-react";
 import { serviceAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 import DynamicServiceFormModal from "@/components/common/DynamicServiceFormModal";
@@ -13,19 +13,16 @@ const isEmoji = (str) => {
 };
 
 /**
- * Diagnostic & Fitness — additive-only new home for simple dynamic
- * diagnostic/fitness services (e.g. Health Checkups). Forked from the
- * Home Essentials page pattern: Service CRUD (via the shared Dynamic
- * Service Creator modal, category=DIAGNOSTICS_FITNESS) + a Category CRUD
- * tab (ServiceCategory, module=DIAGNOSTICS_FITNESS).
- *
- * Does NOT touch Blood Test / Insurance screens or their Service rows —
- * those keep their existing specialized flows untouched. Mobile needs no
- * new code: mobile/app/all-ayuxa-services/index.tsx already renders any
- * isDynamic + isEnabled + category === "DIAGNOSTICS_FITNESS" service via
- * the generic mobile/app/dynamic-service/[slug].tsx renderer.
+ * Quick Services — CRUD for the home-screen Quick Services strip (Hospital
+ * Trip, Home Doctor, Home Nurse, Home Aide, etc). Same pattern as Diagnostic
+ * & Fitness / Home Essentials / Tours & Travel: Service CRUD via the shared
+ * Dynamic Service Creator modal (category=QUICK_SERVICES) + a Category CRUD
+ * tab. These 4 services previously only existed as static home_config
+ * entries with no backing Service row (no admin control over price/payment
+ * mode at all) — see sduiSync.js's quick_services handling, which now
+ * mirrors the essentials/tours_travel auto-sync pattern.
  */
-export default function DiagnosticFitnessPage() {
+export default function QuickServicesPage() {
     const [activeTab, setActiveTab] = useState("services");
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -38,7 +35,7 @@ export default function DiagnosticFitnessPage() {
             setLoading(true);
             const res = await serviceAPI.getAll();
             const all = res.data?.data || [];
-            const filtered = all.filter(s => s.category === "DIAGNOSTICS_FITNESS");
+            const filtered = all.filter(s => s.category === "QUICK_SERVICES");
             setServices(filtered.sort((a, b) => a.sortOrder - b.sortOrder));
         } catch (e) {
             console.error(e);
@@ -101,18 +98,18 @@ export default function DiagnosticFitnessPage() {
     };
 
     if (loading && services.length === 0) {
-        return <div className="page-header"><h2>Loading Diagnostic & Fitness services...</h2></div>;
+        return <div className="page-header"><h2>Loading Quick Services...</h2></div>;
     }
 
     return (
         <div>
             <div className="page-header" style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <div className="header-icon-box" style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(16, 185, 129, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <HeartPulse size={24} className="text-success" />
+                    <Zap size={24} className="text-success" />
                 </div>
                 <div>
-                    <h2>Diagnostic & Fitness</h2>
-                    <p>Manage diagnostic and fitness services shown on the mobile app&apos;s Diagnostics &amp; Fitness grid (Blood Work, Scan &amp; ECG, Medicine, Fitness, Physio, Insurance, Equipment, Home Meal).</p>
+                    <h2>Quick Services</h2>
+                    <p>Manage the home-screen Quick Services strip (Hospital Trip, Home Doctor, Home Nurse, Home Aide) — full control over price, payment mode, and visibility.</p>
                 </div>
             </div>
 
@@ -122,7 +119,7 @@ export default function DiagnosticFitnessPage() {
             </div>
 
             {activeTab === "categories" ? (
-                <ServiceCategoryTab module="DIAGNOSTICS_FITNESS" />
+                <ServiceCategoryTab module="QUICK_SERVICES" />
             ) : (
                 <>
                     <div className="filter-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 20 }}>
@@ -144,13 +141,13 @@ export default function DiagnosticFitnessPage() {
 
                     <div className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
                         {filteredServices.length === 0 ? (
-                            <p className="text-muted">No Diagnostic & Fitness services yet.</p>
+                            <p className="text-muted">No Quick Services yet.</p>
                         ) : filteredServices.map(s => (
                             <div key={s.id} className="card" style={{ borderColor: s.isEnabled ? "rgba(16,185,129,0.3)" : "rgba(100,116,139,0.2)", display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%" }}>
                                 <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid var(--border-color)", paddingBottom: 12, marginBottom: 12 }}>
                                     <h3 style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700 }}>
                                         <span style={{ fontSize: 20 }}>
-                                            {s.icon ? (isEmoji(s.icon) ? s.icon : <img src={s.icon} alt={s.name} style={{ width: 22, height: 22, borderRadius: 4, objectFit: "cover" }} />) : "🩺"}
+                                            {s.icon ? (isEmoji(s.icon) ? s.icon : <img src={s.icon} alt={s.name} style={{ width: 22, height: 22, borderRadius: 4, objectFit: "cover" }} />) : "⚡"}
                                         </span>
                                         {s.name}
                                     </h3>
@@ -182,7 +179,7 @@ export default function DiagnosticFitnessPage() {
                         onClose={() => setShowModal(false)}
                         onSaved={loadServices}
                         editingService={editingService}
-                        category="DIAGNOSTICS_FITNESS"
+                        category="QUICK_SERVICES"
                         defaultSortOrder={services.length + 1}
                     />
                 </>
