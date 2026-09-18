@@ -15,6 +15,38 @@ const { getDeliveryFeeConfig, calculateDeliveryFee } = require('../utils/deliver
 
 const isCODMethod = (paymentMethod) => String(paymentMethod || '').toUpperCase() === 'CASH';
 
+// ─── Product Order Cancellation Notifications ────────────────────────────────
+// Shared by the admin status-update endpoint and the user self-cancel
+// endpoint, so both routes to CANCELLED send exactly one WhatsApp/SMS.
+async function sendProductOrderCancelledNotifications(order) {
+    if (!order.user?.phone) return;
+    try {
+        const { sendOrderCancelled } = require('../services/whatsapp');
+        const waSuccess = await sendOrderCancelled({
+            phone: order.user.phone, name: order.user.name, orderId: order.orderCode || order.id, userId: order.user.id,
+        }).catch(err => {
+            logger.warn('[OrderCtrl] WA ORDER_CANCELLED failed (non-fatal):', err.message);
+            return false;
+        });
+        if (!waSuccess && order.user.smsEnabled !== false) {
+            const { sendSMS } = require('../services/sms');
+            await sendSMS({ template: 'ORDER_CANCELLED_USER', mobile: order.user.phone, variables: [order.user.name, order.orderCode || order.id], userId: order.user.id });
+        }
+    } catch (notifyErr) {
+        logger.warn('[OrderCtrl] Order cancellation notification failed (non-fatal):', notifyErr.message);
+    }
+    try {
+        const { sendPushToUser } = require('../utils/pushNotification.service');
+        await sendPushToUser(order.user.id, {
+            title: 'Order Cancelled',
+            body: `Your order (${order.orderCode || order.id}) has been cancelled. Any paid amount will be refunded within 3-5 business days.`,
+            data: { type: 'product_order_cancelled', orderId: order.id },
+        });
+    } catch (pushErr) {
+        logger.warn('[OrderCtrl] Order cancellation push failed (non-fatal):', pushErr.message);
+    }
+}
+
 // Warehouse origin pincode (change to your actual warehouse pincode)
 const WAREHOUSE_PINCODE = process.env.WAREHOUSE_PINCODE || '560001';
 
@@ -258,6 +290,37 @@ const checkoutCart = async (req, res, next) => {
             }
         }
 
+        // COD orders are placed immediately (no Razorpay payment step) — send the
+        // "order confirmed" notification here. Prepaid orders get theirs once
+        // payment actually succeeds, via payment.service.js's processPaymentSuccess.
+        if (isCODMethod(paymentMethod)) {
+            try {
+                const { sendBookingConfirmed } = require('../services/whatsapp');
+                const waSuccess = await sendBookingConfirmed({
+                    phone: req.user.phone, name: req.user.name, orderId: order.orderCode, userId: req.user.id,
+                }).catch(err => {
+                    logger.warn('[OrderCtrl] WA BOOKING_CONFIRMED failed (non-fatal):', err.message);
+                    return false;
+                });
+                if (!waSuccess && req.user.smsEnabled !== false) {
+                    const { sendSMS } = require('../services/sms');
+                    await sendSMS({ template: 'ORDER_CONFIRMED', mobile: req.user.phone, variables: [req.user.name, order.orderCode, '08047280789'], userId: req.user.id });
+                }
+            } catch (notifyErr) {
+                logger.warn('[OrderCtrl] Order confirmation notification failed (non-fatal):', notifyErr.message);
+            }
+            try {
+                const { sendPushToUser } = require('../utils/pushNotification.service');
+                await sendPushToUser(req.user.id, {
+                    title: 'Order Confirmed',
+                    body: `Your order (${order.orderCode}) has been placed successfully.`,
+                    data: { type: 'product_order_confirmed', orderId: order.id },
+                });
+            } catch (pushErr) {
+                logger.warn('[OrderCtrl] Order confirmation push failed (non-fatal):', pushErr.message);
+            }
+        }
+
         sendResponse(res, 201, {
             order,
             breakdown: { subtotal, tax, shippingCharge, totalAmount },
@@ -293,6 +356,45 @@ const getMyOrders = async (req, res, next) => {
         ]);
 
         sendPaginatedResponse(res, orders, total, page, limit);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ──────────────────────────────────────────────
+//  USER: CANCEL ORDER
+// ──────────────────────────────────────────────
+
+/**
+ * POST /api/orders/:id/cancel
+ * User self-cancels their own order, while it's still in a cancellable state
+ * (before it's shipped — see PRODUCT_ORDER_TRANSITIONS).
+ */
+const cancelMyOrder = async (req, res, next) => {
+    try {
+        const existing = await prisma.productOrder.findFirst({
+            where: { id: req.params.id, userId: req.user.id },
+            select: { status: true },
+        });
+        if (!existing) return res.status(404).json({ success: false, message: 'Order not found' });
+        if (!isValidTransition(PRODUCT_ORDER_TRANSITIONS, existing.status, 'CANCELLED')) {
+            return res.status(400).json({ success: false, message: `Order can no longer be cancelled (current status: ${existing.status}).` });
+        }
+
+        const order = await prisma.productOrder.update({
+            where: { id: req.params.id },
+            data: { status: 'CANCELLED' },
+            include: { user: { select: { id: true, name: true, phone: true, smsEnabled: true } } },
+        });
+        await recordStatusTransition({
+            entityType: 'ProductOrder', entityId: order.id,
+            fromStatus: existing.status, toStatus: 'CANCELLED',
+            changedBy: req.user.id,
+        });
+
+        await sendProductOrderCancelledNotifications(order);
+
+        sendResponse(res, 200, order, 'Order cancelled');
     } catch (error) {
         next(error);
     }
@@ -594,6 +696,10 @@ const updateOrderStatus = async (req, res, next) => {
             }
         }
 
+        if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
+            await sendProductOrderCancelledNotifications(order);
+        }
+
         sendResponse(res, 200, order, 'Order status updated');
     } catch (error) {
         next(error);
@@ -688,6 +794,7 @@ module.exports = {
     getShippingRate,
     checkoutCart,
     getMyOrders,
+    cancelMyOrder,
     getOrderTracking,
     getAdminOrders,
     fulfillOrder,

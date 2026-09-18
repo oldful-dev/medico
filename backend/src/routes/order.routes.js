@@ -25,6 +25,10 @@ router.post('/checkout', authenticate, ctrl.checkoutCart);
 // List all product orders for the logged-in user
 router.get('/my-orders', authenticate, ctrl.getMyOrders);
 
+// POST /api/orders/:id/cancel
+// User self-cancels their own order while it's still in a cancellable state
+router.post('/:id/cancel', authenticate, ctrl.cancelMyOrder);
+
 // GET /api/orders/:id/tracking
 // Get live Delhivery tracking for a product order
 router.get('/:id/tracking', authenticate, ctrl.getOrderTracking);

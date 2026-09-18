@@ -577,6 +577,19 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                 }
 
                 if (payment.productOrderId || payment.productOrder) {
+                    const orderId = payment.productOrderId || payment.productOrder?.id;
+
+                    try {
+                        const { sendPushToUser } = require('../utils/pushNotification.service');
+                        await sendPushToUser(payment.userId, {
+                            title: 'Order Confirmed',
+                            body: `Your order (${payment.productOrder?.orderCode || orderId}) has been placed successfully.`,
+                            data: { type: 'product_order_confirmed', orderId },
+                        });
+                    } catch (pushErr) {
+                        logger.error('[PaymentService] Product order push notification failed:', pushErr.message);
+                    }
+
                     // Delhivery/Shiprocket auto-fulfillment — see
                     // fulfillment.service.js for the shared logic (also used
                     // by the admin manual-retry endpoint). A failure here is
@@ -585,7 +598,6 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                     // instead of silently leaving the order unshipped.
                     try {
                         const { attemptFulfillment } = require('./fulfillment.service');
-                        const orderId = payment.productOrderId || payment.productOrder?.id;
                         const result = await attemptFulfillment(orderId, 'system');
                         if (!result.success) {
                             logger.error(`[PaymentService] Auto-fulfillment failed for order ${orderId}: ${result.error}`);

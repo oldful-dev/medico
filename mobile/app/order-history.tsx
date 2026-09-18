@@ -76,6 +76,7 @@ export default function OrderHistoryScreen() {
     const onRefresh = () => { setRefreshing(true); fetchAll(); };
 
     const [cancellingId, setCancellingId] = useState<string | null>(null);
+    const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
     const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
 
     const isPastBooking = (booking: Booking) => {
@@ -115,6 +116,37 @@ export default function OrderHistoryScreen() {
                 },
             },
         ]);
+    };
+
+    const handleCancelOrder = (order: ProductOrder) => {
+        Alert.alert(
+            'Cancel Order',
+            `Cancel order #${order.orderCode}? Any paid amount will be refunded within 3-5 business days.`,
+            [
+                { text: 'Keep', style: 'cancel' },
+                {
+                    text: 'Cancel Order', style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            setCancellingOrderId(order.id);
+                            const res = await storeService.cancelOrder(order.id);
+                            if (res.success) {
+                                setProductOrders(prev => prev.map(o =>
+                                    o.id === order.id ? { ...o, status: 'CANCELLED' } : o
+                                ));
+                                Alert.alert('Order Cancelled', 'Your order has been cancelled successfully.');
+                            } else {
+                                Alert.alert('Error', res.message || 'Could not cancel order. Please contact support.');
+                            }
+                        } catch {
+                            Alert.alert('Error', 'Could not cancel order. Please contact support.');
+                        } finally {
+                            setCancellingOrderId(null);
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const handleDownloadOrderInvoice = async (order: ProductOrder) => {
@@ -277,10 +309,26 @@ export default function OrderHistoryScreen() {
                                 <Text style={styles.trackBtnText}>{t('order_history.track_btn') || 'Track'}</Text>
                             </TouchableOpacity>
                         )}
+                        {['PENDING', 'CONFIRMED', 'PAID', 'ACCEPTED'].includes(order.status) && (
+                            <TouchableOpacity
+                                style={[styles.invoiceBtn, cancellingOrderId === order.id && { opacity: 0.6 }]}
+                                onPress={(e) => { e.stopPropagation(); handleCancelOrder(order); }}
+                                disabled={cancellingOrderId === order.id}
+                            >
+                                {cancellingOrderId === order.id ? (
+                                    <ActivityIndicator size="small" color="#DC2626" />
+                                ) : (
+                                    <Ionicons name="close-circle-outline" size={13} color="#DC2626" />
+                                )}
+                                <Text style={[styles.invoiceBtnText, { color: '#DC2626' }]}>
+                                    {cancellingOrderId === order.id ? '...' : 'Cancel'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                         {!['PENDING', 'CANCELLED', 'RETURNED'].includes(order.status) ? (
                             <TouchableOpacity
                                 style={[styles.invoiceBtn, downloadingInvoiceId === order.id && { opacity: 0.6 }]}
-                                onPress={() => handleDownloadOrderInvoice(order)}
+                                onPress={(e) => { e.stopPropagation(); handleDownloadOrderInvoice(order); }}
                                 disabled={downloadingInvoiceId === order.id}
                             >
                                 {downloadingInvoiceId === order.id ? (

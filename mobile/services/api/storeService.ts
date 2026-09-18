@@ -219,6 +219,14 @@ export const storeService = {
     },
 
     /**
+     * POST /api/orders/:id/cancel
+     * Cancel a product order while it's still in a cancellable state.
+     */
+    cancelOrder: async (orderId: string): Promise<ApiResponse<ProductOrder>> => {
+        return apiClient.post<ProductOrder>(`/orders/${orderId}/cancel`);
+    },
+
+    /**
      * GET /api/orders/:id/tracking
      * Get live Delhivery tracking for a product order.
      */
