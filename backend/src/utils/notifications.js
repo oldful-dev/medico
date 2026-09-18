@@ -162,7 +162,12 @@ const sendWelcomeNotifications = async (user) => {
     // not appear there at all) and was failing silently every send.
     // SLA doc lives in the public ayuxa-assets GCS bucket (uploaded via
     // scripts/upload-welcome-sla.js) — same asset attached to the welcome email.
-    const WELCOME_DOC_URL = 'https://assets.ayuxacare.com/b942e2cd-7567-4f9c-ac9b-80dc87c61919.pdf';
+    // Re-uploaded under a fresh object (was b942e2cd-...) after Fast2SMS/WABA
+    // cached the old URL's media fetch as generic .bin from before the
+    // Cloudflare worker's header-stripping bug (fixed separately) was live —
+    // their cache didn't invalidate even after the URL itself started
+    // serving Content-Type: application/pdf correctly.
+    const WELCOME_DOC_URL = 'https://assets.ayuxacare.com/cebf16d5-15e8-4e76-9f53-1bdcfd11788a.pdf';
     const waSuccess = await wa.sendWelcomeFlowV2({
         phone: user.phone,
         name: user.name,
