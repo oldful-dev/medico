@@ -237,10 +237,14 @@ function normalizeMeetup(reg: any): Booking {
     };
 }
 
-function mapProductStatus(s: string): Booking['status'] {
+function mapProductStatus(s: string, hasFulfillmentError?: boolean): Booking['status'] {
     if (s === 'DELIVERED') return 'completed';
     if (s === 'CANCELLED') return 'cancelled';
     if (s === 'CONFIRMED' || s === 'DISPATCHED' || s === 'PAID') return 'confirmed';
+    // A stuck shipment (e.g. courier account issue) is an ops problem, not a
+    // customer-caused one — surface it as "Needs Attention" rather than
+    // leaving it looking identical to a normal just-placed order.
+    if (hasFulfillmentError) return 'needs_attention';
     return 'pending';
 }
 
@@ -264,7 +268,7 @@ function normalizeProductOrder(order: ProductOrder): Booking {
         serviceName,
         bookingId: order.orderCode,
         scheduledDate: order.createdAt,
-        status: mapProductStatus(order.status),
+        status: mapProductStatus(order.status, !!order.fulfillmentError),
         paymentStatus: order.status === 'PENDING' ? 'pending' : (order.status === 'CANCELLED' ? 'failed' : 'paid'),
         reportReady: false,
         createdAt: order.createdAt,

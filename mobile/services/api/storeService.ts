@@ -100,6 +100,8 @@ export interface ProductOrder {
     trackingData?: TrackingData;
     shiprocketOrderId?: string;
     shipmentId?: string;
+    fulfillmentError?: string | null;
+    fulfillmentFailedAt?: string | null;
     items?: OrderLineItem[];
     product?: Pick<Product, 'id' | 'name' | 'imageUrl'>;
     user?: {
