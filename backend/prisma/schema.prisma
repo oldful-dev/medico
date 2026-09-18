@@ -917,6 +917,10 @@ model ProductOrder {
   deliveryFee         Float     @default(0) @map("delivery_fee")
   taxAmount           Float     @default(0) @map("tax_amount")
   status              String    @default("PENDING")
+  // 'CASH' (COD) or 'PREPAID' — recorded at checkout since a ProductOrder has
+  // no guaranteed Payment row (COD orders never create one), and fulfillment
+  // needs to know which payment_method to send Delhivery.
+  paymentMethod       String    @default("PREPAID") @map("payment_method")
   address             String?
   courierName         String?
   awbCode             String?

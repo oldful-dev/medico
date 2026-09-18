@@ -281,6 +281,7 @@ const checkoutCart = async (req, res, next) => {
                         taxAmount: tax,
                         address: resolvedAddress,
                         status: 'PENDING',
+                        paymentMethod: isCODMethod(paymentMethod) ? 'CASH' : 'PREPAID',
                         items: lineItems,
                     },
                 });
@@ -344,6 +345,16 @@ const checkoutCart = async (req, res, next) => {
                 });
             } catch (socketErr) {
                 logger.warn('[OrderCtrl] Admin socket emit failed (non-fatal):', socketErr.message);
+            }
+
+            // Prepaid orders auto-fulfill once payment clears (payment.service.js).
+            // COD has no payment step to hang that off, so it must be triggered
+            // here — otherwise COD orders never get a Delhivery shipment created
+            // at all and just sit as PENDING forever (never fetches into Delhivery).
+            // attemptFulfillment never throws — safe to await inline.
+            const fulfillResult = await attemptFulfillment(order.id, 'system');
+            if (!fulfillResult.success) {
+                logger.error(`[OrderCtrl] COD auto-fulfillment failed for order ${order.orderCode}: ${fulfillResult.error}`);
             }
         }
 
@@ -621,7 +632,10 @@ const fulfillOrder = async (req, res, next) => {
         }
         totalWeight = Math.max(totalWeight, 0.1);
 
-        const isPrepaid = order.status === 'PAID' || (order.payments && order.payments.length > 0);
+        // order.status === 'PAID' is only true briefly right after payment
+        // success — by the time a manual admin fulfill runs it may already have
+        // moved past that (e.g. ACCEPTED), so paymentMethod is the reliable signal.
+        const isPrepaid = order.paymentMethod !== 'CASH';
 
         const srPayload = {
             order_id: order.orderCode,

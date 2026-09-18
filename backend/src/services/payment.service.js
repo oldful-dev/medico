@@ -44,7 +44,15 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
             if (paymentRecord.labOrder && paymentRecord.labOrder.status !== 'CONFIRMED') {
                 promotionsCompleted = false;
             }
-            if (paymentRecord.productOrderId && paymentRecord.productOrder && paymentRecord.productOrder.status !== 'PAID') {
+            // Require an actual Delhivery shipment, not just status: 'PAID' — the
+            // client-verify call and the Razorpay webhook both call this function,
+            // and status flips to PAID inside the same transaction that first
+            // promotion runs. If the retry lands before that first call's
+            // setImmediate fulfillment has actually run/completed, checking
+            // status alone would treat fulfillment as "already done" and skip
+            // it forever with no error ever recorded.
+            if (paymentRecord.productOrderId && paymentRecord.productOrder &&
+                (paymentRecord.productOrder.status !== 'PAID' || !paymentRecord.productOrder.shiprocketOrderId)) {
                 promotionsCompleted = false;
             }
             if (!paymentRecord.invoice) {
@@ -470,46 +478,66 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
         }
 
         // 3. Heavy lifting (Non-blocking) — PDF, email, WA, SMS, Delhivery
-        if (createdInvoice) {
+        //
+        // Runs whenever the invoice is newly created OR a product order still
+        // has no Delhivery shipment — a webhook retry landing after the invoice
+        // was already created (by the earlier client-verify call) must still be
+        // able to (re)attempt fulfillment, not skip it forever just because the
+        // invoice step happened to complete on the first call.
+        const needsFulfillmentRetry = !!payment?.productOrder && !payment.productOrder.shiprocketOrderId;
+        if (createdInvoice || needsFulfillmentRetry) {
             setImmediate(async () => {
             try {
-                // A. PDF Generation & upload
-                const pdfBuffer = await generateInvoicePDF({
-                    invoiceNumber: invoice.invoiceNumber,
-                    invoiceDate: new Date(),
-                    subtotal: invoice.subtotal,
-                    gstRate: invoice.gstRate,
-                    gstAmount: invoice.gstAmount,
-                    totalAmount: payment.amount,
-                    // Distinct fee lines — never merged (compliance).
-                    serviceFee: invoice.serviceFee,
-                    ayuxaBookingFee: invoice.ayuxaBookingFee,
-                    deliveryFee: invoice.deliveryFee,
-                    billingName: payment.user.name,
-                    description: payment.booking?.service?.name || 'Ayuxa Health Tech Platforms Pvt. Ltd.',
-                });
-
-                const { url } = await uploadFile(pdfBuffer, 'documents/invoices', `invoice-${invoice.invoiceNumber}.pdf`);
-
-                await prisma.invoice.update({
-                    where: { id: invoice.id },
-                    data: { pdfUrl: url, emailSentAt: new Date() },
-                });
-
-                if (payment.user.email) {
-                    await emailService.sendPaymentReceipt({
-                        to: payment.user.email,
-                        name: payment.user.name,
+                // A. PDF Generation & upload — only on first promotion (createdInvoice),
+                // never re-sent on a fulfillment-only retry. Isolated in its own
+                // try/catch so a failure here (storage/email misconfiguration,
+                // etc.) can't abort everything below it in this block, including
+                // Delhivery fulfillment — that used to happen silently, with no
+                // fulfillmentError ever recorded since attemptFulfillment was
+                // never even reached.
+                if (createdInvoice) {
+                try {
+                    const pdfBuffer = await generateInvoicePDF({
                         invoiceNumber: invoice.invoiceNumber,
-                        amount: parseFloat(payment.amount).toFixed(2),
-                        paymentId: payment.razorpayPaymentId,
-                        invoicePdfUrl: url,
-                        userId: payment.userId,
+                        invoiceDate: new Date(),
+                        subtotal: invoice.subtotal,
+                        gstRate: invoice.gstRate,
+                        gstAmount: invoice.gstAmount,
+                        totalAmount: payment.amount,
+                        // Distinct fee lines — never merged (compliance).
+                        serviceFee: invoice.serviceFee,
+                        ayuxaBookingFee: invoice.ayuxaBookingFee,
+                        deliveryFee: invoice.deliveryFee,
+                        billingName: payment.user.name,
+                        description: payment.booking?.service?.name || 'Ayuxa Health Tech Platforms Pvt. Ltd.',
                     });
+
+                    const { url } = await uploadFile(pdfBuffer, 'documents/invoices', `invoice-${invoice.invoiceNumber}.pdf`);
+
+                    await prisma.invoice.update({
+                        where: { id: invoice.id },
+                        data: { pdfUrl: url, emailSentAt: new Date() },
+                    });
+
+                    if (payment.user.email) {
+                        await emailService.sendPaymentReceipt({
+                            to: payment.user.email,
+                            name: payment.user.name,
+                            invoiceNumber: invoice.invoiceNumber,
+                            amount: parseFloat(payment.amount).toFixed(2),
+                            paymentId: payment.razorpayPaymentId,
+                            invoicePdfUrl: url,
+                            userId: payment.userId,
+                        });
+                    }
+                } catch (invoiceErr) {
+                    logger.error('[PaymentService] Invoice PDF/email generation failed (non-fatal):', invoiceErr.message);
+                }
                 }
 
-                // B. Booking post-processing (Redcliffe integration)
-                if (payment.booking) {
+                // B. Booking post-processing (Redcliffe integration) — first
+                // promotion only, same reason as the invoice block above.
+                if (createdInvoice && payment.booking) {
                     try {
                         const { sendPushToUser } = require('../utils/pushNotification.service');
                         await sendPushToUser(payment.userId, {
@@ -559,7 +587,7 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                     }
                 }
 
-                if (payment.labOrder) {
+                if (createdInvoice && payment.labOrder) {
                     if (payment.labOrder.redcliffeBookingId) {
                         try {
                             await rc.confirmBooking(payment.labOrder.redcliffeBookingId);
@@ -579,15 +607,17 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                 if (payment.productOrderId || payment.productOrder) {
                     const orderId = payment.productOrderId || payment.productOrder?.id;
 
-                    try {
-                        const { sendPushToUser } = require('../utils/pushNotification.service');
-                        await sendPushToUser(payment.userId, {
-                            title: 'Order Confirmed',
-                            body: `Your order (${payment.productOrder?.orderCode || orderId}) has been placed successfully.`,
-                            data: { type: 'product_order_confirmed', orderId },
-                        });
-                    } catch (pushErr) {
-                        logger.error('[PaymentService] Product order push notification failed:', pushErr.message);
+                    if (createdInvoice) {
+                        try {
+                            const { sendPushToUser } = require('../utils/pushNotification.service');
+                            await sendPushToUser(payment.userId, {
+                                title: 'Order Confirmed',
+                                body: `Your order (${payment.productOrder?.orderCode || orderId}) has been placed successfully.`,
+                                data: { type: 'product_order_confirmed', orderId },
+                            });
+                        } catch (pushErr) {
+                            logger.error('[PaymentService] Product order push notification failed:', pushErr.message);
+                        }
                     }
 
                     // Delhivery/Shiprocket auto-fulfillment — see
@@ -607,7 +637,7 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                     }
                 }
 
-                if (subscription) {
+                if (createdInvoice && subscription) {
                     const { sendPushToUser } = require('../utils/pushNotification.service');
                     await sendPushToUser(payment.userId, {
                         title: 'Plan Activated!',

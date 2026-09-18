@@ -94,9 +94,10 @@ const attemptFulfillment = async (orderId, changedBy = 'system') => {
                     hsn: '',
                 };
             }),
-            payment_method: 'Prepaid',
+            payment_method: orderRecord.paymentMethod === 'CASH' ? 'COD' : 'Prepaid',
+            ...(orderRecord.paymentMethod === 'CASH' && { cod_amount: orderRecord.amount }),
             shipping_charges: orderRecord.shippingCharge || 0,
-            sub_total: (orderRecord.subtotal || orderRecord.amount) + (orderRecord.tax || 0),
+            sub_total: orderRecord.subtotal || orderRecord.amount,
             total_discount: orderRecord.discount || 0,
             length: 10, breadth: 10, height: 10, weight: 0.5,
         };
