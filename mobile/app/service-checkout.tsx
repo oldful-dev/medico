@@ -1037,6 +1037,25 @@ export default function ServiceCheckoutScreen() {
           return;
         }
 
+        // The backend now rejects a payment-initiate request outright when
+        // RAZORPAY_KEY_ID isn't configured server-side, but this local
+        // fallback used to quietly swallow a missing key into an empty
+        // string and hand that straight to RazorpayCheckout.open() — the
+        // native SDK's response is the generic, undebuggable "Service
+        // initialization incomplete" error, which named nothing about the
+        // real cause. Fail with a clear message instead of opening with a
+        // bad key.
+        const razorpayKey = backendKey || process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID;
+        if (!razorpayKey) {
+          setFlowState("failed");
+          triggerAlert(
+            "Payment Unavailable",
+            "Payment gateway is not configured. Please contact support.",
+            "warning-outline"
+          );
+          return;
+        }
+
         await storageService.setItem(STORAGE_KEYS.PENDING_ORDER_ID, orderId);
         await storageService.setItem(STORAGE_KEYS.PENDING_ORDER_AT, String(Date.now()));
         if (sessionBookingId.current) {
@@ -1052,7 +1071,7 @@ export default function ServiceCheckoutScreen() {
           image:
             "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/onlylogo.png",
           currency: "INR",
-          key: backendKey || process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || "",
+          key: razorpayKey,
           amount: String(Math.round(orderAmount * 100)),
           name: "Ayuxa Healthcare",
           order_id: orderId,

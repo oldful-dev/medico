@@ -1098,6 +1098,19 @@ export default function CheckoutScreen() {
                 return;
             }
 
+            // A missing key here used to silently fall through to an empty
+            // string passed straight to RazorpayCheckout.open() — the native
+            // SDK's response is the generic, undebuggable "Service
+            // initialization incomplete" error rather than anything naming
+            // the real cause (backend RAZORPAY_KEY_ID not configured). Fail
+            // with a clear message instead.
+            const razorpayKey = backendKey || process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID;
+            if (!razorpayKey) {
+                setFlowState('failed');
+                triggerAlert(t('checkout.payment_error'), 'Payment gateway is not configured. Please contact support.');
+                return;
+            }
+
             // ─── STEP 5: Persist pending order for crash recovery ──────
             // If the app crashes while Razorpay is open, we can recover on next launch.   
             // Timestamped so a never-completed order (app killed, never reopened)

@@ -239,6 +239,17 @@ const initiatePayment = async (req, res, next) => {
 
         // Create Razorpay order (Only if amount >= 1 INR)
         if (finalAmount >= 1) {
+            // A missing key here used to silently reach the client as
+            // `key: undefined`, which mobile's fallback chain turned into an
+            // empty string passed straight to RazorpayCheckout.open() — the
+            // native SDK's response to an empty/invalid key is the generic,
+            // undebuggable "Service initialization incomplete" error, not
+            // anything naming the real cause. Fail loudly here instead.
+            if (!process.env.RAZORPAY_KEY_ID) {
+                logger.error('RAZORPAY_KEY_ID is not set — cannot initiate a real payment.');
+                return sendResponse(res, 500, null, 'Payment gateway is not configured. Please contact support.');
+            }
+
             const razorpayOrder = await razorpay.createOrder(finalAmount, `receipt_${Date.now()}`);
 
             // Create payment record
