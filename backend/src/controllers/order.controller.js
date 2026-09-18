@@ -426,6 +426,17 @@ const getOrderTracking = async (req, res, next) => {
             const live = await delhivery.trackShipment(order.awbCode);
             tracking = live;
 
+            // Map carrier status into our canonical status — same mapping as
+            // the 30-min cron sync (cron/index.js), so opening this screen
+            // reflects delivery/RTO immediately instead of waiting for the
+            // next cron tick. RTO stays distinct from a customer CANCELLED.
+            let dbStatus = order.status;
+            const upper = String(live.currentStatus || '').toUpperCase();
+            if (upper.includes('DELIVERED') || upper.includes('DLV')) dbStatus = 'DELIVERED';
+            else if (upper.includes('OUT FOR DELIVERY') || upper.includes('OFD')) dbStatus = 'IN_TRANSIT';
+            else if (upper.includes('RTO')) dbStatus = 'RETURNED';
+            else if (upper.includes('CANCELLED')) dbStatus = 'CANCELLED';
+
             // Persist the latest tracking snapshot
             await prisma.productOrder.update({
                 where: { id: order.id },
@@ -433,8 +444,34 @@ const getOrderTracking = async (req, res, next) => {
                     trackingStatus: live.currentStatus,
                     trackingData: live,
                     shippingStatus: live.currentStatus,
+                    status: dbStatus,
                 },
             });
+
+            if (dbStatus !== order.status) {
+                await recordStatusTransition({
+                    entityType: 'ProductOrder', entityId: order.id,
+                    fromStatus: order.status, toStatus: dbStatus,
+                    changedBy: 'system', reason: `Delhivery: ${live.currentStatus}`,
+                });
+                if (dbStatus === 'DELIVERED' || dbStatus === 'RETURNED') {
+                    try {
+                        const { sendPushToUser } = require('../utils/pushNotification.service');
+                        await sendPushToUser(req.user.id, dbStatus === 'DELIVERED' ? {
+                            title: 'Order Delivered',
+                            body: `Your order (${order.orderCode}) has been delivered.`,
+                            data: { type: 'product_order_delivered', orderId: order.id },
+                        } : {
+                            title: 'Order Returned',
+                            body: `Your order (${order.orderCode}) is being returned. Any paid amount will be refunded within 3-5 business days.`,
+                            data: { type: 'product_order_returned', orderId: order.id },
+                        });
+                    } catch (pushErr) {
+                        logger.warn('[OrderCtrl] Tracking-sync push notification failed (non-fatal):', pushErr.message);
+                    }
+                }
+                order.status = dbStatus;
+            }
         }
 
         sendResponse(res, 200, { order, tracking });

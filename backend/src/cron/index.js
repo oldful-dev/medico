@@ -315,7 +315,7 @@ const initCronJobs = () => {
                     status: { in: ['CONFIRMED', 'DISPATCHED', 'IN_TRANSIT'] },
                     awbCode: { not: null },
                 },
-                select: { id: true, awbCode: true, orderCode: true, status: true },
+                select: { id: true, awbCode: true, orderCode: true, status: true, userId: true },
                 take: 50, // Rate-limit: max 50 per run
             });
 
@@ -351,6 +351,27 @@ const initCronJobs = () => {
                             fromStatus: order.status, toStatus: dbStatus,
                             changedBy: 'cron', reason: `Delhivery: ${newStatus}`,
                         });
+
+                        // No approved DLT WhatsApp/SMS template exists for
+                        // "order delivered"/"returned to origin" — push is the
+                        // only channel available for these carrier-driven
+                        // transitions until one is registered.
+                        if (dbStatus === 'DELIVERED' || dbStatus === 'RETURNED') {
+                            try {
+                                const { sendPushToUser } = require('../utils/pushNotification.service');
+                                await sendPushToUser(order.userId, dbStatus === 'DELIVERED' ? {
+                                    title: 'Order Delivered',
+                                    body: `Your order (${order.orderCode}) has been delivered.`,
+                                    data: { type: 'product_order_delivered', orderId: order.id },
+                                } : {
+                                    title: 'Order Returned',
+                                    body: `Your order (${order.orderCode}) is being returned. Any paid amount will be refunded within 3-5 business days.`,
+                                    data: { type: 'product_order_returned', orderId: order.id },
+                                });
+                            } catch (pushErr) {
+                                logger.warn(`[CRON] Push notification failed for order ${order.orderCode}: ${pushErr.message}`);
+                            }
+                        }
                     }
                     updated++;
                 } catch (trackErr) {
