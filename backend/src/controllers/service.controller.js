@@ -163,6 +163,21 @@ const updateService = async (req, res, next) => {
             data.isDynamic = data.isDynamic === true || data.isDynamic === 'true';
         }
 
+        // Slug is hardcoded into the compiled mobile app for a Core
+        // (isDynamic: false) service — native screens call
+        // useServiceInitialization('this-exact-slug'), so an admin-side
+        // rename can't be reflected there without a new app release.
+        // Enforced server-side, not just disabled in the admin UI, since
+        // this is the exact bug class (mismatched hardcoded slug ->
+        // "Service initialization incomplete") this session spent hours
+        // tracing and fixing across a dozen screens.
+        if (data.slug && oldService && !oldService.isDynamic && data.slug !== oldService.slug) {
+            return sendResponse(
+                res, 409, null,
+                `"${oldService.name}" is a Core (hardcoded) service — its slug ("${oldService.slug}") is baked into the mobile app's native screen and cannot be changed here without shipping a new app release. If you need a different slug, that screen's code must be updated to match first.`
+            );
+        }
+
         // Same friendly pre-check as createService — see the comment there.
         if (data.slug && data.slug !== oldService?.slug) {
             const conflict = await prisma.service.findUnique({
@@ -292,6 +307,25 @@ const deleteService = async (req, res, next) => {
         const id = req.params.id;
         const force = req.query.force === 'true';
         const bookingsCount = await prisma.booking.count({ where: { serviceId: id } });
+
+        // Core (isDynamic: false) services are backed by a hardcoded native
+        // mobile screen that calls useServiceInitialization('this-exact-slug')
+        // — that literal lives in the compiled app regardless of what happens
+        // here, so deleting the row doesn't remove the dependency, it just
+        // breaks it. If this ever needs to be recreated, it MUST reuse the
+        // same slug or the mobile screen stays broken — surfaced explicitly
+        // here (checked before the booking/benefit warnings) since the slug
+        // itself is the one piece of information a hard delete truly loses.
+        if (!force) {
+            const coreCheck = await prisma.service.findUnique({ where: { id }, select: { slug: true, name: true, isDynamic: true, route: true } });
+            if (coreCheck && !coreCheck.isDynamic) {
+                return res.status(200).json({
+                    success: false,
+                    isWarning: true,
+                    message: `"${coreCheck.name}" is a Core (hardcoded) service — its mobile screen${coreCheck.route ? ` (route: ${coreCheck.route})` : ''} has slug "${coreCheck.slug}" baked into its code and will keep looking for a service with that exact slug even after this row is deleted. If you recreate this service later, you MUST use slug "${coreCheck.slug}" again, or that screen will show "Service initialization incomplete" for every user. Force delete anyway?`,
+                });
+            }
+        }
 
         if (bookingsCount > 0 && !force) {
             const updated = await prisma.service.update({

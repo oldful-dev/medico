@@ -429,8 +429,25 @@ export default function DynamicServiceFormModal({
                                         required
                                         placeholder="e.g. home-ecg"
                                         value={form.slug}
+                                        // Locked once a Core (isDynamic: false) service exists — its
+                                        // slug is hardcoded into the compiled mobile app (native
+                                        // screens call useServiceInitialization('this-exact-slug')),
+                                        // so changing it here can't be reflected there without a new
+                                        // app release. Every "Service initialization incomplete"
+                                        // investigation this session traced back to exactly this
+                                        // mismatch. Checked against the ORIGINAL isDynamic value
+                                        // (editingService), not the live form.isDynamic toggle, so
+                                        // flipping the architecture dropdown can't be used to unlock it.
+                                        disabled={!!editingService && !editingService.isDynamic}
+                                        title={!!editingService && !editingService.isDynamic ? 'Slug is locked for Core (hardcoded) services — it is baked into the mobile app and cannot be changed without a new app release.' : undefined}
+                                        style={!!editingService && !editingService.isDynamic ? { opacity: 0.7, cursor: 'not-allowed' } : undefined}
                                         onChange={e => setForm({ ...form, slug: e.target.value })}
                                     />
+                                    {!!editingService && !editingService.isDynamic && (
+                                        <p className="text-xs text-muted" style={{ margin: '4px 0 0' }}>
+                                            🔒 Locked — this slug is hardcoded in the mobile app&apos;s native screen.
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
                                     <label className="form-label">Service Architecture Type *</label>
