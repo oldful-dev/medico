@@ -411,7 +411,7 @@ export default function BookNursingCareScreen() {
           bookingPayload,
           amount: String(calculatedPrice),
           label: `${serviceName} (${selectedDuration})`,
-          serviceSlug: "nurse-care",
+          serviceSlug: dbService?.slug || "nurse-care",
           selectedOption: selectedDuration,
           // Nurse Care never forwarded the admin-configured paymentMode/
           // checkoutGroup before, so checkout always fell back to

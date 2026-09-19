@@ -291,7 +291,7 @@ export default function BookCaregiverSupportScreen() {
                     bookingPayload,
                     amount: String(servicePrice),
                     label: 'Caregiver Support',
-                    serviceSlug: 'caregiver-support',
+                    serviceSlug: dbService?.slug || 'caregiver-support',
                     ...(dbService?.paymentMode && { paymentMode: dbService.paymentMode }),
                     ...(dbService?.checkoutGroup && { checkoutGroup: dbService.checkoutGroup }),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),

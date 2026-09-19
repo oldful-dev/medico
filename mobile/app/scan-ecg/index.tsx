@@ -62,7 +62,7 @@ export default function ScanEcgScreen() {
         setAlertConfig({ visible: true, title, message, iconName });
     };
 
-    const { isReady, cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit } = useServiceInitialization('scan-ecg');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, isLoading: isLoadingInit, dbService } = useServiceInitialization('scan-ecg');
 
     // Follow the centralized active address whenever it changes elsewhere
     // in the app, unless the user has already made their own pick here.
@@ -193,7 +193,9 @@ export default function ScanEcgScreen() {
                     bookingPayload,
                     amount: String(servicePrice),
                     label: 'Scan & ECG',
-                    serviceSlug: 'scan-ecg',
+                    serviceSlug: dbService?.slug || 'scan-ecg',
+                    ...(dbService?.paymentMode && { paymentMode: dbService.paymentMode }),
+                    ...(dbService?.checkoutGroup && { checkoutGroup: dbService.checkoutGroup }),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId })
                 },
             });

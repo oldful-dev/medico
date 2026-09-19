@@ -259,7 +259,7 @@ export default function HospitalTripScreen() {
           bookingPayload,
           amount: String(servicePrice),
           label: serviceName || "Hospital Visit Assistance",
-          serviceSlug: "hospital-trip",
+          serviceSlug: dbService?.slug || "hospital-trip",
           ...(dbService?.paymentMode && { paymentMode: dbService.paymentMode }),
           ...(dbService?.checkoutGroup && { checkoutGroup: dbService.checkoutGroup }),
           ...(params.subscriptionId && {

@@ -354,7 +354,7 @@ export default function DoctorVisitScreen() {
                     bookingPayload,
                     amount: String(servicePrice),
                     label: serviceName || 'Doctor Home Visit',
-                    serviceSlug: 'doctor-visit',
+                    serviceSlug: dbService?.slug || 'doctor-visit',
                     // Without this, checkout always fell back to isZeroPayment
                     // (the "Booking Request" inquiry card, no price breakdown)
                     // regardless of admin's paymentMode setting for this service.

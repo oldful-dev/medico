@@ -163,7 +163,7 @@ export default function MedicalEquipmentScreen() {
                     bookingPayload,
                     amount: String(servicePrice),
                     label: serviceName,
-                    serviceSlug: 'medical-equipment',
+                    serviceSlug: dbService?.slug || 'medical-equipment',
                     ...(dbService?.paymentMode && { paymentMode: dbService.paymentMode }),
                     ...(dbService?.checkoutGroup && { checkoutGroup: dbService.checkoutGroup }),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),

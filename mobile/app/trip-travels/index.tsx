@@ -110,7 +110,7 @@ export default function TripTravelsScreen() {
                     amount: String(servicePrice || 0),
                     label: t('trip_travels.header'),
                     paymentMode: 'PAID',
-                    serviceSlug: 'trip-travels',
+                    serviceSlug: dbService?.slug || 'trip-travels',
                 },
             });
             return;

@@ -8,6 +8,7 @@ const { uploadFile, deleteFile } = require('../utils/storage.service');
 const { syncDbServicesToUIConfig } = require('../utils/sduiSync');
 const { createAuditLog } = require('../middleware/audit');
 const { logger } = require('../config/logger');
+const { getBenefitCodeForService } = require('../config/benefitMapping');
 
 // GET /api/services
 const getServices = async (req, res, next) => {
@@ -304,6 +305,39 @@ const deleteService = async (req, res, next) => {
                 message: `This service has ${bookingsCount} active bookings. Deleting it directly will break customer booking histories. We have disabled it instead. Would you like to force delete the service along with all its booking history?`,
                 data: updated
             });
+        }
+
+        // Deleting a service has no FK link to PlanBenefit — that table only
+        // stores a free-text benefitCode matched against the service's slug
+        // at runtime (benefitMapping.js). Nothing in the schema would stop
+        // this delete from silently orphaning a plan's quota promise (e.g.
+        // "Tech Support 2/mo" staying listed on the Home Essentials plan
+        // with no working screen left to redeem it on) — warn the same way
+        // the booking-count check above does, before force is required.
+        if (!force) {
+            const serviceForSlug = await prisma.service.findUnique({ where: { id }, select: { slug: true, name: true } });
+            const benefitCode = serviceForSlug ? getBenefitCodeForService(serviceForSlug.slug) : null;
+            if (benefitCode) {
+                const linkedBenefits = await prisma.planBenefit.findMany({
+                    where: { benefitCode },
+                    include: { plan: { select: { id: true, name: true, isVisible: true } } },
+                });
+                if (linkedBenefits.length > 0) {
+                    const planIds = [...new Set(linkedBenefits.map(b => b.plan.id))];
+                    const planNames = [...new Set(linkedBenefits.map(b => b.plan.name))].join(', ');
+                    // Real, currently-paying impact — not just "a plan config
+                    // exists somewhere" — so admin knows whether this affects
+                    // 0 customers or 400 of them before deciding.
+                    const activeSubscriberCount = await prisma.subscription.count({
+                        where: { planId: { in: planIds }, status: 'ACTIVE', expiryDate: { gte: new Date() } },
+                    });
+                    return res.status(200).json({
+                        success: false,
+                        isWarning: true,
+                        message: `Service "${serviceForSlug.name}" (slug: "${serviceForSlug.slug}") is promised as a benefit (${benefitCode}) on: ${planNames} — currently held by ${activeSubscriberCount} active subscriber${activeSubscriberCount === 1 ? '' : 's'}. Deleting it will leave that plan benefit pointing at nothing: subscribers will still see the quota on their plan but have no working screen to redeem it on. Force delete anyway?`,
+                    });
+                }
+            }
         }
 
         // Only the real-delete path below purges the image — the

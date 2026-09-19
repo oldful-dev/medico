@@ -39,7 +39,12 @@ const serviceSlugMap = {
   "test": "CUSTOM_REQUEST",
   
   // Waiver categories:
+  // Real DB slug is "plumbing" (not "plumbing-electrical") — the mismatch
+  // meant getBenefitCodeForService() returned null for every Plumbing &
+  // Electrical booking, silently skipping the ZERO_SERVICE_FEE waiver check
+  // entirely, so Home Essentials plan holders were charged full fees on it.
   "plumbing-electrical": "ZERO_SERVICE_FEE",
+  "plumbing": "ZERO_SERVICE_FEE",
   "appliance-repair": "ZERO_SERVICE_FEE",
   "smart-upgrade": "ZERO_SERVICE_FEE",
   "driving-cab": "ZERO_SERVICE_FEE",
