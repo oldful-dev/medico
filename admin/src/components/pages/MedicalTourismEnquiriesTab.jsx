@@ -104,8 +104,9 @@ export default function MedicalTourismEnquiriesTab() {
             ) : enquiries.length === 0 ? (
                 <p className="text-muted">No Medical Tourism enquiries yet.</p>
             ) : (
-                <div className="table-container">
-                    <table className="table">
+                <div className="card">
+                <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
+                    <table className="data-table">
                         <thead>
                             <tr>
                                 <th>Enquiry ID</th>
@@ -122,10 +123,15 @@ export default function MedicalTourismEnquiriesTab() {
                             {enquiries.map(b => {
                                 const enquiry = b.medicalTourismEnquiry;
                                 const requirement = b.formDataJson?.requirement_type;
+                                // The patient the enquiry is FOR (form.patient_name) is not
+                                // necessarily the logged-in app user who submitted it
+                                // (b.user) — a family member/agent can book on someone
+                                // else's behalf, per the PDF's own patient-info fields.
+                                const patientName = b.formDataJson?.patient_name || b.user?.name || "—";
                                 return (
                                     <tr key={b.id} style={{ cursor: "pointer" }} onClick={() => openDetail(b)}>
                                         <td style={{ fontWeight: 600 }}>{b.bookingCode}</td>
-                                        <td>{b.user?.name || "—"}</td>
+                                        <td>{patientName}</td>
                                         <td style={{ textTransform: "capitalize" }}>{(requirement || "").replace(/_/g, " ") || "—"}</td>
                                         <td>
                                             <span className={`badge ${b.paymentStatus === "SUCCESS" ? "badge-success" : "badge-warning"}`}>
@@ -141,6 +147,7 @@ export default function MedicalTourismEnquiriesTab() {
                             })}
                         </tbody>
                     </table>
+                </div>
                 </div>
             )}
 
