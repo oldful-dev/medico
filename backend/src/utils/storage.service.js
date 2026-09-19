@@ -370,6 +370,20 @@ const refreshSignedUrl = async (fileUrl, expiresMinutes = null) => {
     return getSignedDownloadUrl(storagePath, expiresMinutes);
 };
 
+// Invoice.pdfUrl is a signed GCS URL — max 7-day expiry, so a value stored
+// more than a week ago may already be dead. Call this instead of reading
+// invoice.pdfUrl directly anywhere the URL is about to be handed to a user
+// (resend receipt, admin invoice view, etc.) — it re-signs a fresh one from
+// the stable pdfStoragePath column. Falls back to the (possibly stale)
+// stored pdfUrl for older invoice rows saved before pdfStoragePath existed.
+const getSignedInvoiceUrl = async (invoice) => {
+    if (!invoice) return null;
+    if (invoice.pdfStoragePath) {
+        return getSignedDownloadUrl(invoice.pdfStoragePath);
+    }
+    return invoice.pdfUrl || null;
+};
+
 // ══════════════════════════════════════════════════════════════
 //  DELETE FILE — GCS ONLY + CDN purge
 // ══════════════════════════════════════════════════════════════
@@ -447,6 +461,7 @@ module.exports = {
     getSignedUploadUrl,
     getSignedDownloadUrl,
     refreshSignedUrl,
+    getSignedInvoiceUrl,
     makeFilePublic,
     deleteFile,
     purgeCDNCache,

@@ -536,7 +536,8 @@ model Invoice {
   ayuxaBookingFee Float     @default(0) @map("ayuxa_booking_fee")
   deliveryFee     Float     @default(0) @map("delivery_fee")
   lineItemGst     Json? // { carePlan: 0, homePlan: 18, product: 18, fees: 18 } per-line breakdown
-  pdfUrl          String?
+  pdfUrl          String? // signed GCS URL — expires after 7 days, may be stale; re-sign from pdfStoragePath before handing out
+  pdfStoragePath  String? @map("pdf_storage_path") // stable GCS object path (e.g. documents/invoices/<uuid>.pdf) — lets pdfUrl be re-signed after expiry, since the uploaded filename is a random UUID with no way to re-derive it from invoiceNumber
   emailSentAt     DateTime?
   billingName     String?
   billingAddress  String?

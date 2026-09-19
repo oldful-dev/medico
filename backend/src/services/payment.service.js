@@ -512,11 +512,14 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                         description: payment.booking?.service?.name || 'Ayuxa Health Tech Platforms Pvt. Ltd.',
                     });
 
-                    const { url } = await uploadFile(pdfBuffer, 'documents/invoices', `invoice-${invoice.invoiceNumber}.pdf`);
+                    const { url, storagePath } = await uploadFile(pdfBuffer, 'documents/invoices', `invoice-${invoice.invoiceNumber}.pdf`);
 
+                    // pdfUrl is a signed GCS URL (max 7-day expiry) — storagePath
+                    // is stable and lets it be re-signed later via
+                    // getSignedInvoiceUrl() once it's expired.
                     await prisma.invoice.update({
                         where: { id: invoice.id },
-                        data: { pdfUrl: url, emailSentAt: new Date() },
+                        data: { pdfUrl: url, pdfStoragePath: storagePath, emailSentAt: new Date() },
                     });
 
                     if (payment.user.email) {
