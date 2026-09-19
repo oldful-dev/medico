@@ -22,6 +22,19 @@ import FormInput from "@/components/common/FormInput";
 import DocumentUploadBox from "@/components/common/DocumentUploadBox";
 import { mediaService } from "@/services/api/mediaService";
 
+// ─── Validation ───
+// Standard "no spaces, one @, a dot in the domain" email check — permissive
+// enough to not reject real addresses, strict enough to catch typos.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// International patients always enter a country code (the field label says
+// so explicitly) — loose E.164-style check: "+" then 8-15 digits, allowing
+// spaces/dashes/parens for readability (e.g. "+44 7911 123456").
+const PHONE_REGEX = /^\+[\d\s\-()]{8,17}$/;
+const isValidPhoneDigitCount = (value: string) => {
+  const digits = value.replace(/\D/g, "");
+  return digits.length >= 8 && digits.length <= 15;
+};
+
 // ─── Requirement options (Medical Tourism.pdf §2, step 3) ───
 const REQUIREMENT_OPTIONS = [
   { id: "medical_treatment", label: "Medical Treatment" },
@@ -115,12 +128,15 @@ export default function MedicalTourismScreen() {
     );
   };
 
+  const isEmailValid = EMAIL_REGEX.test(email.trim());
+  const isPhoneValid = PHONE_REGEX.test(mobileNumber.trim()) && isValidPhoneDigitCount(mobileNumber);
+
   const isFormValid =
     !!requirementType &&
     !!patientName.trim() &&
     !!country.trim() &&
-    !!mobileNumber.trim() &&
-    !!email.trim() &&
+    isPhoneValid &&
+    isEmailValid &&
     !!medicalIssue.trim() &&
     consentContact &&
     consentShareInfo &&
@@ -133,6 +149,14 @@ export default function MedicalTourismScreen() {
     }
     if (!patientName.trim() || !country.trim() || !mobileNumber.trim() || !email.trim()) {
       triggerAlert(t("common.required", "Required"), t("medical_tourism.alert_patient_info", "Please fill in all required patient information."));
+      return;
+    }
+    if (!isPhoneValid) {
+      triggerAlert(t("common.invalid", "Invalid"), t("medical_tourism.alert_invalid_phone", "Please enter a valid mobile number with country code, e.g. +44 7911 123456."));
+      return;
+    }
+    if (!isEmailValid) {
+      triggerAlert(t("common.invalid", "Invalid"), t("medical_tourism.alert_invalid_email", "Please enter a valid email address."));
       return;
     }
     if (!medicalIssue.trim()) {
