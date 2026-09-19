@@ -438,61 +438,75 @@ const createBooking = async (req, res, next) => {
                 let benefitCode = null;
                 let updatedFormDataJson = formDataJson || {};
 
-                const { getBenefitCodeForService } = require('../config/benefitMapping');
+                const { getBenefitCodesForService } = require('../config/benefitMapping');
                 const { canConsumeBenefit, consumeBenefit } = require('../services/subscriptionBenefit.service');
 
-                benefitCode = getBenefitCodeForService(service.slug);
-                if (benefitCode) {
-                    if (benefitCode === 'ZERO_SERVICE_FEE') {
-                        // Scenario D: Waiver benefit — check if the subscription includes fee waiver
-                        const check = await canConsumeBenefit(finalUserId, 'ZERO_SERVICE_FEE');
-                        if (check.allowed) {
-                            if (typeof updatedFormDataJson !== 'object') updatedFormDataJson = {};
-                            updatedFormDataJson.bookingFeeWaived = true;
-                            updatedFormDataJson.platformFeeWaived = true;
-                            updatedFormDataJson.gstOnFeeWaived = true;
-                        }
-                        // If no subscription (NO_ACTIVE_SUBSCRIPTION or BENEFIT_NOT_IN_PLAN),
-                        // fees apply normally — no blocking.
-                    } else {
-                        const check = await canConsumeBenefit(finalUserId, benefitCode);
-                        if (check.allowed) {
-                            // Scenario B: Free entitlement available — cover the booking
-                            chargeAmount = 0;
-                            isSubscriptionCovering = true;
-                            usedEntitlement = true;
-                        } else if (check.reason === 'LIMIT_EXCEEDED') {
-                            // Scenario C: Quota exhausted
-                            if (!req.body.isPaidBooking) {
-                                // Let frontend know to show the "Continue as Paid" prompt
-                                return res.status(400).json({
-                                    success: false,
-                                    code: 'LIMIT_EXCEEDED',
-                                    message: 'Your free monthly quota for this service has been exhausted.',
-                                    hint: 'Pass isPaidBooking=true to proceed as a standard paid booking.',
-                                });
-                            }
-                            // isPaidBooking=true: proceed as a standard paid booking — but don't
-                            // trust the client-sent amount at face value. A stale mobile-side
-                            // total (still reflecting the now-exhausted subscription waiver) must
-                            // not silently pass here just because the flag was set. Require the
-                            // charge to actually cover the un-waived standard rate. Use the
-                            // resolved vendor-fee component (respects a selected per-option price,
-                            // same as the Scenario A floor above) — chargeAmount is the client's
-                            // grand TOTAL (service+booking+platform+tax combined), not the vendor
-                            // fee alone, so it must not be passed in as vendorFee.
-                            const standardRateFloor = await computeStandardRateFloor(service, resolvedVendorFee);
-                            if (chargeAmount < standardRateFloor * 0.95) {
-                                return res.status(400).json({
-                                    success: false,
-                                    code: 'AMOUNT_BELOW_STANDARD_RATE',
-                                    message: `Standard rate for this booking is ₹${Math.round(standardRateFloor)}. Please refresh and try again.`,
-                                });
-                            }
-                        }
-                        // Scenario A: NO_ACTIVE_SUBSCRIPTION / BENEFIT_NOT_IN_PLAN
-                        // → No action needed — proceed with safeAmount as paid booking.
+                // A slug can carry more than one candidate benefit code when
+                // it's shared across plans (e.g. hospital-trip is promised as
+                // both HOSPITAL_ACCOMPANIMENT on Companion and PICKUP_DROP on
+                // Escort) — try each until one is actually allowed by the
+                // user's own active subscription.
+                const candidateCodes = getBenefitCodesForService(service.slug);
+                let check = null;
+                for (const code of candidateCodes) {
+                    if (code === 'ZERO_SERVICE_FEE') continue; // handled separately below
+                    const result = await canConsumeBenefit(finalUserId, code);
+                    if (result.allowed) { benefitCode = code; check = result; break; }
+                    // Keep the last non-allowed result so a LIMIT_EXCEEDED on a
+                    // single-candidate slug still surfaces to the user below.
+                    if (!benefitCode) { benefitCode = code; check = result; }
+                }
+                const hasZeroFeeCandidate = candidateCodes.includes('ZERO_SERVICE_FEE');
+
+                if (hasZeroFeeCandidate) {
+                    // Scenario D: Waiver benefit — check if the subscription includes fee waiver
+                    const zeroFeeCheck = await canConsumeBenefit(finalUserId, 'ZERO_SERVICE_FEE');
+                    if (zeroFeeCheck.allowed) {
+                        if (typeof updatedFormDataJson !== 'object') updatedFormDataJson = {};
+                        updatedFormDataJson.bookingFeeWaived = true;
+                        updatedFormDataJson.platformFeeWaived = true;
+                        updatedFormDataJson.gstOnFeeWaived = true;
                     }
+                    // If no subscription (NO_ACTIVE_SUBSCRIPTION or BENEFIT_NOT_IN_PLAN),
+                    // fees apply normally — no blocking.
+                }
+                if (benefitCode && check) {
+                    if (check.allowed) {
+                        // Scenario B: Free entitlement available — cover the booking
+                        chargeAmount = 0;
+                        isSubscriptionCovering = true;
+                        usedEntitlement = true;
+                    } else if (check.reason === 'LIMIT_EXCEEDED') {
+                        // Scenario C: Quota exhausted
+                        if (!req.body.isPaidBooking) {
+                            // Let frontend know to show the "Continue as Paid" prompt
+                            return res.status(400).json({
+                                success: false,
+                                code: 'LIMIT_EXCEEDED',
+                                message: 'Your free monthly quota for this service has been exhausted.',
+                                hint: 'Pass isPaidBooking=true to proceed as a standard paid booking.',
+                            });
+                        }
+                        // isPaidBooking=true: proceed as a standard paid booking — but don't
+                        // trust the client-sent amount at face value. A stale mobile-side
+                        // total (still reflecting the now-exhausted subscription waiver) must
+                        // not silently pass here just because the flag was set. Require the
+                        // charge to actually cover the un-waived standard rate. Use the
+                        // resolved vendor-fee component (respects a selected per-option price,
+                        // same as the Scenario A floor above) — chargeAmount is the client's
+                        // grand TOTAL (service+booking+platform+tax combined), not the vendor
+                        // fee alone, so it must not be passed in as vendorFee.
+                        const standardRateFloor = await computeStandardRateFloor(service, resolvedVendorFee);
+                        if (chargeAmount < standardRateFloor * 0.95) {
+                            return res.status(400).json({
+                                success: false,
+                                code: 'AMOUNT_BELOW_STANDARD_RATE',
+                                message: `Standard rate for this booking is ₹${Math.round(standardRateFloor)}. Please refresh and try again.`,
+                            });
+                        }
+                    }
+                    // Scenario A: NO_ACTIVE_SUBSCRIPTION / BENEFIT_NOT_IN_PLAN
+                    // → No action needed — proceed with safeAmount as paid booking.
                 }
 
                 // ─── Status logic ─────────────────────────────────────────

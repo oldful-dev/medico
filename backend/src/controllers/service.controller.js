@@ -8,7 +8,7 @@ const { uploadFile, deleteFile } = require('../utils/storage.service');
 const { syncDbServicesToUIConfig } = require('../utils/sduiSync');
 const { createAuditLog } = require('../middleware/audit');
 const { logger } = require('../config/logger');
-const { getBenefitCodeForService } = require('../config/benefitMapping');
+const { getBenefitCodesForService } = require('../config/benefitMapping');
 
 // GET /api/services
 const getServices = async (req, res, next) => {
@@ -350,15 +350,20 @@ const deleteService = async (req, res, next) => {
         // the booking-count check above does, before force is required.
         if (!force) {
             const serviceForSlug = await prisma.service.findUnique({ where: { id }, select: { slug: true, name: true } });
-            const benefitCode = serviceForSlug ? getBenefitCodeForService(serviceForSlug.slug) : null;
-            if (benefitCode) {
+            // A slug can carry more than one candidate benefit code (e.g.
+            // hospital-trip is promised as both HOSPITAL_ACCOMPANIMENT on
+            // Companion and PICKUP_DROP on Escort) — check all of them so
+            // deleting doesn't silently orphan the second plan's promise.
+            const benefitCodes = serviceForSlug ? getBenefitCodesForService(serviceForSlug.slug) : [];
+            if (benefitCodes.length > 0) {
                 const linkedBenefits = await prisma.planBenefit.findMany({
-                    where: { benefitCode },
+                    where: { benefitCode: { in: benefitCodes } },
                     include: { plan: { select: { id: true, name: true, isVisible: true } } },
                 });
                 if (linkedBenefits.length > 0) {
                     const planIds = [...new Set(linkedBenefits.map(b => b.plan.id))];
                     const planNames = [...new Set(linkedBenefits.map(b => b.plan.name))].join(', ');
+                    const codesInvolved = [...new Set(linkedBenefits.map(b => b.benefitCode))].join(', ');
                     // Real, currently-paying impact — not just "a plan config
                     // exists somewhere" — so admin knows whether this affects
                     // 0 customers or 400 of them before deciding.
@@ -368,7 +373,7 @@ const deleteService = async (req, res, next) => {
                     return res.status(200).json({
                         success: false,
                         isWarning: true,
-                        message: `Service "${serviceForSlug.name}" (slug: "${serviceForSlug.slug}") is promised as a benefit (${benefitCode}) on: ${planNames} — currently held by ${activeSubscriberCount} active subscriber${activeSubscriberCount === 1 ? '' : 's'}. Deleting it will leave that plan benefit pointing at nothing: subscribers will still see the quota on their plan but have no working screen to redeem it on. Force delete anyway?`,
+                        message: `Service "${serviceForSlug.name}" (slug: "${serviceForSlug.slug}") is promised as a benefit (${codesInvolved}) on: ${planNames} — currently held by ${activeSubscriberCount} active subscriber${activeSubscriberCount === 1 ? '' : 's'}. Deleting it will leave that plan benefit pointing at nothing: subscribers will still see the quota on their plan but have no working screen to redeem it on. Force delete anyway?`,
                     });
                 }
             }

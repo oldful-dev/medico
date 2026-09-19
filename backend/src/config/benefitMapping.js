@@ -24,7 +24,12 @@ const serviceSlugMap = {
   "nurse-care": "NURSE_VISIT",
   "home-nurse": "NURSE_VISIT",
   "caregiver-support": "NURSE_VISIT",
-  "hospital-trip": "HOSPITAL_ACCOMPANIMENT",
+  // Array = the slug is shared by more than one plan's promised benefit.
+  // Ayuxa Companion promises HOSPITAL_ACCOMPANIMENT (quota-tracked) on this
+  // same booking; Ayuxa Escort separately promises PICKUP_DROP (1/month) —
+  // getBenefitCodeForService()'s callers try each candidate in order and use
+  // whichever the user's actual active plan grants.
+  "hospital-trip": ["HOSPITAL_ACCOMPANIMENT", "PICKUP_DROP"],
   "bill-payment": "BILL_PAYMENT",
   "tech-helper": "TECH_SUPPORT",
   "grocery-run": "GROCERY_ASSIST",
@@ -49,25 +54,36 @@ const serviceSlugMap = {
   "appliance-repair": "ZERO_SERVICE_FEE",
   "smart-upgrade": "ZERO_SERVICE_FEE",
   "driving-cab": "ZERO_SERVICE_FEE",
-  "trip-travels": "ZERO_SERVICE_FEE",
+  // Ayuxa Escort separately promises SPIRITUAL_ESCORT (1/quarter, "Travel
+  // Escort up to 50km") on this same slug — see hospital-trip's comment above.
+  "trip-travels": ["ZERO_SERVICE_FEE", "SPIRITUAL_ESCORT"],
   "ayuxa": "ZERO_SERVICE_FEE"
 };
 
+// Returns the single benefit code for a slug (back-compat — existing callers
+// expect one string). When a slug maps to multiple candidate codes (shared
+// across plans), returns the first one; use getBenefitCodesForService() to
+// get the full candidate list and pick the one the user's plan actually grants.
 function getBenefitCodeForService(serviceSlug) {
-  if (!serviceSlug) return null;
+  const codes = getBenefitCodesForService(serviceSlug);
+  return codes.length ? codes[0] : null;
+}
+
+function getBenefitCodesForService(serviceSlug) {
+  if (!serviceSlug) return [];
   const normalized = serviceSlug.toLowerCase().trim();
-  if (serviceSlugMap[normalized]) {
-    return serviceSlugMap[normalized];
+  let entry = serviceSlugMap[normalized];
+  if (!entry) {
+    const match = Object.keys(serviceSlugMap).find(k => k.toUpperCase().replace(/-/g, '_') === normalized.toUpperCase().replace(/-/g, '_'));
+    entry = match ? serviceSlugMap[match] : null;
   }
-  const match = Object.keys(serviceSlugMap).find(k => k.toUpperCase().replace(/-/g, '_') === normalized.toUpperCase().replace(/-/g, '_'));
-  if (match) {
-    return serviceSlugMap[match];
-  }
-  return null;
+  if (!entry) return [];
+  return Array.isArray(entry) ? entry : [entry];
 }
 
 module.exports = {
   serviceActionMap,
   serviceSlugMap,
-  getBenefitCodeForService
+  getBenefitCodeForService,
+  getBenefitCodesForService
 };
