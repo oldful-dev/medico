@@ -153,7 +153,11 @@ export default function MedicalTourismScreen() {
 
       let uploadedReportUrls: string[] = [];
       if (medicalReports.length > 0) {
-        uploadedReportUrls = await mediaService.uploadMultipleMedia(medicalReports, "medical-tourism");
+        // "health-reports" (not the service slug) so storage.service.js's
+        // isPrivateFolder() serves these as signed URLs, not public — medical
+        // reports/scans/diagnoses are sensitive PII, same as any other
+        // health document in the app.
+        uploadedReportUrls = await mediaService.uploadMultipleMedia(medicalReports, "health-reports");
       }
 
       const bookingPayload = JSON.stringify({
@@ -176,6 +180,9 @@ export default function MedicalTourismScreen() {
           treatment_timeline: treatmentTimeline.trim() || undefined,
           medical_reports: uploadedReportUrls,
           travel_support_needs: travelSupportNeeds,
+          consent_contact: consentContact,
+          consent_share_info: consentShareInfo,
+          consent_privacy: consentPrivacy,
         },
       });
 
@@ -413,6 +420,7 @@ export default function MedicalTourismScreen() {
                   subtitle={t("medical_tourism.upload_reports_subtitle", "PDF, JPG, PNG up to 10MB each")}
                   onFilesChange={setMedicalReports}
                   maxFiles={5}
+                  allowedTypes={["application/pdf", "image/jpeg", "image/png"]}
                 />
               </View>
 

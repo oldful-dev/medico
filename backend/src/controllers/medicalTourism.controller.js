@@ -13,6 +13,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
+const { refreshSignedUrl } = require('../utils/storage.service');
 
 // GET /api/admin/medical-tourism/enquiries
 const getEnquiries = async (req, res, next) => {
@@ -109,4 +110,33 @@ const updateEnquiry = async (req, res, next) => {
     }
 };
 
-module.exports = { getEnquiries, getEnquiryById, updateEnquiry };
+// GET /api/admin/medical-tourism/enquiries/:id/documents/:index/view-url
+// Medical reports are uploaded to the "health-reports" private folder, whose
+// signed URL expires in 30 minutes — the URL stored in formDataJson.medical_
+// reports goes dead well before an admin gets around to reviewing it. Same
+// fix as HealthReport's own view-url endpoint (user.controller.js): re-sign
+// on demand instead of relying on the stale stored URL.
+const getDocumentViewUrl = async (req, res, next) => {
+    try {
+        const booking = await prisma.booking.findFirst({
+            where: { id: req.params.id, service: { slug: 'medical-tourism' } },
+            select: { formDataJson: true },
+        });
+        if (!booking) return res.status(404).json({ success: false, message: 'Enquiry not found' });
+
+        const reports = booking.formDataJson?.medical_reports;
+        const index = parseInt(req.params.index, 10);
+        if (!Array.isArray(reports) || !reports[index]) {
+            return res.status(404).json({ success: false, message: 'Document not found' });
+        }
+
+        const freshUrl = await refreshSignedUrl(reports[index]);
+        if (!freshUrl) return res.status(500).json({ success: false, message: 'Could not generate a view link' });
+
+        sendResponse(res, 200, { url: freshUrl });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { getEnquiries, getEnquiryById, updateEnquiry, getDocumentViewUrl };

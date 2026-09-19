@@ -493,6 +493,9 @@ export const medicalTourismAPI = {
     getEnquiries: (params) => api.get('/admin/medical-tourism/enquiries', { params }),
     getEnquiryById: (id) => api.get(`/admin/medical-tourism/enquiries/${id}`),
     updateEnquiry: (id, data) => api.put(`/admin/medical-tourism/enquiries/${id}`, data),
+    // Medical reports are private (30-min signed URL) — always fetch a fresh
+    // link right before opening, never reuse the one stored on the enquiry.
+    getDocumentViewUrl: (id, index) => api.get(`/admin/medical-tourism/enquiries/${id}/documents/${index}/view-url`),
 };
 
 // ── Coupons / Promotions ─────────────────────────────

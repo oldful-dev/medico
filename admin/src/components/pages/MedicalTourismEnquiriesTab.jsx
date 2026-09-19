@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Search, X, Phone, Mail, Calendar, FileText, ExternalLink } from "lucide-react";
+import { Search, X, Phone, Mail, Calendar, FileText, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
 import { medicalTourismAPI, adminAPI } from "@/lib/api";
 import { showToast, formatCurrency } from "@/lib/hooks";
 
@@ -168,7 +168,8 @@ function EnquiryDetailDrawer({ booking, coordinators, saving, onUpdate, onClose 
     );
 
     const fieldLabel = (key) => key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-    const skipKeys = new Set(["requirement_type", "medical_reports", "disclaimer_banner", "consent_contact", "consent_share_info", "consent_privacy", "attachments", "comments"]);
+    const skipKeys = new Set(["requirement_type", "medical_reports", "disclaimer_banner", "attachments", "comments"]);
+    const successfulPayment = (booking.payments || []).find(p => p.status === "SUCCESS") || booking.payments?.[0];
 
     return (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 100, display: "flex", justifyContent: "flex-end" }} onClick={onClose}>
@@ -205,12 +206,29 @@ function EnquiryDetailDrawer({ booking, coordinators, saving, onUpdate, onClose 
                     <div className="card" style={{ marginBottom: 16 }}>
                         <h4 style={{ marginTop: 0, fontSize: 13, textTransform: "uppercase", color: "var(--text-muted)" }}>Documents</h4>
                         {form.medical_reports.map((url, i) => (
-                            <a key={i} href={url} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, margin: "4px 0" }}>
-                                <FileText size={13} /> Document {i + 1}
-                            </a>
+                            <DocumentLink key={i} bookingId={booking.id} index={i} />
                         ))}
                     </div>
                 )}
+
+                <div className="card" style={{ marginBottom: 16 }}>
+                    <h4 style={{ marginTop: 0, fontSize: 13, textTransform: "uppercase", color: "var(--text-muted)" }}>Payment</h4>
+                    <p style={{ margin: "4px 0", fontSize: 13 }}><strong>Amount:</strong> {successfulPayment ? `₹${successfulPayment.amount}` : `₹${booking.amount}`}</p>
+                    <p style={{ margin: "4px 0", fontSize: 13 }}><strong>Status:</strong> {booking.paymentStatus}</p>
+                    {successfulPayment?.razorpayPaymentId && (
+                        <p style={{ margin: "4px 0", fontSize: 13 }}><strong>Transaction Ref:</strong> {successfulPayment.razorpayPaymentId}</p>
+                    )}
+                    {successfulPayment?.createdAt && (
+                        <p style={{ margin: "4px 0", fontSize: 13 }}><strong>Paid On:</strong> {new Date(successfulPayment.createdAt).toLocaleString()}</p>
+                    )}
+                </div>
+
+                <div className="card" style={{ marginBottom: 16 }}>
+                    <h4 style={{ marginTop: 0, fontSize: 13, textTransform: "uppercase", color: "var(--text-muted)" }}>Consent</h4>
+                    <ConsentCheck label="Consent to Contact" given={form.consent_contact} />
+                    <ConsentCheck label="Consent to Share Information" given={form.consent_share_info} />
+                    <ConsentCheck label="Privacy Policy Accepted" given={form.consent_privacy} />
+                </div>
 
                 <div className="card">
                     <h4 style={{ marginTop: 0, fontSize: 13, textTransform: "uppercase", color: "var(--text-muted)" }}>Tracking</h4>
@@ -262,5 +280,43 @@ function EnquiryDetailDrawer({ booking, coordinators, saving, onUpdate, onClose 
                 </div>
             </div>
         </div>
+    );
+}
+
+function DocumentLink({ bookingId, index }) {
+    const [loading, setLoading] = useState(false);
+
+    const handleOpen = async () => {
+        try {
+            setLoading(true);
+            const res = await medicalTourismAPI.getDocumentViewUrl(bookingId, index);
+            const url = res.data?.data?.url;
+            if (url) window.open(url, "_blank", "noopener,noreferrer");
+            else showToast("Could not open document", "error");
+        } catch (e) {
+            console.error(e);
+            showToast("Could not open document", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <button
+            onClick={handleOpen}
+            disabled={loading}
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, margin: "4px 0", background: "none", border: "none", padding: 0, cursor: loading ? "default" : "pointer", color: "var(--accent-primary-light)" }}
+        >
+            <FileText size={13} /> {loading ? "Opening..." : `Document ${index + 1}`}
+        </button>
+    );
+}
+
+function ConsentCheck({ label, given }) {
+    return (
+        <p style={{ margin: "4px 0", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+            {given ? <CheckCircle2 size={14} className="text-success" /> : <XCircle size={14} className="text-danger" />}
+            {label}
+        </p>
     );
 }

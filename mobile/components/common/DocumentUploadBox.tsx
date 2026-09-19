@@ -15,6 +15,10 @@ interface DocumentUploadBoxProps {
     subtitle?: string;
     onFilesChange?: (files: string[]) => void;
     maxFiles?: number;
+    // Defaults to PDF-only — every existing caller wants that. Pass a wider
+    // list (e.g. scans/photos of prescriptions) when the use case genuinely
+    // needs images too, like Medical Tourism's report upload.
+    allowedTypes?: string | string[];
 }
 
 export default function DocumentUploadBox({
@@ -22,6 +26,7 @@ export default function DocumentUploadBox({
     subtitle,
     onFilesChange,
     maxFiles = 1,
+    allowedTypes = 'application/pdf',
 }: DocumentUploadBoxProps) {
     const { t } = useTranslation();
     const resolvedTitle = title ?? t('image_upload.upload_photos', 'Upload Document');
@@ -48,7 +53,7 @@ export default function DocumentUploadBox({
 
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: 'application/pdf',
+                type: allowedTypes,
                 multiple: false,
             });
 
@@ -64,7 +69,7 @@ export default function DocumentUploadBox({
             console.error('[DocumentUploadBox] Error picking document:', error);
             Alert.alert(t('common.error', 'Error'), 'Could not open document picker. Please try again.');
         }
-    }, [files.length, maxFiles, notifyParent, t]);
+    }, [files.length, maxFiles, notifyParent, t, allowedTypes]);
 
     const removeFile = (index: number) => {
         setFiles(prev => {
