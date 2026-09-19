@@ -37,6 +37,7 @@ const serviceSlugMap = {
   "meal-service": "MEAL_SERVICE",
   "anything-else": "CUSTOM_REQUEST",
   "test": "CUSTOM_REQUEST",
+  "meetup": "LOCAL_MEETUP",
   
   // Waiver categories:
   // Real DB slug is "plumbing" (not "plumbing-electrical") — the mismatch

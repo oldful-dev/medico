@@ -21,6 +21,7 @@ router.get('/',     ctrl.getMeetups);
 router.get('/:id',  ctrl.getMeetupById);
 
 // ─── User: register ───────────────────────────────────────────────
+router.get('/:id/benefit-status', authenticateUser, ctrl.getMeetupBenefitStatus);
 router.post('/:id/register', authenticateUser, ctrl.registerForMeetup);
 
 module.exports = router;

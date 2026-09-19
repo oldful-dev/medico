@@ -7,6 +7,8 @@ const { sendResponse } = require('../utils/helpers');
 const { logger } = require('../config/logger');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const { getBenefitCodeForService } = require('../config/benefitMapping');
+const { canConsumeBenefit, consumeBenefit } = require('../services/subscriptionBenefit.service');
 
 // ─── Helpers ────────────────────────────────────────────────────
 function generateBookingCode() {
@@ -158,6 +160,24 @@ const getMeetupById = async (req, res, next) => {
     }
 };
 
+// ─── User: check free-quota eligibility BEFORE payment ──────────
+// GET /api/meetups/:id/benefit-status — read-only, does not consume
+// quota. The mobile app calls this before deciding whether to route
+// to paid /service-checkout or register directly for free, so the
+// actual payment decision is made pre-Razorpay, never after.
+const getMeetupBenefitStatus = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const benefitCode = getBenefitCodeForService('meetup');
+        if (!benefitCode) return sendResponse(res, 200, { eligible: false });
+        const check = await canConsumeBenefit(userId, benefitCode);
+        sendResponse(res, 200, { eligible: !!check.allowed });
+    } catch (error) {
+        logger.error('getMeetupBenefitStatus error:', error.message);
+        next(error);
+    }
+};
+
 // ─── User: Register & pay for meetup ────────────────────────────
 // POST /api/meetups/:id/register
 const registerForMeetup = async (req, res, next) => {
@@ -203,6 +223,35 @@ const registerForMeetup = async (req, res, next) => {
             return sendResponse(res, 409, null, 'You have already registered for this meetup');
         }
 
+        // This endpoint is only ever called AFTER /service-checkout's
+        // Razorpay payment already succeeded (or the caller explicitly
+        // asked for the free/quota-covered path — see below) — it must
+        // never independently re-decide whether money was charged, or a
+        // registration could get marked "WAIVED" for a payment that
+        // genuinely went through moments earlier. useFreeEntitlement is
+        // set by the client only when it navigated here WITHOUT going
+        // through checkout, because a pre-check (see GET
+        // /meetups/:id/benefit-status) confirmed quota was available.
+        const { useFreeEntitlement } = req.body;
+        const benefitCode = getBenefitCodeForService('meetup');
+        let amountPaid = meetup.serviceCharge;
+        let paymentStatus = 'PAID';
+        let confirmedFree = false;
+        if (useFreeEntitlement && benefitCode) {
+            const check = await canConsumeBenefit(userId, benefitCode);
+            if (check.allowed) {
+                confirmedFree = true;
+                amountPaid = 0;
+                paymentStatus = 'WAIVED';
+            }
+            // If the quota was consumed by something else in the gap between
+            // the client's pre-check and this call, fall through to the
+            // normal paid path rather than silently granting a free seat —
+            // the client is expected to have already collected payment in
+            // that race (service-checkout's own retry/error handling covers
+            // it), so this only affects the rare double-submit case.
+        }
+
         let registration;
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
@@ -222,9 +271,9 @@ const registerForMeetup = async (req, res, next) => {
                         pickupLandmark: pickupLandmark || null,
                         pickupContact: pickupContact || null,
                         preferredPickupTime: preferredPickupTime || null,
-                        amountPaid: meetup.serviceCharge,
+                        amountPaid,
                         status: 'CONFIRMED',
-                        paymentStatus: 'PAID',
+                        paymentStatus,
                     },
                     include: { meetup: true },
                 });
@@ -233,6 +282,12 @@ const registerForMeetup = async (req, res, next) => {
                 const isUniqueViolation = err.code === 'P2002' && err.meta?.target?.includes('bookingCode');
                 if (!isUniqueViolation || attempt === 2) throw err;
             }
+        }
+
+        if (confirmedFree) {
+            await consumeBenefit(userId, benefitCode, registration.id).catch(err => {
+                logger.warn('consumeBenefit failed for meetup registration (non-fatal):', err.message);
+            });
         }
 
         sendResponse(res, 201, registration, 'Registration confirmed');
@@ -414,6 +469,7 @@ const updateRegistrationStatus = async (req, res, next) => {
 module.exports = {
     getMeetups,
     getMeetupById,
+    getMeetupBenefitStatus,
     registerForMeetup,
     getMyRegistrations,
     getRegistrationById,

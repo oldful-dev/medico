@@ -63,6 +63,7 @@ export interface RegisterMeetupPayload {
     pickupLandmark?: string;
     pickupContact?: string;
     preferredPickupTime?: string;
+    useFreeEntitlement?: boolean;
 }
 
 export const meetupService = {
@@ -77,6 +78,9 @@ export const meetupService = {
 
     getMeetupById: (id: string) =>
         apiClient.get<Meetup>(`/meetups/${id}`),
+
+    getBenefitStatus: (id: string) =>
+        apiClient.get<{ eligible: boolean }>(`/meetups/${id}/benefit-status`),
 
     getMyRegistrations: () =>
         apiClient.get<MeetupRegistration[]>('/meetups/my-registrations'),

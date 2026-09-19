@@ -11,6 +11,7 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useUser } from '@/context/UserContext';
 import { useTranslation } from 'react-i18next';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
+import { meetupService } from '@/services/api/meetupService';
 
 const PRIMARY = '#02743F';
 
@@ -68,11 +69,12 @@ export default function MeetupRegisterScreen() {
     const [gender, setGender] = useState('');
     const [assistance, setAssistance] = useState<Record<string, boolean>>({});
     const [specialNotes, setSpecialNotes] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     const toggleAssistance = (key: string) =>
         setAssistance(prev => ({ ...prev, [key]: !prev[key] }));
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
         console.log('📋 [MEETUP REGISTER] handleContinue called');
         if (!fullName.trim()) { triggerAlert(t('common.required', 'Required'), t('meetup.alert_name_required', 'Please enter your full name')); return; }
         const phoneDigits = mobile.replace(/\D/g, '');
@@ -125,31 +127,74 @@ export default function MeetupRegisterScreen() {
                 } as any,
             } as any);
             console.log('🚗 [MEETUP REGISTER] Router.push called for /meetup/pickup');
-        } else {
-            router.push({
-                pathname: '/service-checkout',
-                params: {
-                    bookingPayload: JSON.stringify({
-                        fullName,
-                        mobile: cleanMobile,
-                        age,
-                        gender,
-                        assistanceJson: JSON.stringify(assistance),
-                        specialNotes,
-                        pickupEnabled: false,
-                        pickupAddress: '',
-                        pickupLandmark: '',
-                        pickupContact: '',
-                        preferredPickupTime: '',
-                    }),
-                    amount: meetupServiceCharge,
-                    label: 'Local Meetup',
-                    meetupId: id,
-                    meetupParams: JSON.stringify(params),
-                    skipUpsell: '1',
-                } as any,
-            } as any);
+            return;
         }
+
+        const registrationFields = {
+            fullName,
+            mobile: cleanMobile,
+            age,
+            gender,
+            assistanceJson: JSON.stringify(assistance),
+            specialNotes,
+            pickupEnabled: false,
+            pickupAddress: '',
+            pickupLandmark: '',
+            pickupContact: '',
+            preferredPickupTime: '',
+        };
+
+        // Check the user's plan quota BEFORE routing to Razorpay — never
+        // decide "free" after money has already moved. If the check fails
+        // or says not eligible, fall through to the normal paid flow.
+        setSubmitting(true);
+        let eligible = false;
+        try {
+            const statusRes = await meetupService.getBenefitStatus(id);
+            eligible = !!statusRes?.data?.eligible;
+        } catch (e) {
+            eligible = false;
+        }
+
+        if (eligible) {
+            try {
+                const regRes = await meetupService.registerForMeetup(id, {
+                    ...registrationFields,
+                    useFreeEntitlement: true,
+                } as any);
+                setSubmitting(false);
+                if (regRes.success && regRes.data) {
+                    router.replace({
+                        pathname: '/service-confirmation',
+                        params: {
+                            bookingId: regRes.data.id,
+                            bookingCode: regRes.data.bookingCode,
+                            serviceName: 'Local Meetup',
+                            amount: '0',
+                        } as any,
+                    } as any);
+                    return;
+                }
+                // Registration didn't go through free (e.g. quota consumed by
+                // a race) — fall through to the paid flow below.
+            } catch (e) {
+                setSubmitting(false);
+                // Fall through to paid flow.
+            }
+        }
+
+        setSubmitting(false);
+        router.push({
+            pathname: '/service-checkout',
+            params: {
+                bookingPayload: JSON.stringify(registrationFields),
+                amount: meetupServiceCharge,
+                label: 'Local Meetup',
+                meetupId: id,
+                meetupParams: JSON.stringify(params),
+                skipUpsell: '1',
+            } as any,
+        } as any);
     };
 
     return (
@@ -301,8 +346,10 @@ export default function MeetupRegisterScreen() {
 
             {/* Continue button */}
             <View style={[makeStyles(isDarkMode, colors).footer, { paddingBottom: insets.bottom + 12 }]}>
-                <TouchableOpacity style={makeStyles(isDarkMode, colors).continueBtn} onPress={handleContinue} activeOpacity={0.85}>
-                    <Text style={makeStyles(isDarkMode, colors).continueBtnText}>{t('meetup.continue', 'Continue')}</Text>
+                <TouchableOpacity style={makeStyles(isDarkMode, colors).continueBtn} onPress={handleContinue} activeOpacity={0.85} disabled={submitting}>
+                    <Text style={makeStyles(isDarkMode, colors).continueBtnText}>
+                        {submitting ? t('common.please_wait', 'Please wait...') : t('meetup.continue', 'Continue')}
+                    </Text>
                     <Ionicons name="arrow-forward" size={18} color="#fff" />
                 </TouchableOpacity>
             </View>
