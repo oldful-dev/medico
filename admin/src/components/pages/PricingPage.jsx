@@ -12,6 +12,7 @@ const CATEGORIES = [
     { value: "DIAGNOSTICS_FITNESS", label: "📊 Diagnostics & Fitness" },
     { value: "TOURS_TRAVEL", label: "✈️ Tours & Travel" },
     { value: "CARE", label: "🏥 Care" },
+    { value: "MEDICAL_TOURISM", label: "🌍 Medical Tourism" },
 ];
 
 // Categories that get their own highlighted, explained pricing block instead

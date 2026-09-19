@@ -17,7 +17,7 @@ const FEE_FIELDS = ['serviceFee', 'bookingFee', 'platformFee', 'convenienceFee',
 // every service in it; a specific service can still get its own basePrice
 // on its own admin page (Home Essentials / Diagnostic & Fitness / etc.)
 // without needing a separate ServiceCharge row.
-const VALID_CATEGORIES = ['CARE', 'DIAGNOSTICS_FITNESS', 'HOME_ESSENTIALS', 'TOURS_TRAVEL'];
+const VALID_CATEGORIES = ['CARE', 'DIAGNOSTICS_FITNESS', 'HOME_ESSENTIALS', 'TOURS_TRAVEL', 'MEDICAL_TOURISM'];
 
 // GET /api/admin/service-charges
 const getServiceCharges = async (req, res, next) => {

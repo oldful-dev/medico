@@ -9,24 +9,25 @@ datasource db {
 }
 
 model Admin {
-  id              String         @id @default(uuid())
-  name            String
-  email           String         @unique
-  phone           String?
-  passwordHash    String
-  role            AdminRole      @default(CITY_ADMIN)
-  cityId          String?
-  isActive        Boolean        @default(true)
-  isStaffProfile  Boolean        @default(false)
-  lastLoginAt     DateTime?
-  refreshToken    String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  profileImageUrl String?
-  documentsJson   Json?
-  city            City?          @relation(fields: [cityId], references: [id])
-  auditLogs       AuditLog[]
-  sessions        AdminSession[]
+  id                              String                  @id @default(uuid())
+  name                            String
+  email                           String                  @unique
+  phone                           String?
+  passwordHash                    String
+  role                            AdminRole               @default(CITY_ADMIN)
+  cityId                          String?
+  isActive                        Boolean                 @default(true)
+  isStaffProfile                  Boolean                 @default(false)
+  lastLoginAt                     DateTime?
+  refreshToken                    String?
+  createdAt                       DateTime                @default(now())
+  updatedAt                       DateTime                @updatedAt
+  profileImageUrl                 String?
+  documentsJson                   Json?
+  city                            City?                   @relation(fields: [cityId], references: [id])
+  auditLogs                       AuditLog[]
+  sessions                        AdminSession[]
+  assignedMedicalTourismEnquiries MedicalTourismEnquiry[]
 
   @@index([name, email, role, isActive])
   @@map("admins")
@@ -238,29 +239,29 @@ model Service {
 }
 
 model Booking {
-  id                 String         @id @default(uuid())
-  bookingCode        String         @unique
-  userId             String
-  serviceId          String
-  cityId             String
-  caregiverId        String?
-  scheduledDate      DateTime
-  scheduledTime      String?
-  addressLine        String?
-  latitude           Float?
-  longitude          Float?
-  symptoms           String[]
-  doctorType         String?
-  prescriptionUrl    String?
-  staffType          String?
-  shiftDuration      ShiftDuration?
-  startDate          DateTime?
-  endDate            DateTime?
-  requirements       String[]
-  pickupAddress      String?
-  dropAddress        String?
-  vehicleType        String?
-  amount             Float          @default(0)
+  id                    String                 @id @default(uuid())
+  bookingCode           String                 @unique
+  userId                String
+  serviceId             String
+  cityId                String
+  caregiverId           String?
+  scheduledDate         DateTime
+  scheduledTime         String?
+  addressLine           String?
+  latitude              Float?
+  longitude             Float?
+  symptoms              String[]
+  doctorType            String?
+  prescriptionUrl       String?
+  staffType             String?
+  shiftDuration         ShiftDuration?
+  startDate             DateTime?
+  endDate               DateTime?
+  requirements          String[]
+  pickupAddress         String?
+  dropAddress           String?
+  vehicleType           String?
+  amount                Float                  @default(0)
   // Fee split captured at booking time.
   //   serviceFee      = provider/vendor/diagnostic charge
   //   ayuxaBookingFee = Ayuxa's fee for facilitating/managing the booking
@@ -269,31 +270,64 @@ model Booking {
   //   deliveryFee     = collection / delivery / logistics charge
   //   taxAmount       = GST on whatever is taxable for this service type
   // amount == serviceFee + ayuxaBookingFee + deliveryFee + taxAmount - discount
-  serviceFee         Float          @default(0) @map("service_fee")
-  ayuxaBookingFee    Float          @default(0) @map("ayuxa_booking_fee")
-  deliveryFee        Float          @default(0) @map("delivery_fee")
-  taxAmount          Float          @default(0) @map("tax_amount")
-  feeBreakdown       Json?          @map("fee_breakdown") // full itemised snapshot for audit
-  status             BookingStatus  @default(PENDING)
-  adminNotes         String?
-  isEscalated        Boolean        @default(false)
-  isSLABreached      Boolean        @default(false)
-  slaDeadline        DateTime?
-  formDataJson       Json?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  paymentStatus      PaymentStatus  @default(PENDING)
-  servicePersonName  String?
-  servicePersonNotes String?
-  servicePersonPhone String?
-  caregiver          Caregiver?     @relation(fields: [caregiverId], references: [id])
-  city               City           @relation(fields: [cityId], references: [id])
-  service            Service        @relation(fields: [serviceId], references: [id])
-  user               User           @relation(fields: [userId], references: [id])
-  labOrders          LabOrder[]
-  payments           Payment[]
+  serviceFee            Float                  @default(0) @map("service_fee")
+  ayuxaBookingFee       Float                  @default(0) @map("ayuxa_booking_fee")
+  deliveryFee           Float                  @default(0) @map("delivery_fee")
+  taxAmount             Float                  @default(0) @map("tax_amount")
+  feeBreakdown          Json?                  @map("fee_breakdown") // full itemised snapshot for audit
+  status                BookingStatus          @default(PENDING)
+  adminNotes            String?
+  isEscalated           Boolean                @default(false)
+  isSLABreached         Boolean                @default(false)
+  slaDeadline           DateTime?
+  formDataJson          Json?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  paymentStatus         PaymentStatus          @default(PENDING)
+  servicePersonName     String?
+  servicePersonNotes    String?
+  servicePersonPhone    String?
+  caregiver             Caregiver?             @relation(fields: [caregiverId], references: [id])
+  city                  City                   @relation(fields: [cityId], references: [id])
+  service               Service                @relation(fields: [serviceId], references: [id])
+  user                  User                   @relation(fields: [userId], references: [id])
+  labOrders             LabOrder[]
+  payments              Payment[]
+  medicalTourismEnquiry MedicalTourismEnquiry?
 
   @@map("bookings")
+}
+
+// Extra tracking Medical Tourism enquiries need beyond a normal Booking
+// (coordinator assignment, follow-up date, a pipeline more granular than
+// BookingStatus) — kept in its own 1:1 table instead of adding these to the
+// shared Booking/BookingStatus model, which every other service type also
+// uses and whose status dropdown/logic would otherwise need to account for
+// stages ("Contacted", "Documents Requested") meaningless to a home visit.
+model MedicalTourismEnquiry {
+  id                    String               @id @default(uuid())
+  bookingId             String               @unique
+  status                MedicalTourismStatus @default(NEW)
+  assignedCoordinatorId String?
+  internalNotes         String?
+  followUpDate          DateTime?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  booking               Booking              @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  assignedCoordinator   Admin?               @relation(fields: [assignedCoordinatorId], references: [id])
+
+  @@map("medical_tourism_enquiries")
+}
+
+enum MedicalTourismStatus {
+  NEW
+  PAYMENT_PENDING
+  PAID
+  UNDER_REVIEW
+  CONTACTED
+  DOCUMENTS_REQUESTED
+  CONSULTATION_SCHEDULED
+  CLOSED
 }
 
 model Caregiver {
@@ -1153,13 +1187,13 @@ model AppMessage {
 //     DISMISSED_ONCE -- 24h later, Dismiss -->    DISMISSED_FINAL (never shown again)
 //     VIEWED/(no row) -- OK / Agree -->           ACKNOWLEDGED ("Completed", never shown again)
 model AppMessageDismissal {
-  id              String   @id @default(uuid())
-  userId          String   @map("user_id")
-  appMessageId    String   @map("app_message_id")
-  messageVersion  String   @map("message_version") @db.VarChar(20)
-  status          String   @default("VIEWED") @db.VarChar(20) // VIEWED | DISMISSED_ONCE | DISMISSED_FINAL | ACKNOWLEDGED
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  appMessageId     String   @map("app_message_id")
+  messageVersion   String   @map("message_version") @db.VarChar(20)
+  status           String   @default("VIEWED") @db.VarChar(20) // VIEWED | DISMISSED_ONCE | DISMISSED_FINAL | ACKNOWLEDGED
   firstDismissedAt DateTime @default(now()) @map("first_dismissed_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   appMessage AppMessage @relation(fields: [appMessageId], references: [id], onDelete: Cascade)

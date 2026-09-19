@@ -221,6 +221,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/admin/service-charges', serviceChargeRoutes);
 app.use('/api/admin/coupons', couponRoutes);
 app.use('/api/admin/referrals', referralRoutes.adminRouter);
+app.use('/api/admin/medical-tourism', require('./routes/medicalTourism.routes'));
 
 // Admin
 app.use('/api/admin', adminRoutes);

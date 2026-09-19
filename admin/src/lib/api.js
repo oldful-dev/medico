@@ -488,6 +488,13 @@ export const serviceChargeAPI = {
     delete: (id) => api.delete(`/admin/service-charges/${id}`),
 };
 
+// ── Medical Tourism Enquiries ─────────────────────────
+export const medicalTourismAPI = {
+    getEnquiries: (params) => api.get('/admin/medical-tourism/enquiries', { params }),
+    getEnquiryById: (id) => api.get(`/admin/medical-tourism/enquiries/${id}`),
+    updateEnquiry: (id, data) => api.put(`/admin/medical-tourism/enquiries/${id}`, data),
+};
+
 // ── Coupons / Promotions ─────────────────────────────
 export const couponAPI = {
     getAll: (params) => api.get('/admin/coupons', { params }),

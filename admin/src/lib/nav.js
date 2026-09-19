@@ -33,6 +33,7 @@ export const NAV_SECTIONS = [
             { id: "quick-services", href: "/quick-services", label: "Quick Services", icon: Zap, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "home-essentials", href: "/home-essentials", label: "Home Essential", icon: HeartPulse, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "diagnostic-fitness", href: "/diagnostic-fitness", label: "Diagnostic & Fitness", icon: HeartPulse, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
+            { id: "medical-tourism", href: "/medical-tourism", label: "Medical Tourism", icon: Globe, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "bookings", href: "/bookings", label: "Booking Management", icon: CalendarCheck, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "server-ui", href: "/server-ui", label: "Server UI Configuration", icon: Sliders, roles: ['SUPER_ADMIN'] },
             { id: "store", href: "/store", label: "Wellness Store", icon: ShoppingBag, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },

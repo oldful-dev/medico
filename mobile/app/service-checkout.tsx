@@ -829,7 +829,7 @@ export default function ServiceCheckoutScreen() {
         } catch {}
       }
 
-      if (!params.meetupId && !selectedAddress && !payloadAddressLine) {
+      if (params.hideLocation !== "true" && !params.meetupId && !selectedAddress && !payloadAddressLine) {
         triggerAlert(
           t("service_checkout.address_required_title"),
           t("service_checkout.address_required_msg"),
@@ -1747,9 +1747,12 @@ export default function ServiceCheckoutScreen() {
               />
             )}
 
-            {/* Service Address — hide for meetup */}
+            {/* Service Address — hide for meetup, or when the screen explicitly
+                has no location component (e.g. Medical Tourism — an
+                international consultation enquiry, not a home visit) */}
             {!params.meetupId &&
-              (params.isDynamic === "true" && params.hideLocation !== "true" ? (
+              params.hideLocation !== "true" &&
+              (params.isDynamic === "true" ? (
                 <AddressPickerSection
                   selectedAddress={selectedAddress}
                   onAddressChange={(addr) => {
