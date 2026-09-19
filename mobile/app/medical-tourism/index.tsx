@@ -299,18 +299,21 @@ export default function MedicalTourismScreen() {
                   {t("medical_tourism.patient_information", "Patient Information")}
                 </Text>
                 <FormInput
+                  isDarkMode={isDarkMode}
                   placeholder={t("medical_tourism.full_name", "Full Name") + " *"}
                   value={patientName}
                   onChangeText={setPatientName}
                   style={dynamicStyles.formInputSpacing}
                 />
                 <FormInput
+                  isDarkMode={isDarkMode}
                   placeholder={t("medical_tourism.country", "Country") + " *"}
                   value={country}
                   onChangeText={setCountry}
                   style={dynamicStyles.formInputSpacing}
                 />
                 <FormInput
+                  isDarkMode={isDarkMode}
                   placeholder={t("medical_tourism.mobile_number", "Mobile Number (with country code)") + " *"}
                   value={mobileNumber}
                   onChangeText={setMobileNumber}
@@ -318,6 +321,7 @@ export default function MedicalTourismScreen() {
                   style={dynamicStyles.formInputSpacing}
                 />
                 <FormInput
+                  isDarkMode={isDarkMode}
                   placeholder={t("medical_tourism.email", "Email Address") + " *"}
                   value={email}
                   onChangeText={setEmail}
@@ -346,12 +350,14 @@ export default function MedicalTourismScreen() {
                 </View>
 
                 <FormInput
+                  isDarkMode={isDarkMode}
                   placeholder={t("medical_tourism.preferred_language", "Preferred Language (optional)")}
                   value={preferredLanguage}
                   onChangeText={setPreferredLanguage}
                   style={dynamicStyles.formInputSpacingTop}
                 />
                 <FormInput
+                  isDarkMode={isDarkMode}
                   placeholder={t("medical_tourism.time_zone", "Time Zone (optional)")}
                   value={timeZone}
                   onChangeText={setTimeZone}
@@ -378,12 +384,14 @@ export default function MedicalTourismScreen() {
                   maxLength={500}
                 />
                 <FormInput
+                  isDarkMode={isDarkMode}
                   placeholder={t("medical_tourism.diagnosis", "Diagnosis (if known)")}
                   value={diagnosis}
                   onChangeText={setDiagnosis}
                   style={dynamicStyles.formInputSpacingTop}
                 />
                 <FormInput
+                  isDarkMode={isDarkMode}
                   placeholder={t("medical_tourism.required_treatment", "Required Treatment / Specialty")}
                   value={requiredTreatment}
                   onChangeText={setRequiredTreatment}
@@ -403,6 +411,7 @@ export default function MedicalTourismScreen() {
                   maxLength={500}
                 />
                 <FormInput
+                  isDarkMode={isDarkMode}
                   placeholder={t("medical_tourism.treatment_timeline", "Preferred Treatment Timeline")}
                   value={treatmentTimeline}
                   onChangeText={setTreatmentTimeline}

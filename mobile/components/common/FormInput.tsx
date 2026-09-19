@@ -19,6 +19,7 @@ interface FormInputProps {
     multiline?: boolean;
     maxLength?: number;
     autoFocus?: boolean;
+    isDarkMode?: boolean;
 }
 
 export default function FormInput({
@@ -35,16 +36,18 @@ export default function FormInput({
     multiline = false,
     maxLength,
     autoFocus = false,
+    isDarkMode = false,
 }: FormInputProps) {
+    const themedStyles = makeStyles(isDarkMode);
     return (
-        <View style={[styles.container, style]}>
+        <View style={[themedStyles.container, style]}>
             {prefix ? (
-                <Text style={styles.prefix}>{prefix}</Text>
+                <Text style={themedStyles.prefix}>{prefix}</Text>
             ) : null}
             <TextInput
-                style={[styles.input, { fontSize }, multiline && { textAlignVertical: 'top', paddingTop: 10 }]}
+                style={[themedStyles.input, { fontSize }, multiline && { textAlignVertical: 'top', paddingTop: 10 }]}
                 placeholder={placeholder}
-                placeholderTextColor="rgba(2, 116, 63, 0.49)"
+                placeholderTextColor={isDarkMode ? 'rgba(148, 163, 184, 0.7)' : 'rgba(2, 116, 63, 0.49)'}
                 editable={editable}
                 keyboardType={keyboardType}
                 value={value}
@@ -54,14 +57,14 @@ export default function FormInput({
                 autoFocus={autoFocus}
             />
             {showChevron ? (
-                <Ionicons name="chevron-down" size={14} color="rgba(2, 116, 63, 0.49)" style={styles.chevron} />
+                <Ionicons name="chevron-down" size={14} color={isDarkMode ? '#94A3B8' : 'rgba(2, 116, 63, 0.49)'} style={themedStyles.chevron} />
             ) : null}
             {suffix}
         </View>
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     container: {
         minHeight: 55,
         borderWidth: 1,
@@ -70,26 +73,29 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 12,
-        backgroundColor: 'transparent',
-        // Figma shadow: 0px 4px 10px rgba(0,0,0,0.25)
+        // A transparent background with the Figma-spec shadow rendered as a
+        // dark halo/double-box around the field on the app's cream/off-white
+        // screens (only real usage today: medical-tourism/index.tsx) — a
+        // solid surface plus a much softer shadow reads as normal elevation.
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: isDarkMode ? 0 : 0.08,
+        shadowRadius: 4,
+        elevation: isDarkMode ? 0 : 2,
     },
     prefix: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontWeight: '600',
         fontSize: 12,
-        color: '#555555',
+        color: isDarkMode ? '#94A3B8' : '#555555',
         marginRight: 6,
     },
     input: {
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontWeight: '600',
-        color: '#02743F',
+        color: isDarkMode ? '#F1F5F9' : '#02743F',
         height: '100%',
     },
     chevron: {
