@@ -316,7 +316,7 @@ const FALLBACK_CONFIG: AppConfig = {
               icon_key: "ess_ac_repair",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png",
-              route: "/paper-legal",
+              route: "/tech-helper",
               visible: true,
               sort_order: 2,
             },

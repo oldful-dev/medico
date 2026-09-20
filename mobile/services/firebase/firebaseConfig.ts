@@ -98,7 +98,7 @@ const RC_DEFAULT_HOME_CONFIG = JSON.stringify({
                 // 1. Bill Payment
                 { id: 'bills',        label: 'Bill\nPayment',              icon: '056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png', route: '/bill-payment',        enabled: true, sort_order: 1 },
                 // 2. Tech Help
-                { id: 'tech_helper',  label: 'Tech\nHelp',                 icon: 'fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/paper-legal',         enabled: true, sort_order: 2 },
+                { id: 'tech_helper',  label: 'Tech\nHelp',                 icon: 'fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/tech-helper',         enabled: true, sort_order: 2 },
                 // 3. Paperwork
                 { id: 'bank',         label: 'Paper-\nwork',               icon: '33ede0e57be708b9775957c3ecec7013b0a56c6d.png', route: '/bank-paperwork',      enabled: true, sort_order: 3 },
                 // 4. Appliance Repair
