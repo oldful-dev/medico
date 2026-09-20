@@ -14,6 +14,16 @@ const isEmoji = (str) => {
     return clean.length <= 4 && !clean.includes('.') && !clean.includes('/') && !clean.includes(':');
 };
 
+// Dynamic services all render through one of two shared catch-all screens —
+// Home Essentials gets its own (it has extra checkoutGroup-driven pricing
+// logic the generic one doesn't), everything else uses the generic one.
+// Keep in sync with mobile/app/dynamic/home-essentials/[slug].tsx and
+// mobile/app/dynamic/service/[slug].tsx.
+const dynamicRouteFor = (category, slug) =>
+    category === "HOME_ESSENTIALS"
+        ? `/dynamic/home-essentials/${slug}`
+        : `/dynamic/service/${slug}`;
+
 const DEFAULT_FORM_FIELDS = [
     {
         id: "benefits",
@@ -102,6 +112,10 @@ export default function DynamicServiceFormModal({
     const [form, setForm] = useState(buildEmptyForm(category, defaultSortOrder));
     const [formFields, setFormFields] = useState(DEFAULT_FORM_FIELDS);
     const [serviceCategories, setServiceCategories] = useState([]);
+    // Once the admin manually edits the Route field, stop auto-filling it —
+    // auto-fill should never fight a deliberate override. Reset whenever the
+    // modal opens for a (possibly different) service.
+    const [routeManuallyEdited, setRouteManuallyEdited] = useState(false);
 
     // Categories are scoped per-module (Home Essentials/Diagnostic & Fitness/
     // Tours & Travel each manage their own) — reload whenever the modal opens
@@ -163,10 +177,17 @@ export default function DynamicServiceFormModal({
             } else {
                 setFormFields(DEFAULT_FORM_FIELDS);
             }
+            // Editing an existing service: treat whatever route it already
+            // has (even if blank) as a deliberate choice — never auto-
+            // overwrite a saved service's route just because its slug field
+            // gets touched.
+            setRouteManuallyEdited(true);
         } else {
             setIconType("emoji");
             setForm(buildEmptyForm(category, defaultSortOrder));
             setFormFields(DEFAULT_FORM_FIELDS);
+            // Brand-new service: let the route auto-fill as the slug is typed.
+            setRouteManuallyEdited(false);
         }
     }, [open, editingService, category, defaultSortOrder]);
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -222,7 +243,7 @@ export default function DynamicServiceFormModal({
         }
 
         try {
-            const routeVal = form.route || `/dynamic-service/${form.slug}`;
+            const routeVal = form.route || dynamicRouteFor(form.category, form.slug);
 
             const serializedFields = formFields.map((f, index) => ({
                 id: f.id || `field_${index}`,
@@ -441,7 +462,21 @@ export default function DynamicServiceFormModal({
                                         disabled={!!editingService && !editingService.isDynamic}
                                         title={!!editingService && !editingService.isDynamic ? 'Slug is locked for Core (hardcoded) services — it is baked into the mobile app and cannot be changed without a new app release.' : undefined}
                                         style={!!editingService && !editingService.isDynamic ? { opacity: 0.7, cursor: 'not-allowed' } : undefined}
-                                        onChange={e => setForm({ ...form, slug: e.target.value })}
+                                        onChange={e => {
+                                            const newSlug = e.target.value;
+                                            setForm(prev => ({
+                                                ...prev,
+                                                slug: newSlug,
+                                                // Auto-fill the route from the slug for Dynamic services,
+                                                // as long as the admin hasn't typed their own route yet —
+                                                // still fully editable below, this just saves the manual
+                                                // step and avoids leftover values (e.g. from a route picked
+                                                // for a previous edit) silently pointing at the wrong page.
+                                                route: (prev.isDynamic && !routeManuallyEdited)
+                                                    ? dynamicRouteFor(prev.category, newSlug)
+                                                    : prev.route,
+                                            }));
+                                        }}
                                     />
                                     {!!editingService && !editingService.isDynamic && (
                                         <p className="text-xs text-muted" style={{ margin: '4px 0 0' }}>
@@ -455,7 +490,16 @@ export default function DynamicServiceFormModal({
                                         className="form-input"
                                         style={{ cursor: "pointer" }}
                                         value={form.isDynamic ? "dynamic" : "core"}
-                                        onChange={e => setForm({ ...form, isDynamic: e.target.value === "dynamic" })}
+                                        onChange={e => {
+                                            const nowDynamic = e.target.value === "dynamic";
+                                            setForm(prev => ({
+                                                ...prev,
+                                                isDynamic: nowDynamic,
+                                                route: (nowDynamic && !routeManuallyEdited && prev.slug)
+                                                    ? dynamicRouteFor(prev.category, prev.slug)
+                                                    : prev.route,
+                                            }));
+                                        }}
                                     >
                                         <option value="core">Core Built-in Page (Native Code / Direct Route)</option>
                                         <option value="dynamic">Dynamic SDUI Page (Form Builder / SDUI)</option>
@@ -466,9 +510,17 @@ export default function DynamicServiceFormModal({
                                 <label className="form-label">Service Route Path (Optional)</label>
                                 <RouteSelector
                                     value={form.route}
-                                    onChange={val => setForm({ ...form, route: val })}
-                                    placeholder="Auto: /dynamic-service/[slug]"
+                                    onChange={val => {
+                                        setRouteManuallyEdited(true);
+                                        setForm({ ...form, route: val });
+                                    }}
+                                    placeholder={form.isDynamic ? `Auto: ${dynamicRouteFor(form.category, form.slug || "[slug]")}` : "e.g. /my-service"}
                                 />
+                                {form.isDynamic && !routeManuallyEdited && (
+                                    <p className="text-xs text-muted" style={{ margin: "4px 0 0" }}>
+                                        Auto-filled from the slug — edit above to override.
+                                    </p>
+                                )}
                             </div>
                         </div>
 
