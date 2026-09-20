@@ -16,24 +16,12 @@ export const PRESET_SYSTEM_ROUTES = [
   { label: "Medical Equipment", value: "/medical-equipment" },
   { label: "Meal & Tiffin Service", value: "/meal-service" },
   { label: "Hospital Trip & Visit", value: "/hospital-trip" },
-  // Home Essentials services all render through one shared dynamic screen
-  // now — there's no dedicated route file per service any more, so a NEW
-  // Home Essentials service should get /home-essentials-dynamic/<its-slug>
-  // (set automatically from the slug field), not a preset from this list.
-  // These are kept only so existing links/deep-links referencing the old
-  // paths still show a readable label here; don't pick these for a new
-  // service.
-  { label: "Appliance Repair (legacy path)", value: "/appliance-repair" },
-  { label: "Plumbing & Electrical (legacy path)", value: "/plumbing-electrical" },
-  { label: "Deep Cleaning (legacy path)", value: "/deep-cleaning" },
-  { label: "Driver & Cab (legacy path)", value: "/driving-cab" },
-  { label: "Bill Payment (legacy path)", value: "/bill-payment" },
-  { label: "Bank & Paperwork (legacy path)", value: "/bank-paperwork" },
-  { label: "Grocery Run (legacy path)", value: "/grocery-run" },
-  { label: "Paper & Legal Helper (legacy path)", value: "/paper-legal" },
-  { label: "Anything Else Request (legacy path)", value: "/anything-else" },
-  { label: "Washroom Sanitation (legacy path)", value: "/sanitisation" },
-  { label: "Tech Helper (legacy path)", value: "/tech-helper" },
+  // Home Essentials services are fully dynamic now — no per-service route
+  // presets needed here at all. Each one's real route comes straight from
+  // its live Service row via mapServicesToRoutes() below (dbRoutes), which
+  // this dropdown already merges in automatically. A new Home Essentials
+  // service just needs its `route` field set to
+  // /dynamic/home-essentials/<its-slug> when created — nothing to add here.
   { label: "Trip & Travels", value: "/trip-travels" },
   { label: "Local Meetups", value: "/meetup" },
   { label: "Insurance", value: "/insurance" },

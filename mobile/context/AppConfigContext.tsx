@@ -305,7 +305,7 @@ const FALLBACK_CONFIG: AppConfig = {
               icon_key: "ess_bills",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png",
-              route: "/home-essentials-dynamic/bill-payment",
+              route: "/dynamic/home-essentials/bill-payment",
               visible: true,
               sort_order: 1,
             },
@@ -316,7 +316,7 @@ const FALLBACK_CONFIG: AppConfig = {
               icon_key: "ess_ac_repair",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png",
-              route: "/home-essentials-dynamic/tech-helper",
+              route: "/dynamic/home-essentials/tech-helper",
               visible: true,
               sort_order: 2,
             },
@@ -327,7 +327,7 @@ const FALLBACK_CONFIG: AppConfig = {
               icon_key: "ess_bank",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png",
-              route: "/home-essentials-dynamic/paper-work",
+              route: "/dynamic/home-essentials/paper-work",
               visible: true,
               sort_order: 3,
             },
@@ -338,7 +338,7 @@ const FALLBACK_CONFIG: AppConfig = {
               icon_key: "ess_ac_repair",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png",
-              route: "/home-essentials-dynamic/appliances-repair-",
+              route: "/dynamic/home-essentials/appliances-repair-",
               visible: true,
               sort_order: 4,
             },
@@ -349,7 +349,7 @@ const FALLBACK_CONFIG: AppConfig = {
               icon_key: "ess_cleaning",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png",
-              route: "/home-essentials-dynamic/depp-clean",
+              route: "/dynamic/home-essentials/depp-clean",
               visible: true,
               sort_order: 5,
             },
@@ -360,7 +360,7 @@ const FALLBACK_CONFIG: AppConfig = {
               icon_key: "ess_cleaning",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png",
-              route: "/home-essentials-dynamic/washroom-sanitization",
+              route: "/dynamic/home-essentials/washroom-sanitization",
               visible: true,
               sort_order: 6,
             },
@@ -371,7 +371,7 @@ const FALLBACK_CONFIG: AppConfig = {
               icon_key: "ess_plumbing",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png",
-              route: "/home-essentials-dynamic/plumbing",
+              route: "/dynamic/home-essentials/plumbing",
               visible: true,
               sort_order: 7,
             },
@@ -382,7 +382,7 @@ const FALLBACK_CONFIG: AppConfig = {
               icon_key: "ess_driver",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png",
-              route: "/home-essentials-dynamic/driving-cab",
+              route: "/dynamic/home-essentials/driving-cab",
               visible: true,
               sort_order: 8,
             },

@@ -76,7 +76,7 @@ export default function AllAyuxaServicesScreen() {
             label2: "",
             translationKey: "", // fallback to label1
             iconEmoji: sv.icon || "🩺",
-            route: sv.route || `/dynamic-service/${sv.slug}`,
+            route: sv.route || `/dynamic/service/${sv.slug}`,
             isDynamic: true
         }));
 

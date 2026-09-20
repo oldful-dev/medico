@@ -59,7 +59,7 @@ const isEmoji = (str?: string) => {
 const resolveRoute = (route?: string, id?: string) => {
   if (!route) return '/';
   let clean = route.toLowerCase().trim();
-  if (clean.includes('/dynamic-service/')) {
+  if (clean.includes('/dynamic/service/')) {
     return route;
   }
   const cleanId = id ? id.toLowerCase().trim() : '';
@@ -333,7 +333,7 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
       id: sv.slug,
       label: sv.name,
       icon: sv.icon || '🩺',
-      route: sv.route || `/dynamic-service/${sv.slug}`,
+      route: sv.route || `/dynamic/service/${sv.slug}`,
       enabled: true,
       categoryId: sv.categoryId || null,
     }));
