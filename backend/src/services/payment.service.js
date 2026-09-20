@@ -495,6 +495,7 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                 // Delhivery fulfillment — that used to happen silently, with no
                 // fulfillmentError ever recorded since attemptFulfillment was
                 // never even reached.
+                let invoicePdfUrl = null; // hoisted for block C (WhatsApp) below
                 if (createdInvoice) {
                 try {
                     const pdfBuffer = await generateInvoicePDF({
@@ -513,6 +514,7 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                     });
 
                     const { url, storagePath } = await uploadFile(pdfBuffer, 'documents/invoices', `invoice-${invoice.invoiceNumber}.pdf`);
+                    invoicePdfUrl = url;
 
                     // pdfUrl is a signed GCS URL (max 7-day expiry) — storagePath
                     // is stable and lets it be re-signed later via
@@ -650,17 +652,22 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                 }
 
                 // C. WhatsApp / SMS Receipt (exactly once!)
+                // PAYMENT_RECEIVED now requires a document (GST invoice PDF) —
+                // skip the WhatsApp send (falling straight to SMS) if the PDF
+                // upload above failed, rather than sending a template call
+                // that Fast2SMS will reject for missing media.
                 if (createdInvoice && payment.user?.phone) {
                     const { sendPaymentReceived } = require('./whatsapp');
-                    const waSuccess = await sendPaymentReceived({
+                    const waSuccess = invoicePdfUrl ? await sendPaymentReceived({
                         phone: payment.user.phone,
                         name: payment.user.name,
                         amount: parseFloat(payment.amount).toFixed(2),
+                        invoicePdfUrl,
                         userId: payment.userId,
                     }).catch(err => {
                         logger.warn('[PaymentService] WA PAYMENT_RECEIVED failed (non-fatal):', err.message);
                         return false;
-                    });
+                    }) : false;
 
                     if (!waSuccess && payment.user.smsEnabled !== false) {
                         const { sendSMS } = require('./sms');

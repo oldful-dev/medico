@@ -32,26 +32,16 @@ const WHATSAPP_TEMPLATES = {
         docRequired: false,
         description: 'Service booking confirmed to client',
     },
+    // Re-approved on Fast2SMS with a document header (confirmed via portal:
+    // "payment_successful", msgId 20520, status Approved) — same messageId
+    // as before, so this is the same template, just now carrying a PDF slot.
+    // sendPaymentReceived() (router.js) passes invoicePdfUrl as mediaUrl.
     PAYMENT_RECEIVED: {
         waba: 'AYUXA',
         messageId: 20520,
         variables: 2,              // Var1=name, Var2=amount
         mediaRequired: false,
-        docRequired: false,
-        description: 'Payment successful receipt to client',
-    },
-    // PENDING Fast2SMS approval — do not call from payment.service.js until
-    // confirmed approved (same pattern as WELCOME_FLOW_V2 before it went
-    // live). Once approved, swap sendPaymentReceived's call in router.js
-    // to this template and pass mediaUrl: invoice.pdfUrl, so the GST
-    // invoice PDF attaches directly to the WhatsApp receipt instead of only
-    // linking out from email / the in-app Download Invoice button.
-    PAYMENT_RECEIVED_WITH_INVOICE: {
-        waba: 'AYUXA',
-        messageId: null,          // fill in once Fast2SMS assigns it
-        variables: 2,              // Var1=name, Var2=amount
-        mediaRequired: false,
-        docRequired: true,         // document header — invoice PDF
+        docRequired: true,         // document header — GST invoice PDF
         description: 'Payment successful receipt to client, with GST invoice PDF attached',
     },
     ORDER_CANCELLED: {

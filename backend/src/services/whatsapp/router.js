@@ -115,32 +115,18 @@ const sendBookingConfirmed = ({ phone, name, orderId, userId }) =>
     });
 
 /**
- * Payment received / receipt.
- * Template: PAYMENT_RECEIVED — Var1=name, Var2=amount
+ * Payment received / receipt, with the GST invoice PDF attached directly to
+ * the WhatsApp message (approved on Fast2SMS with a document header — see
+ * templates.js). invoicePdfUrl is required now that docRequired is true.
+ * Template: PAYMENT_RECEIVED — Var1=name, Var2=amount; document header required.
  */
-const sendPaymentReceived = ({ phone, name, amount, userId }) =>
+const sendPaymentReceived = ({ phone, name, amount, invoicePdfUrl, userId }) =>
     sendWhatsApp({
         template: 'PAYMENT_RECEIVED',
         mobile: phone,
         variables: [name || 'Customer', String(amount)],
-        userId,
-    });
-
-/**
- * Payment received / receipt, with the GST invoice PDF attached directly to
- * the WhatsApp message (instead of only linking out via email / in-app
- * Download Invoice). NOT LIVE YET — PAYMENT_RECEIVED_WITH_INVOICE is
- * pending Fast2SMS approval (messageId still null in templates.js).
- * payment.service.js should keep calling sendPaymentReceived until this is
- * confirmed approved, same as sendWelcomeFlowV2 before it went live.
- * Template: PAYMENT_RECEIVED_WITH_INVOICE — Var1=name, Var2=amount; document header required.
- */
-const sendPaymentReceivedWithInvoice = ({ phone, name, amount, invoicePdfUrl, userId }) =>
-    sendWhatsApp({
-        template: 'PAYMENT_RECEIVED_WITH_INVOICE',
-        mobile: phone,
-        variables: [name || 'Customer', String(amount)],
         mediaUrl: invoicePdfUrl,
+        docFilename: 'Invoice.pdf',
         userId,
     });
 
@@ -473,7 +459,6 @@ module.exports = {
     // Transactional — client (AYUXA)
     sendBookingConfirmed,
     sendPaymentReceived,
-    sendPaymentReceivedWithInvoice,
     sendOrderCancelled,
     sendPrescriptionReceived,
     sendLabReportReady,
