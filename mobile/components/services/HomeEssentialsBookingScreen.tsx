@@ -5,8 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Switch,
   ActivityIndicator,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { CustomAlertModal } from "@/components/common/CustomAlertModal";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -21,8 +23,16 @@ import { bookingService } from "@/services/api/bookingService";
 import ServiceDetailScreen from "@/components/services/ServiceDetailScreen";
 import CustomDateTimePicker from "@/components/common/CustomDateTimePicker";
 import ImageUploadBox from "@/components/common/ImageUploadBox";
+import DocumentUploadBox from "@/components/common/DocumentUploadBox";
 import { type AddressData } from "@/components/AddressPickerSection";
 import { apiClient } from "@/services/api/apiClient";
+
+// Field types already handled by their own dedicated block below
+// (benefits copy, address card, date picker, comments, photo upload) — any
+// OTHER type in formFieldsJson is rendered generically here instead of being
+// silently dropped. This is what makes the admin form-builder truthful for
+// Home Essentials: whatever field type is added there actually shows up.
+const HANDLED_FIELD_TYPES = new Set(["benefits", "address_picker", "datetime", "comments"]);
 
 interface HomeEssentialsBookingScreenProps {
   slug: string;
@@ -51,6 +61,17 @@ export default function HomeEssentialsBookingScreen({
     dbService?.subhead || dbService?.tagline || "Concierge Services";
   const checkoutGroup = dbService?.checkoutGroup || "D";
 
+  // Any admin-defined field beyond the fixed set (benefits/address/date/
+  // comments) — dropdown, radio, checkbox, text_input, file_upload, etc.
+  // Rendered generically below; never silently dropped.
+  const extraFields: any[] = React.useMemo(() => {
+    const sections = dbService?.formFieldsJson?.sections;
+    if (!Array.isArray(sections)) return [];
+    const fields = sections[0]?.fields;
+    if (!Array.isArray(fields)) return [];
+    return fields.filter((f: any) => f?.type && !HANDLED_FIELD_TYPES.has(f.type));
+  }, [dbService]);
+
   const {
     isReady,
     cityId,
@@ -67,6 +88,11 @@ export default function HomeEssentialsBookingScreen({
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [landmark, setLandmark] = useState("");
   const [comments, setComments] = useState("");
+  // Answers for any custom formFieldsJson fields beyond the fixed set
+  // (dropdown, radio, checkbox, file_upload, etc.) — keyed by field id.
+  const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
+  const setCustomAnswer = (fieldId: string, value: any) =>
+    setCustomAnswers((prev) => ({ ...prev, [fieldId]: value }));
   const [deliveryMethod, setDeliveryMethod] = useState<"online" | "home_visit">(
     "online",
   );
@@ -303,6 +329,12 @@ export default function HomeEssentialsBookingScreen({
     return 0;
   };
 
+  const isExtraFieldEmpty = (field: any) => {
+    const val = customAnswers[field.id];
+    if (field.type === "toggle") return false; // booleans are never "empty"
+    return val === undefined || val === null || val === "" || (Array.isArray(val) && val.length === 0);
+  };
+
   const isFormValid = React.useMemo(() => {
     if (!comments.trim()) return false;
     if (
@@ -312,6 +344,9 @@ export default function HomeEssentialsBookingScreen({
       return false;
     if (showDatePicker && !scheduledDate) return false;
     if (checkoutGroup === "B" && selectedImages.length === 0) return false;
+    for (const field of extraFields) {
+      if (field.required && isExtraFieldEmpty(field)) return false;
+    }
     return true;
   }, [
     comments,
@@ -321,6 +356,8 @@ export default function HomeEssentialsBookingScreen({
     scheduledDate,
     checkoutGroup,
     selectedImages,
+    extraFields,
+    customAnswers,
   ]);
 
   const handleBook = async () => {
@@ -383,6 +420,17 @@ export default function HomeEssentialsBookingScreen({
       return;
     }
 
+    // 5. Validate any custom admin-defined fields
+    for (const field of extraFields) {
+      if (field.required && isExtraFieldEmpty(field)) {
+        triggerAlert(
+          t("common.required", "Required"),
+          `${field.label || "This field"} is required.`,
+        );
+        return;
+      }
+    }
+
     if (!isReady) {
       triggerAlert(
         t("common.error", "Error"),
@@ -401,6 +449,21 @@ export default function HomeEssentialsBookingScreen({
           selectedImages,
           slug,
         );
+      }
+
+      // Upload any custom image_upload/file_upload fields
+      const resolvedCustomAnswers = { ...customAnswers };
+      for (const field of extraFields) {
+        if (
+          (field.type === "image_upload" || field.type === "file_upload") &&
+          Array.isArray(customAnswers[field.id]) &&
+          customAnswers[field.id].length > 0
+        ) {
+          resolvedCustomAnswers[field.id] = await mediaService.uploadMultipleMedia(
+            customAnswers[field.id],
+            slug,
+          );
+        }
       }
 
       // Booking location comes from the address the user actually
@@ -425,6 +488,7 @@ export default function HomeEssentialsBookingScreen({
           comments: comments.trim(),
           attachments: uploadedImageUrls,
           deliveryMethod: checkoutGroup === "C" ? deliveryMethod : undefined,
+          ...resolvedCustomAnswers,
         },
       };
 
@@ -585,6 +649,153 @@ export default function HomeEssentialsBookingScreen({
         </View>
       )}
 
+      {/* Custom admin-defined fields (formFieldsJson) beyond the fixed set */}
+      {extraFields.map((field: any) => (
+        <View key={field.id} style={styles.card}>
+          {field.type !== "info_banner" && field.type !== "toggle" && (
+            <Text style={styles.cardTitle}>
+              {field.label} {field.required ? "*" : ""}
+            </Text>
+          )}
+
+          {field.type === "text_input" && (
+            <TextInput
+              style={styles.textInput}
+              placeholder={field.placeholder || t("common.enter_here", "Enter here...")}
+              placeholderTextColor={isDarkMode ? "#64748B" : "#9CA3AF"}
+              value={customAnswers[field.id] || ""}
+              onChangeText={(val) => setCustomAnswer(field.id, val)}
+            />
+          )}
+
+          {field.type === "textarea" && (
+            <TextInput
+              style={styles.textArea}
+              placeholder={field.placeholder || t("common.enter_here", "Enter here...")}
+              placeholderTextColor={isDarkMode ? "#64748B" : "#9CA3AF"}
+              value={customAnswers[field.id] || ""}
+              onChangeText={(val) => setCustomAnswer(field.id, val)}
+              multiline
+              numberOfLines={3}
+            />
+          )}
+
+          {field.type === "number_input" && (
+            <TextInput
+              style={styles.textInput}
+              placeholder={field.placeholder || t("common.enter_here", "Enter here...")}
+              placeholderTextColor={isDarkMode ? "#64748B" : "#9CA3AF"}
+              keyboardType="numeric"
+              value={customAnswers[field.id] || ""}
+              onChangeText={(val) => {
+                let cleaned = val.replace(/[^0-9.-]/g, "");
+                cleaned = cleaned.replace(/(?!^)-/g, "");
+                const firstDot = cleaned.indexOf(".");
+                if (firstDot !== -1) {
+                  cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+                }
+                setCustomAnswer(field.id, cleaned);
+              }}
+            />
+          )}
+
+          {field.type === "phone_input" && (
+            <TextInput
+              style={styles.textInput}
+              placeholder={field.placeholder || t("common.enter_phone", "Enter 10-digit phone number")}
+              placeholderTextColor={isDarkMode ? "#64748B" : "#9CA3AF"}
+              keyboardType="phone-pad"
+              maxLength={15}
+              value={customAnswers[field.id] || ""}
+              onChangeText={(val) => setCustomAnswer(field.id, val)}
+            />
+          )}
+
+          {(field.type === "dropdown" || field.type === "radio") && (
+            <View style={styles.radioList}>
+              {(field.options || []).map((opt: any) => {
+                const isSelected = customAnswers[field.id] === opt.id;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={styles.radioOption}
+                    onPress={() => setCustomAnswer(field.id, opt.id)}
+                  >
+                    <View style={[styles.radioOutline, isSelected && styles.radioOutlineActive]}>
+                      {isSelected && <View style={styles.radioDot} />}
+                    </View>
+                    <Text style={styles.optionLabel}>{opt.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {field.type === "checkbox" && (
+            <View style={styles.radioList}>
+              {(field.options || []).map((opt: any) => {
+                const current = Array.isArray(customAnswers[field.id]) ? customAnswers[field.id] : [];
+                const isSelected = current.includes(opt.id);
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={styles.radioOption}
+                    onPress={() => {
+                      const next = isSelected
+                        ? current.filter((x: string) => x !== opt.id)
+                        : [...current, opt.id];
+                      setCustomAnswer(field.id, next);
+                    }}
+                  >
+                    <View style={[styles.checkboxOutline, isSelected && styles.checkboxOutlineActive]}>
+                      {isSelected && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+                    </View>
+                    <Text style={styles.optionLabel}>{opt.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {field.type === "toggle" && (
+            <View style={styles.toggleFieldRow}>
+              <Text style={styles.optionLabel}>{field.placeholder || field.label}</Text>
+              <Switch
+                value={!!customAnswers[field.id]}
+                onValueChange={(val) => setCustomAnswer(field.id, val)}
+                trackColor={{ false: "#E5E7EB", true: colors.primary }}
+                thumbColor={customAnswers[field.id] ? "#FFFFFF" : "#F4F3F1"}
+              />
+            </View>
+          )}
+
+          {field.type === "image_upload" && (
+            <ImageUploadBox
+              title={field.placeholder || t("service_detail.upload_optional_photos", "Upload Photos (Optional)")}
+              subtitle={t("service_detail.image_upload_subtitle", "JPG, PNG up to 10MB")}
+              onImagesChange={(images) => setCustomAnswer(field.id, images)}
+              maxImages={3}
+            />
+          )}
+
+          {field.type === "file_upload" && (
+            <DocumentUploadBox
+              title={field.placeholder || t("service_detail.upload_document", "Upload Document (Optional)")}
+              subtitle={t("service_detail.document_upload_subtitle", "PDF up to 10MB")}
+              onFilesChange={(files) => setCustomAnswer(field.id, files)}
+              maxFiles={1}
+            />
+          )}
+
+          {field.type === "info_banner" && (
+            <View style={styles.infoBanner}>
+              <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+              <Text style={styles.infoText}>{field.placeholder || field.label}</Text>
+            </View>
+          )}
+        </View>
+      ))}
+
       {/* Date & Time Picker */}
       {showDatePicker && (
         <View style={styles.card}>
@@ -706,5 +917,81 @@ const makeStyles = (isDarkMode: boolean, colors: any) =>
     toggleBtnTextActive: {
       color: colors.primary,
       fontFamily: Fonts.semiBold,
+    },
+    textInput: {
+      fontFamily: Fonts.regular,
+      fontSize: 13,
+      borderWidth: 1,
+      borderColor: isDarkMode ? "#334155" : "#E5E7EB",
+      backgroundColor: isDarkMode ? "#0F172A" : "#FFFFFF",
+      color: isDarkMode ? "#F3F4F6" : "#1F2937",
+      borderRadius: 8,
+      padding: 10,
+      height: 40,
+    },
+    radioList: {
+      flexDirection: "column",
+      gap: 10,
+    },
+    radioOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    radioOutline: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: isDarkMode ? "#475569" : "#D1D5DB",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    radioOutlineActive: {
+      borderColor: colors.primary,
+    },
+    radioDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.primary,
+    },
+    checkboxOutline: {
+      width: 20,
+      height: 20,
+      borderRadius: 4,
+      borderWidth: 2,
+      borderColor: isDarkMode ? "#475569" : "#D1D5DB",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    checkboxOutlineActive: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary,
+    },
+    optionLabel: {
+      fontFamily: Fonts.regular,
+      fontSize: 13,
+      color: isDarkMode ? "#CBD5E1" : "#4B5563",
+    },
+    toggleFieldRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    infoBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: isDarkMode ? "rgba(52, 199, 89, 0.1)" : "rgba(2,116,63,0.06)",
+      padding: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: isDarkMode ? "rgba(52, 199, 89, 0.2)" : "rgba(2,116,63,0.15)",
+    },
+    infoText: {
+      fontFamily: Fonts.medium,
+      fontSize: 12,
+      color: colors.primary,
+      flex: 1,
     },
   });
