@@ -67,11 +67,16 @@ export default function AllHomeEssentialsScreen() {
           return `/${slug}`;
         };
 
-        // Filter for Home Essentials
+        // Filter for Home Essentials — by `category`, the field that
+        // actually groups top-level sections. `serviceType` is a separate
+        // classification that can legitimately differ (e.g. trip-travels
+        // has category:TOURS_TRAVEL but serviceType:HOME_ESSENTIALS, since
+        // it shares a Home-Essentials-style waiver benefit) — filtering on
+        // it here let that service leak into this screen.
         const filtered = res.data
           .filter(
             (s: any) =>
-              s.serviceType === "HOME_ESSENTIALS" &&
+              s.category === "HOME_ESSENTIALS" &&
               s.slug !== "home-essentials"
           )
           .map((s: any) => ({

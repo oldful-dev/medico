@@ -59,15 +59,22 @@ const isEmoji = (str?: string) => {
 const resolveRoute = (route?: string, id?: string) => {
   if (!route) return '/';
   let clean = route.toLowerCase().trim();
-  if (clean.includes('/dynamic/service/')) {
+  // Every real Home Essentials service route now lives under
+  // /dynamic/home-essentials/<slug> or /dynamic/service/<slug> — pass those
+  // straight through untouched. Only the "Home Essentials" PARENT link
+  // (the actual /all-home-essentials view-all page, or its slug
+  // "home-essentials") should redirect; a substring match against any path
+  // containing "home-essentials" used to also catch every individual
+  // service's own route and send it to View All instead.
+  if (clean.startsWith('/dynamic/')) {
     return route;
   }
   const cleanId = id ? id.toLowerCase().trim() : '';
 
-  if (clean.includes('home-essentials') || clean.includes('home essentials')) return '/all-home-essentials';
+  if (clean === 'home-essentials' || clean === '/home-essentials' || clean.includes('home essentials')) return '/all-home-essentials';
   if (clean.includes('all-ayuxa') || clean.includes('all-ayuxacare') || clean.includes('all-oldful')) return '/all-ayuxa-services';
   if (clean.includes('account/medical-logs') || clean.includes('account/medical_logs')) return '/profile/medical-logs';
-  
+
   return route.replace(/oldful/gi, 'ayuxa').replace(/ayuxacare/gi, 'ayuxa');
 };
 
@@ -305,7 +312,10 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors, skel
   // ServiceGrid never runs for it.)
   const CATEGORY_GROUPED_MODULES: Record<string, string> = {
     'ayuxa_services': 'DIAGNOSTICS_FITNESS',
-    'tours_travel': 'TOURS_TRAVEL',
+    // 'tours_travel' itself is the promotional custom_card banner
+    // ("Ayuxa Can Plan your travel") — the real browsable grid section
+    // uses a distinct id so the two don't collide.
+    'tours_travel_grid': 'TOURS_TRAVEL',
   };
   const groupingModule = CATEGORY_GROUPED_MODULES[section.id.toLowerCase()];
   const isCategoryGrouped = !!groupingModule;
@@ -544,14 +554,19 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors, skeleton }: Es
     }).flat()
   );
 
-  // Filter active Home Essentials services from database
+  // Filter active Home Essentials services from database — by `category`,
+  // not `serviceType` (a separate classification that can legitimately
+  // differ; trip-travels has category:TOURS_TRAVEL but
+  // serviceType:HOME_ESSENTIALS, since it shares a Home-Essentials-style
+  // waiver benefit — filtering on serviceType here required explicitly
+  // excluding it by slug, a band-aid that wouldn't catch any other service
+  // with the same kind of mismatch).
   const activeDbServices = services.filter(
     sv =>
-      sv.serviceType === "HOME_ESSENTIALS" &&
+      sv.category === "HOME_ESSENTIALS" &&
       sv.isEnabled &&
       sv.slug !== "home-essentials" &&
-      sv.slug !== "smart-upgrade" &&
-      sv.slug !== "trip-travels"
+      sv.slug !== "smart-upgrade"
   );
 
   // Map exactly using the server-defined services layout configuration order (section.services) capped at max_items (8)
