@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import {
     PlusCircle, Trash, ArrowUp, ArrowDown, Upload
 } from "lucide-react";
-import { serviceAPI, serviceCategoryAPI } from "@/lib/api";
+import { serviceAPI, serviceCategoryAPI, serviceChargeAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 import RouteSelector from "@/components/common/RouteSelector";
 import FileUploadField from "@/components/common/FileUploadField";
@@ -116,6 +116,9 @@ export default function DynamicServiceFormModal({
     // auto-fill should never fight a deliberate override. Reset whenever the
     // modal opens for a (possibly different) service.
     const [routeManuallyEdited, setRouteManuallyEdited] = useState(false);
+    // Every category key that has a live ServiceCharge row — for the Group C
+    // pricing-coverage warning below.
+    const [chargedCategories, setChargedCategories] = useState(null);
 
     // Categories are scoped per-module (Home Essentials/Diagnostic & Fitness/
     // Tours & Travel each manage their own) — reload whenever the modal opens
@@ -127,6 +130,27 @@ export default function DynamicServiceFormModal({
             .then(res => setServiceCategories((res.data?.data || []).filter(c => c.isEnabled)))
             .catch(() => setServiceCategories([]));
     }, [open, category]);
+
+    useEffect(() => {
+        if (!open) return;
+        serviceChargeAPI.getAll()
+            .then(res => setChargedCategories(new Set((res.data?.data || []).map(c => c.serviceCategory))))
+            .catch(() => setChargedCategories(new Set()));
+    }, [open]);
+
+    // Group C ("Tech Support split pricing") reads its Online/Offline prices
+    // from a ServiceCharge row keyed by slug.toUpperCase().replace(/-/g,'_')
+    // — see HomeEssentialsBookingScreen.tsx. If no matching row exists (a
+    // brand-new service, or a slug renamed after its Pricing row was
+    // created — exactly what happened to Tech Helper), the app silently
+    // falls back to default prices with no error anywhere. Warn here
+    // instead of leaving it to surface as "wrong price charged" later.
+    const groupCPricingCategory = form.slug ? form.slug.toUpperCase().replace(/-/g, "_") : "";
+    const groupCMissingPricingRow =
+        form.checkoutGroup === "C" &&
+        !!groupCPricingCategory &&
+        chargedCategories !== null &&
+        !chargedCategories.has(groupCPricingCategory);
 
     // Blood test is the one diagnostic whose per-test Service Fee comes from the
     // Redcliffe Labs API, not from admin config — its price fields are read-only here.
@@ -594,6 +618,13 @@ export default function DynamicServiceFormModal({
                                             <option value="C">Group C: Tech Support split pricing</option>
                                             <option value="D">Group D: Zero Payment Request</option>
                                         </select>
+                                        {groupCMissingPricingRow && (
+                                            <p className="text-xs text-danger" style={{ margin: "4px 0 0" }}>
+                                                ⚠️ No Pricing → Service Charges row for <strong>{groupCPricingCategory}</strong> yet —
+                                                the app will silently fall back to a default price until you add one
+                                                (or if the slug changes later, its row will go stale the same way).
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="form-group" style={{ marginBottom: 0 }}>
                                         <label className="form-label">Base Price (₹) *</label>
