@@ -43,7 +43,23 @@ const serviceSlugMap = {
   "anything-else": "CUSTOM_REQUEST",
   "test": "CUSTOM_REQUEST",
   "meetup": "LOCAL_MEETUP",
-  
+
+  // Current DB slugs (admin renamed these at some point after the entries
+  // above were written — the OLD slugs above are now dead/unused by any
+  // real Service row, but kept harmless in case something still points at
+  // them). getBenefitCodeForService() was silently returning null for
+  // Washroom Sanitization, Appliance Repair, Bank & Paperwork, Paper &
+  // Legal Helper, and Deep Cleaning until these were added — Home
+  // Essentials plan holders were being charged full price/fees on all 5,
+  // with zero error, because the "if (benefitCode)" check was just never
+  // entered. Verify each rename against the live Service table before
+  // trusting a slug here again — see scripts/verify-mobile-service-slugs.js.
+  "washroom-sanitization": "SANITATION",
+  "appliances-repair-": "ZERO_SERVICE_FEE",
+  "paper-work": "PAPERWORK_ASSIST",
+  "legal-work": "PAPERWORK_ASSIST",
+  "depp-clean": "DEEP_CLEANING",
+
   // Waiver categories:
   // Real DB slug is "plumbing" (not "plumbing-electrical") — the mismatch
   // meant getBenefitCodeForService() returned null for every Plumbing &
