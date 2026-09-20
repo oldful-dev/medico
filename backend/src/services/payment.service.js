@@ -514,7 +514,6 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                     });
 
                     const { url, storagePath } = await uploadFile(pdfBuffer, 'documents/invoices', `invoice-${invoice.invoiceNumber}.pdf`);
-                    invoicePdfUrl = url;
 
                     // pdfUrl is a signed GCS URL (max 7-day expiry) — storagePath
                     // is stable and lets it be re-signed later via
@@ -523,6 +522,20 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                         where: { id: invoice.id },
                         data: { pdfUrl: url, pdfStoragePath: storagePath, emailSentAt: new Date() },
                     });
+
+                    // Separate public copy for the WhatsApp attachment — Fast2SMS's
+                    // media fetcher 400s on the private signed GCS URL above (its
+                    // long X-Goog-* query string), same as the earlier welcome-PDF
+                    // issue. mobile/assets/images is the one GCS folder Cloudflare's
+                    // transform rule actually maps to assets.ayuxacare.com, giving a
+                    // short, unsigned, unguessable (UUID-named) URL their fetcher can
+                    // reach — same pattern as WELCOME_DOC_URL in notifications.js.
+                    try {
+                        const { url: publicUrl } = await uploadFile(pdfBuffer, 'mobile/assets/images', `invoice-${invoice.invoiceNumber}.pdf`);
+                        invoicePdfUrl = publicUrl;
+                    } catch (publicUploadErr) {
+                        logger.warn('[PaymentService] Public invoice copy for WhatsApp failed (non-fatal):', publicUploadErr.message);
+                    }
 
                     if (payment.user.email) {
                         await emailService.sendPaymentReceipt({
