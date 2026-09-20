@@ -16,20 +16,27 @@ export const PRESET_SYSTEM_ROUTES = [
   { label: "Medical Equipment", value: "/medical-equipment" },
   { label: "Meal & Tiffin Service", value: "/meal-service" },
   { label: "Hospital Trip & Visit", value: "/hospital-trip" },
-  { label: "Appliance Repair", value: "/appliance-repair" },
-  { label: "Plumbing & Electrical", value: "/plumbing-electrical" },
-  { label: "Deep Cleaning", value: "/deep-cleaning" },
-  { label: "Driver & Cab", value: "/driving-cab" },
-  { label: "Bill Payment", value: "/bill-payment" },
-  { label: "Bank & Paperwork", value: "/bank-paperwork" },
-  { label: "Grocery Run", value: "/grocery-run" },
-  { label: "Paper & Legal Helper", value: "/paper-legal" },
-  { label: "Anything Else Request", value: "/anything-else" },
+  // Home Essentials services all render through one shared dynamic screen
+  // now — there's no dedicated route file per service any more, so a NEW
+  // Home Essentials service should get /home-essentials-dynamic/<its-slug>
+  // (set automatically from the slug field), not a preset from this list.
+  // These are kept only so existing links/deep-links referencing the old
+  // paths still show a readable label here; don't pick these for a new
+  // service.
+  { label: "Appliance Repair (legacy path)", value: "/appliance-repair" },
+  { label: "Plumbing & Electrical (legacy path)", value: "/plumbing-electrical" },
+  { label: "Deep Cleaning (legacy path)", value: "/deep-cleaning" },
+  { label: "Driver & Cab (legacy path)", value: "/driving-cab" },
+  { label: "Bill Payment (legacy path)", value: "/bill-payment" },
+  { label: "Bank & Paperwork (legacy path)", value: "/bank-paperwork" },
+  { label: "Grocery Run (legacy path)", value: "/grocery-run" },
+  { label: "Paper & Legal Helper (legacy path)", value: "/paper-legal" },
+  { label: "Anything Else Request (legacy path)", value: "/anything-else" },
+  { label: "Washroom Sanitation (legacy path)", value: "/sanitisation" },
+  { label: "Tech Helper (legacy path)", value: "/tech-helper" },
   { label: "Trip & Travels", value: "/trip-travels" },
   { label: "Local Meetups", value: "/meetup" },
   { label: "Insurance", value: "/insurance" },
-  { label: "Washroom Sanitation", value: "/sanitisation" },
-  { label: "Tech Helper", value: "/tech-helper" },
   { label: "Transportation", value: "/transportation" },
   { label: "Smart Membership Upgrade", value: "/smart-upgrade" },
   { label: "Cart / Checkout", value: "/cart" },

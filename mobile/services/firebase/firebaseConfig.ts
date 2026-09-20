@@ -95,22 +95,25 @@ const RC_DEFAULT_HOME_CONFIG = JSON.stringify({
             max_items: 8,
             view_all_route: '/all-home-essentials',
             services: [
+                // Routes point at the shared dynamic catch-all + the service's
+                // CURRENT DB slug — verify against the live Service table
+                // (scripts/verify-mobile-service-slugs.js) if these drift again.
                 // 1. Bill Payment
-                { id: 'bills',        label: 'Bill\nPayment',              icon: '056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png', route: '/bill-payment',        enabled: true, sort_order: 1 },
+                { id: 'bills',        label: 'Bill\nPayment',              icon: '056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png', route: '/home-essentials-dynamic/bill-payment',          enabled: true, sort_order: 1 },
                 // 2. Tech Help
-                { id: 'tech_helper',  label: 'Tech\nHelp',                 icon: 'fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/tech-helper',         enabled: true, sort_order: 2 },
+                { id: 'tech_helper',  label: 'Tech\nHelp',                 icon: 'fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/home-essentials-dynamic/tech-helper',           enabled: true, sort_order: 2 },
                 // 3. Paperwork
-                { id: 'bank',         label: 'Paper-\nwork',               icon: '33ede0e57be708b9775957c3ecec7013b0a56c6d.png', route: '/bank-paperwork',      enabled: true, sort_order: 3 },
+                { id: 'bank',         label: 'Paper-\nwork',               icon: '33ede0e57be708b9775957c3ecec7013b0a56c6d.png', route: '/home-essentials-dynamic/paper-work',            enabled: true, sort_order: 3 },
                 // 4. Appliance Repair
-                { id: 'ac_repair',    label: 'Appliance\nRepair',          icon: 'fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/appliance-repair',    enabled: true, sort_order: 4 },
+                { id: 'ac_repair',    label: 'Appliance\nRepair',          icon: 'fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/home-essentials-dynamic/appliances-repair-',    enabled: true, sort_order: 4 },
                 // 5. Deep Cleaning & Pest Control
-                { id: 'cleaning',     label: 'Deep Cleaning\n& Pest Ctrl', icon: 'ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png', route: '/deep-cleaning',       enabled: true, sort_order: 5 },
+                { id: 'cleaning',     label: 'Deep Cleaning\n& Pest Ctrl', icon: 'ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png', route: '/home-essentials-dynamic/depp-clean',            enabled: true, sort_order: 5 },
                 // 6. Washroom Sanitation
-                { id: 'sanitisation', label: 'Washroom\nSanitation',       icon: '8888c71f466119aa294bd00136ff887f616d4737.png', route: '/sanitisation',        enabled: true, sort_order: 6 },
+                { id: 'sanitisation', label: 'Washroom\nSanitation',       icon: '8888c71f466119aa294bd00136ff887f616d4737.png', route: '/home-essentials-dynamic/washroom-sanitization', enabled: true, sort_order: 6 },
                 // 7. Plumbing & Electrician
-                { id: 'plumbing',     label: 'Plumbing &\nElectrician',    icon: '8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png', route: '/plumbing-electrical', enabled: true, sort_order: 7 },
+                { id: 'plumbing',     label: 'Plumbing &\nElectrician',    icon: '8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png', route: '/home-essentials-dynamic/plumbing',              enabled: true, sort_order: 7 },
                 // 8. Driver Request
-                { id: 'driver',       label: 'Driver\nRequest',            icon: '60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png', route: '/driving-cab',         enabled: true, sort_order: 8 },
+                { id: 'driver',       label: 'Driver\nRequest',            icon: '60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png', route: '/home-essentials-dynamic/driving-cab',           enabled: true, sort_order: 8 },
             ],
         },
     ],
