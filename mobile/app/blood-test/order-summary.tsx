@@ -29,7 +29,7 @@ export default function BloodTestOrderSummaryScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { profile } = useUser();
+    const { profile, services, getServiceBySlug } = useUser();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const styles = makeStyles(isDarkMode, colors);
@@ -65,15 +65,26 @@ export default function BloodTestOrderSummaryScreen() {
         console.error('Failed to parse booking data:', e);
     }
 
+    // Dynamic fee resolution from Admin ServiceCharge configuration
+    const bloodService = getServiceBySlug?.('blood-work') ||
+        getServiceBySlug?.('blood-test') ||
+        services?.find(s => s.slug === 'blood-work' || s.slug === 'blood-test' || s.name?.toLowerCase().includes('blood') || (s as any).serviceType === 'BLOOD_TEST');
+    const dynamicBookingFee = bloodService?.serviceCharge?.bookingFee != null
+        ? Number(bloodService.serviceCharge.bookingFee)
+        : 0;
+
     // Fee split — kept as separate lines, never merged (compliance).
     //   serviceFee      = diagnostic test cost
-    //   ayuxaBookingFee = Ayuxa booking-facilitation fee (0 for lab tests)
+    //   ayuxaBookingFee = Ayuxa booking-facilitation fee (from Admin ServiceCharge)
     //   deliveryFee     = home sample collection (currently free)
     const serviceFee = parseFloat(params.amount || '0');
-    const ayuxaBookingFee = 0;
+    const ayuxaBookingFee = dynamicBookingFee;
     const deliveryFee = 0;
     const baseAmount = serviceFee;
-    const gst = Math.round(serviceFee * 0.18 * 100) / 100;
+    const gstRate = bloodService?.serviceCharge?.taxPercentage != null
+        ? Number(bloodService.serviceCharge.taxPercentage) / 100
+        : 0.18;
+    const gst = Math.round(serviceFee * gstRate * 100) / 100;
     // Pre-discount total — this is what /apply-coupon and /initiate must receive;
     // the backend re-applies the coupon, so sending the discounted figure would
     // discount twice. `totalAmount` (below) is display-only.

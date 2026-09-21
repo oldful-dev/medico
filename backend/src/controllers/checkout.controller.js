@@ -94,13 +94,20 @@ async function getPlanTypeForCategory(category) {
  */
 async function resolveServiceCharge(serviceCategory) {
     let serviceRecord = null;
+    const catLower = (serviceCategory || '').toLowerCase().replace(/_/g, '-');
+    const aliases = [catLower, (serviceCategory || '').toLowerCase()];
+    if (catLower === 'blood-test' || catLower === 'bloodwork' || catLower === 'blood') {
+        aliases.push('blood-work', 'blood-test');
+    } else if (catLower === 'blood-work') {
+        aliases.push('blood-test');
+    }
+
     if (serviceCategory) {
         serviceRecord = await prisma.service.findFirst({
             where: {
                 OR: [
-                    { slug: serviceCategory.toLowerCase().replace(/_/g, '-') },
-                    { slug: serviceCategory.toLowerCase() },
-                    { name: { equals: serviceCategory, mode: 'insensitive' } },
+                    { slug: { in: aliases } },
+                    { name: { in: ['Blood Work', 'Blood Test', serviceCategory], mode: 'insensitive' } },
                 ]
             }
         });
@@ -110,6 +117,15 @@ async function resolveServiceCharge(serviceCategory) {
     let config = await prisma.serviceCharge.findUnique({
         where: { serviceCategory: lookupCategory }
     });
+
+    if (!config && (lookupCategory === 'BLOOD_TEST' || lookupCategory === 'BLOOD_WORK')) {
+        config = await prisma.serviceCharge.findFirst({
+            where: {
+                serviceCategory: { in: ['BLOOD_TEST', 'BLOOD_WORK', 'DIAGNOSTICS_FITNESS'] },
+                isActive: true
+            }
+        });
+    }
 
     // Fallback: If no config exists for this specific slug/name, try to match by its parent category
     if (!config && serviceRecord) {

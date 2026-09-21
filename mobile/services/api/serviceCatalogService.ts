@@ -30,6 +30,16 @@ export interface ServiceItem {
     category?: string;
     categoryId?: string | null;
     paymentMode?: string;
+    serviceCharge?: {
+        serviceFee?: number | null;
+        onlineServiceFee?: number | null;
+        offlineServiceFee?: number | null;
+        bookingFee?: number | null;
+        platformFee?: number | null;
+        taxPercentage?: number | null;
+        isSubscriptionEligible?: boolean;
+        isRequestBased?: boolean;
+    } | null;
 }
 
 // Admin-created grouping within a module (e.g. "Health Checkups" under

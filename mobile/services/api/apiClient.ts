@@ -6,7 +6,15 @@
 
 import { Platform } from 'react-native';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
+function resolveApiBaseUrl(): string {
+    const raw = process.env.EXPO_PUBLIC_API_URL?.trim();
+    if (raw && (raw.startsWith('http://') || raw.startsWith('https://'))) {
+        return raw.replace(/\/+$/, '');
+    }
+    return 'https://api.ayuxacare.com/api';
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 interface RequestConfig {
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

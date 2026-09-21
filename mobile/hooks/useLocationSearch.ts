@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
+const rawApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+const API_BASE_URL = (rawApiUrl && (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')))
+    ? rawApiUrl.replace(/\/+$/, '')
+    : 'https://api.ayuxacare.com/api';
 
 export interface LocationPrediction {
     description: string;

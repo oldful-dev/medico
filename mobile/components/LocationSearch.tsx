@@ -8,6 +8,7 @@ import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { useLocationSearch, type LocationPrediction } from '@/hooks/useLocationSearch';
 import { useTranslation } from 'react-i18next';
+import { apiClient } from '@/services/api/apiClient';
 
 interface LocationSearchProps {
     onSelectLocation: (placeId: string, description: string, coords?: { lat: number; lng: number }) => void;
@@ -53,21 +54,16 @@ export const LocationSearch = ({
 
         if (details && !fullAddress.match(/\b\d{6}\b/)) {
             try {
-                const revRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api'}/location/reverse-geocode`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ latitude: details.latitude, longitude: details.longitude }),
+                const revData = await apiClient.post<any>('/location/reverse-geocode', {
+                    latitude: details.latitude,
+                    longitude: details.longitude,
                 });
-                const revData = await revRes.json();
-                if (revData.statusCode === 0 && revData.data?.formatted_address) {
+                if (revData && revData.data?.formatted_address) {
                     fullAddress = revData.data.formatted_address;
-                    const geoRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api'}/location/geocode`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ address: fullAddress }),
+                    const geoData = await apiClient.post<any>('/location/geocode', {
+                        address: fullAddress,
                     });
-                    const geoData = await geoRes.json();
-                    if (geoData.statusCode === 0 && geoData.data) {
+                    if (geoData && geoData.data) {
                         finalLat = geoData.data.latitude || finalLat;
                         finalLng = geoData.data.longitude || finalLng;
                     }

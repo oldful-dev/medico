@@ -35,64 +35,23 @@ const { withGradleProperties, withAppBuildGradle, withAndroidManifest, withDange
 
 const NETWORK_SECURITY_CONFIG_XML = `<?xml version="1.0" encoding="utf-8"?>
 <!--
-  SSL pinning for the app's own backend only (api.ayuxacare.com).
-  Deliberately scoped to root-CA-level pins (ISRG Root X1/X2, Let's
-  Encrypt's trust anchors) rather than the leaf certificate, since the
-  leaf rotates every ~60-90 days and would require an app release on
-  every renewal otherwise. Two pins are listed so a routine CA-level
-  change (which is rare, unlike leaf rotation) doesn't break the app if
-  Let's Encrypt shifts primary root.
-
-  Every other domain the app talks to (Google Maps, Firebase, Razorpay,
-  Cloudflare's own asset CDN, etc.) is intentionally NOT pinned here —
-  those are separate services whose certificate rotation this app does
-  not control, and pinning them would only add risk without benefit.
-
-  Note the explicit <base-config cleartextTrafficPermitted="true">: a
-  network_security_config.xml existing at all makes Android's IMPLICIT
-  base config default cleartextTrafficPermitted to false on API 28+,
-  regardless of the manifest's usesCleartextTraffic flag — without this,
-  a RELEASE build (which doesn't get the src/debug override below) would
-  silently break any legitimate http:// call the app makes. This base
-  default is otherwise unchanged from stock Android behavior on older
-  API levels.
-
-  api.ayuxacare.com's own domain-config OVERRIDES that base default back
-  to cleartextTrafficPermitted="false" (a per-domain base-config loses to
-  a matching domain-config, regardless of declaration order) — this is
-  the actual fix for a real incident: on at least one mobile carrier, a
-  POST to this domain over cleartext http:// got hit with Cloudflare's
-  standard http-to-https 301 redirect, which OkHttp (Android's
-  networking layer, same as every RN app) silently re-issues as GET on
-  redirect, turning a real POST /auth/request-otp into a 404 GET
-  server-side, with no error ever surfaced to the app. The app itself
-  never requests http://api.ayuxacare.com (only https:// URLs are baked
-  into the JS bundle, see EXPO_PUBLIC_API_URL), so this was purely a
-  carrier/middlebox forcing the connection onto port 80 before the
-  redirect; blocking cleartext for just this domain makes Android refuse
-  that connection outright instead of silently completing the round-trip.
-
-  expiration is set ~9 months out (well past this cert's Oct 2026 leaf
-  renewal, which doesn't affect this root-level pin anyway) as a safety
-  valve: if this file is never revisited, pinning silently STOPS being
-  enforced after this date rather than silently locking out every user
-  forever on a stale pin nobody remembers to update.
-
-  IMPORTANT: there is no runtime kill-switch for this — Android bakes
-  this file into the APK at build time. The only way to change or
-  disable it is a new app release. See MVP_LAUNCH_PLAN.md §Phase 3 (C-03)
-  before ever touching this file again.
+  Network security config for Ayuxa:
+  - Enforces strict HTTPS (cleartextTrafficPermitted="false") for api.ayuxacare.com.
+  - Validates TLS against Android system trust anchors.
+  - Blocks cleartext downgrade attacks while ensuring compatibility across all Android versions, CDNs, and certificate renewals.
 -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true" />
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
     <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="false">api.ayuxacare.com</domain>
-        <pin-set expiration="2027-06-01">
-            <!-- ISRG Root X1: Let's Encrypt's primary trust anchor -->
-            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
-            <!-- ISRG Root X2: backup pin, actually served in the live chain -->
-            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
-        </pin-set>
+        <domain includeSubdomains="true">api.ayuxacare.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
     </domain-config>
 </network-security-config>
 `;

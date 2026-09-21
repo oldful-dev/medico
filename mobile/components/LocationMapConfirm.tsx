@@ -12,8 +12,10 @@ import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
+const rawApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+const API_BASE_URL = (rawApiUrl && (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')))
+    ? rawApiUrl.replace(/\/+$/, '')
+    : 'https://api.ayuxacare.com/api';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';

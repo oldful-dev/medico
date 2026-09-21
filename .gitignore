@@ -95,6 +95,8 @@ next-env.d.ts
 rzp-key.csv
 
 # ───── Project Specific Local Files ─────
+*.xlsx
+*.pdf
 PRD V2.pdf
 Oldful PRD.pdf
 OLDFUL API FILE.pdf
@@ -105,6 +107,7 @@ parse_api_list.js
 *.ps1
 API_LIST.pdf
 RedcliffeLabs API Documentation.pdf
+Medical Tourism.pdf
 tmp-figma/
 
 # ───── Misc ─────

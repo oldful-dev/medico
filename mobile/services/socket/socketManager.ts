@@ -5,7 +5,15 @@ import { sduiService } from '../firebase/sduiService';
 import { bannerService } from '../api/bannerService';
 import { forceRefreshAppConfig } from '../../context/AppConfigContext';
 
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'https://api.ayuxacare.com';
+function resolveSocketUrl(): string {
+    const raw = process.env.EXPO_PUBLIC_SOCKET_URL?.trim();
+    if (raw && (raw.startsWith('http://') || raw.startsWith('https://'))) {
+        return raw.replace(/\/+$/, '');
+    }
+    return 'https://api.ayuxacare.com';
+}
+
+const SOCKET_URL = resolveSocketUrl();
 
 let socket: Socket | null = null;
 let connectionPromise: Promise<Socket | null> | null = null;

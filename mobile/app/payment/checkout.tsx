@@ -469,13 +469,16 @@ export default function CheckoutScreen() {
     
     // Original charges before waiver (for displaying stroke-through / FREE)
     const showWaiver = benefitApplied || (isSubscription && !!params.bookingPayload) || isUpgraded;
+    const breakdownData = calculatedPrices?.breakdown as any;
     const originalBookingFee = showWaiver 
-        ? (calculatedPrices?.benefitApplied 
-            ? (Math.abs(calculatedPrices.breakdown.benefitDiscount) > 50 ? Math.abs(calculatedPrices.breakdown.benefitDiscount) - 50 : 299)
-            : (calculatedPrices ? calculatedPrices.breakdown.bookingFee : 299))
+        ? (breakdownData?.originalBookingFee != null
+            ? Number(breakdownData.originalBookingFee)
+            : (calculatedPrices ? Number(calculatedPrices.breakdown.bookingFee || 0) : bookingFee))
         : bookingFee;
     const originalPlatformFee = showWaiver
-        ? (calculatedPrices?.benefitApplied ? 50 : (calculatedPrices ? calculatedPrices.breakdown.platformFee : 50))
+        ? (breakdownData?.originalPlatformFee != null
+            ? Number(breakdownData.originalPlatformFee)
+            : (calculatedPrices ? Number(calculatedPrices.breakdown.platformFee || 0) : platformFee))
         : platformFee;
 
     // Blood test: the total is the exact sum of the lines shown in the breakdown
