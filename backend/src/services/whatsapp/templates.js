@@ -60,13 +60,21 @@ const WHATSAPP_TEMPLATES = {
         docRequired: false,
         description: 'Buddy uploaded prescription — client notified',
     },
+    // NOT LIVE — messageId 20512 is rejected by Fast2SMS as invalid/
+    // unapproved, and as of 2026-09-22 no lab-report-ready template exists
+    // at all on the Fast2SMS WhatsApp Business portal for the AYUXA sender
+    // (confirmed: BOOKING_CONFIRMED/PAYMENT_RECEIVED are there, this isn't).
+    // Do not call sendLabReportReady() until a real template is submitted
+    // and approved there and this gets a real messageId — SMS
+    // (LAB_REPORT_READY, DLT 215399) is the only channel for this
+    // notification today; see redcliffe.queue.js.
     LAB_REPORT_READY: {
         waba: 'AYUXA',
-        messageId: 20512,
+        messageId: null,
         variables: 1,              // Var1=name
         mediaRequired: false,
         docRequired: false,
-        description: 'Lab report available in app — client notified',
+        description: 'Lab report available in app — PENDING template approval, not live',
     },
     PLAN_EXPIRY_REMINDER: {
         waba: 'AYUXA',

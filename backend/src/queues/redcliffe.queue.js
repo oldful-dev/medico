@@ -234,9 +234,9 @@ const notificationWorker = new Worker('notification-queue', async job => {
 
     const displayName = patientName || user.name;
 
-    // WhatsApp — Template: LAB_REPORT_READY (ID 20512) — Var1=name
-    const { sendLabReportReady } = require('../services/whatsapp');
-    await sendLabReportReady({ phone: user.phone, name: displayName, userId: user.id });
+    // WhatsApp LAB_REPORT_READY has no approved template on Fast2SMS as of
+    // 2026-09-22 (messageId is null in templates.js) — SMS is the only
+    // channel for this notification until that's submitted and approved.
 
     // DLT SMS — LAB_REPORT_READY (215399) — Var1=name
     if (user.phone) {
