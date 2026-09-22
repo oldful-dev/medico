@@ -749,6 +749,15 @@ export default function BookingsPage() {
                                                         </div>
                                                     </div>
                                                 )}
+                                                {order.reportUrl && (
+                                                    <div><label className="form-label" style={{ fontSize: 10 }}>Report</label>
+                                                        <div className="text-sm">
+                                                            <a href={order.reportUrl} target="_blank" rel="noopener noreferrer" className="btn btn-xs btn-success" style={{ fontSize: 11, textDecoration: 'none' }}>
+                                                                📄 View Report
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Phlebotomist assignment is done entirely by Redcliffe's own

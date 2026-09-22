@@ -21,7 +21,7 @@ exports.handleRedcliffeWebhook = async (req, res) => {
         
         // 1. Security validation (Check auth_key against our .env)
         const expectedAuthKey = process.env.REDCLIFFE_WEBHOOK_SECRET;
-        
+
         if (expectedAuthKey && req.headers['authorization'] !== expectedAuthKey) {
             logger.warn(`[WebhookController] Unauthorized Webhook Attempt: IP ${req.ip}`);
             return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -30,6 +30,19 @@ exports.handleRedcliffeWebhook = async (req, res) => {
         if (ALLOWED_WEBHOOK_IPS.length > 0 && !ALLOWED_WEBHOOK_IPS.includes(req.ip)) {
              logger.warn(`[WebhookController] IP not whitelisted: ${req.ip}`);
              return res.status(403).json({ success: false, message: 'Forbidden IP' });
+        }
+
+        // Redcliffe's own docs/PDF and our test harness (redcliffe-api-tests)
+        // both use `webhook_type` as the trigger-payload key, but this
+        // receiver (and the queue worker) has always read `event_type` —
+        // unverified against a real production webhook until now, since the
+        // registered URL pointed at a dead domain for 5 months (fixed
+        // 2026-09-22). Accept either key defensively rather than assume,
+        // and log which one a real webhook actually carries so this can be
+        // cleaned up to a single field once confirmed.
+        if (payload && !payload.event_type && payload.webhook_type) {
+            logger.info(`[WebhookController] Payload used 'webhook_type' (not 'event_type') — booking ${payload.booking_id}: ${payload.webhook_type}`);
+            payload.event_type = payload.webhook_type;
         }
 
         // 2. Validate payload structure
