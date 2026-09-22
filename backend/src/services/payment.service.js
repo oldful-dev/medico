@@ -620,6 +620,36 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                         body: `Your blood test booking (${payment.labOrder.clientRefId}) has been confirmed.`,
                         data: { type: 'lab_booking_confirmed', labOrderId: payment.labOrder.id, bookingId: payment.labOrder.clientRefId },
                     });
+
+                    // WhatsApp / SMS — lab orders previously only got a push
+                    // notification at this step, unlike regular bookings/orders,
+                    // which get BOOKING_CONFIRMED here too. Same
+                    // WhatsApp-first-SMS-fallback pattern as order.controller.js.
+                    if (payment.user?.phone) {
+                        try {
+                            const { sendBookingConfirmed } = require('./whatsapp');
+                            const waSuccess = await sendBookingConfirmed({
+                                phone: payment.user.phone,
+                                name: payment.user.name,
+                                orderId: payment.labOrder.clientRefId,
+                                userId: payment.userId,
+                            }).catch(err => {
+                                logger.warn('[PaymentService] WA BOOKING_CONFIRMED (lab) failed (non-fatal):', err.message);
+                                return false;
+                            });
+                            if (!waSuccess && payment.user.smsEnabled !== false) {
+                                const { sendSMS } = require('./sms');
+                                await sendSMS({
+                                    template: 'ORDER_CONFIRMED',
+                                    mobile: payment.user.phone,
+                                    variables: [payment.user.name, payment.labOrder.clientRefId, '08047280789'],
+                                    userId: payment.userId,
+                                }).catch(err => logger.warn('[PaymentService] ORDER_CONFIRMED SMS (lab) failed (non-fatal):', err.message));
+                            }
+                        } catch (notifyErr) {
+                            logger.warn('[PaymentService] Lab booking confirmation notification failed (non-fatal):', notifyErr.message);
+                        }
+                    }
                 }
 
                 if (payment.productOrderId || payment.productOrder) {
