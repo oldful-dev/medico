@@ -432,7 +432,9 @@ export const labAPI = {
     getOrderStatus: (id) => api.get(`/labs/booking/${id}`),
     updateOrder: (id, data) => api.post(`/labs/booking/${id}/update`, data),
     getDigitalReport: (id) => api.get(`/labs/booking/${id}/digital-report`),
-    downloadReport: (id) => api.get(`/labs/booking/${id}/report`, { responseType: 'blob' }),
+    // Returns Redcliffe's report metadata JSON (incl. report_url), not raw
+    // PDF bytes — see handleDownloadReport in LabOrdersPage.jsx.
+    downloadReport: (id) => api.get(`/labs/admin/booking/${id}/report`),
     // Body: { date, time, reason? } — admin-only, backend already emits socket + FCM push
     reschedule: (id, data) => api.put(`/labs/booking/${id}/reschedule`, data),
     // Body: { reason? } — admin-only, also notifies Redcliffe + emits socket/FCM push

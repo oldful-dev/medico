@@ -276,14 +276,18 @@ export default function LabOrdersPage() {
 
     const handleDownloadReport = async (id) => {
         try {
+            // getConsolidatedReport (backend) proxies Redcliffe's own
+            // get-consolidated-report endpoint, which returns JSON metadata
+            // with a signed report_url — not the PDF bytes themselves — so
+            // this opens that link directly rather than trying to blob-
+            // download the JSON response as if it were a file.
             const res = await labAPI.downloadReport(id);
-            const url = window.URL.createObjectURL(new Blob([res.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `report-${id}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+            const reportUrl = res.data?.data?.report_url || res.data?.report_url;
+            if (!reportUrl || reportUrl === 'no report') {
+                showToast('Report not available yet.', 'error');
+                return;
+            }
+            window.open(reportUrl, '_blank', 'noopener,noreferrer');
         } catch (error) {
             showToast('Report not available yet or download failed.', 'error');
         }
