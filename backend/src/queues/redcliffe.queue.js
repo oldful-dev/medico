@@ -19,7 +19,7 @@ const WEBHOOK_ACTIVITY_EVENTS = {
     cancelled: { eventType: 'booking_cancelled', statusDetail: 'Booking was cancelled.' },
 };
 
-async function recordWebhookActivity(order, event_type) {
+async function recordWebhookActivity(order, event_type, realStaffName = null) {
     const cfg = WEBHOOK_ACTIVITY_EVENTS[event_type];
     if (!cfg) return;
     try {
@@ -28,10 +28,12 @@ async function recordWebhookActivity(order, event_type) {
                 labOrderId: order.id,
                 eventType: cfg.eventType,
                 serviceType: 'Blood Test',
-                staffName: 'Redcliffe Labs',
-                staffId: 'redcliffe-system',
+                staffName: realStaffName || 'Redcliffe Labs',
+                staffId: realStaffName ? 'redcliffe-phlebo' : 'redcliffe-system',
                 staffPhone: '',
-                statusDetail: cfg.statusDetail,
+                statusDetail: realStaffName
+                    ? `${cfg.statusDetail} (${realStaffName})`
+                    : cfg.statusDetail,
             },
         });
         emitToUser(order.userId, 'activity_update_created', {
@@ -137,12 +139,22 @@ const webhookWorker = new Worker('redcliffe-webhook-queue', async job => {
     let nextStatus = order.status;
     let updates = {};
     let applied = false;
+    // Set only for phleboassigned below — the webhook payload itself never
+    // carries a real name, only a status change, so a separate lookup is
+    // needed to show the actual assigned phlebotomist instead of the
+    // generic 'Redcliffe Labs' placeholder.
+    let realStaffName = null;
 
     switch (event_type) {
         case 'phleboassigned':
             if (order.status === 'CONFIRMED') {
                 updates.trackingLink = data.tracking_link || order.trackingLink;
                 applied = true;
+                const phleboInfo = await redcliffeService.getPhleboTracking(booking_id);
+                if (phleboInfo) {
+                    realStaffName = phleboInfo.phlebo__user__fullname || null;
+                    if (phleboInfo.tracking_link) updates.trackingLink = phleboInfo.tracking_link;
+                }
             }
             break;
 
@@ -202,7 +214,7 @@ const webhookWorker = new Worker('redcliffe-webhook-queue', async job => {
     // socket push) — previously these 4 events only flipped LabOrder.status
     // silently, invisible outside a REST refetch.
     if (applied) {
-        await recordWebhookActivity(order, event_type);
+        await recordWebhookActivity(order, event_type, realStaffName);
     }
 
     logger.info({ job: 'webhook-handler', event: event_type, booking_id, newStatus: nextStatus });

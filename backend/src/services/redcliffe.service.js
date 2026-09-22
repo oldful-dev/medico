@@ -302,6 +302,23 @@ exports.getDigitalReport = async (bookingId) => {
     }
 };
 
+// Real phlebotomist name + tracking link — the phleboassigned webhook
+// payload itself carries neither, only a status change, so this lookup is
+// needed to show the actual assigned person instead of a generic
+// placeholder. Called from redcliffe.queue.js's phleboassigned handler.
+exports.getPhleboTracking = async (bookingId) => {
+    try {
+        const res = await client.get(`/api/external/v2/corporate-phlebo-tracking/`, {
+            params: { booking_id: bookingId },
+            headers: { 'key': API_KEY },
+        });
+        return res.data?.data || null;
+    } catch (error) {
+        logger.error(`[Redcliffe] getPhleboTracking error: ${error.message}`);
+        return null; // Non-fatal — caller falls back to the generic placeholder.
+    }
+};
+
 exports.getConsolidatedReport = async (bookingId) => {
     try {
         const res = await client.get(`/api/external/v2/get-consolidated-report/${bookingId}/`);
@@ -429,5 +446,6 @@ module.exports = {
     updatePaymentMode: exports.updatePaymentMode,
     updatePackage: exports.updatePackage,
     getDigitalReport: exports.getDigitalReport,
-    getConsolidatedReport: exports.getConsolidatedReport
+    getConsolidatedReport: exports.getConsolidatedReport,
+    getPhleboTracking: exports.getPhleboTracking
 };
