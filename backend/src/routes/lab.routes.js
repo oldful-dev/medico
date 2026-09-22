@@ -10,6 +10,7 @@ router.get('/admin/orders', authenticateAdmin, ctrl.adminGetLabOrders);
 router.put('/booking/:id/reschedule', authenticateAdmin, ctrl.rescheduleLabOrder);
 router.post('/booking/:id/admin-cancel', authenticateAdmin, ctrl.adminCancelLabOrder);
 router.get('/admin/booking/:id/invoice', authenticateAdmin, ctrl.getLabOrderInvoice);
+router.get('/admin/booking/:id/report',  authenticateAdmin, ctrl.getConsolidatedReport);
 
 // ─── Admin: Featured Tests curation ──────────
 router.get('/admin/featured', authenticateAdmin, ctrl.adminListFeatured);
