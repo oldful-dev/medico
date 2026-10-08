@@ -7,6 +7,7 @@ import { LogoMarquee } from '@/components/home/LogoMarquee';
 import { ServicesPreview } from '@/components/home/ServicesPreview';
 import { Testimonials } from '@/components/home/Testimonials';
 import { uiConfigService } from '@/services/api/uiConfigService';
+import { retry } from '@/utils/retry';
 
 export default function LandingPage() {
   const [showReviews, setShowReviews] = useState(true);
@@ -16,7 +17,7 @@ export default function LandingPage() {
   useEffect(() => {
     const checkConfig = async () => {
       try {
-        const config = await uiConfigService.getCompanyGlobalConfig();
+        const config = await retry(() => uiConfigService.getCompanyGlobalConfig());
         if (config) {
           if (config.show_reviews !== undefined) {
             setShowReviews(config.show_reviews);

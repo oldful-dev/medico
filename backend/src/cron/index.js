@@ -455,6 +455,48 @@ const initCronJobs = () => {
         }
     });
 
+    // ─── 11. Expired Lab Hold Sweeper (every 15 min) ─────────
+    // Holds expire 30 min after creation but nothing ever transitioned them, so
+    // abandoned holds sat in HOLD_CREATED/PENDING forever (and the matching
+    // Redcliffe slot stayed reserved). 10-min grace avoids racing a payment that
+    // is finishing right at the window edge; orders with a SUCCESS payment are
+    // never touched.
+    cron.schedule('*/15 * * * *', async () => {
+        try {
+            const rc = require('../services/redcliffe.service');
+            const cutoff = new Date(Date.now() - 10 * 60 * 1000);
+            const stale = await prisma.labOrder.findMany({
+                where: {
+                    status: { in: ['HOLD_CREATED', 'PENDING'] },
+                    holdExpiresAt: { lt: cutoff },
+                    payments: { none: { status: 'SUCCESS' } },
+                },
+                select: { id: true, redcliffeBookingId: true },
+                take: 100,
+            });
+            for (const o of stale) {
+                if (o.redcliffeBookingId) {
+                    try {
+                        await rc.updateBooking({
+                            booking_id: parseInt(o.redcliffeBookingId, 10),
+                            booking_status: 'cancelled',
+                            remark: 'Hold expired without payment',
+                        });
+                    } catch (rcErr) {
+                        logger.warn(`CRON hold sweeper: Redcliffe release failed for ${o.id}: ${rcErr.message}`);
+                    }
+                }
+                await prisma.labOrder.updateMany({
+                    where: { id: o.id, status: { in: ['HOLD_CREATED', 'PENDING'] } },
+                    data: { status: 'FAILED' },
+                });
+            }
+            if (stale.length) logger.info(`⏰ CRON: Expired ${stale.length} stale lab holds`);
+        } catch (error) {
+            logger.error('CRON expired lab hold sweeper error:', error);
+        }
+    });
+
     logger.info('✅ All cron jobs registered');
 };
 

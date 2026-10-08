@@ -289,7 +289,7 @@ const syncDbServicesToUIConfig = async () => {
                             item.route = dbSvc.route || `/${dbSvc.slug}`;
                             changed = true;
                         }
-                        if (item.icon !== dbSvc.icon) {
+                        if (dbSvc.icon && item.icon !== dbSvc.icon) {
                             item.icon = dbSvc.icon;
                             changed = true;
                         }
@@ -370,7 +370,7 @@ const syncDbServicesToUIConfig = async () => {
                             item.route = dbSvc.route || `/${dbSvc.slug}`;
                             changed = true;
                         }
-                        if (item.icon !== dbSvc.icon) {
+                        if (dbSvc.icon && item.icon !== dbSvc.icon) {
                             item.icon = dbSvc.icon;
                             changed = true;
                         }

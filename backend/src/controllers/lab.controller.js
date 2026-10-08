@@ -605,10 +605,38 @@ const cancelLabOrder = async (req, res, next) => {
             return sendResponse(res, 400, null, 'Cannot cancel after sample collection');
         }
 
+        // Tell Redcliffe if a real booking exists there yet (best-effort — a
+        // PENDING/HOLD_CREATED order may not have a confirmed Redcliffe booking
+        // yet). Without this, Redcliffe keeps the slot/hold active and may still
+        // collect the sample and generate a report for an order we consider
+        // cancelled.
+        if (order.redcliffeBookingId) {
+            try {
+                await rc.updateBooking({
+                    booking_id: parseInt(order.redcliffeBookingId, 10),
+                    booking_status: 'cancelled',
+                    remark: 'Cancelled by customer',
+                });
+            } catch (rcErr) {
+                logger.warn(`[cancelLabOrder] Redcliffe cancel failed for ${id}: ${rcErr.message}`);
+            }
+        }
+
         const updated = await prisma.labOrder.update({
             where: { id },
             data: { status: 'FAILED' }
         });
+
+        try {
+            const { sendPushToUser } = require('../utils/notifications');
+            await sendPushToUser(userId, {
+                title: 'Booking Cancelled',
+                body: 'Your blood test booking has been cancelled.',
+                data: { type: 'lab_cancelled', labOrderId: id },
+            });
+        } catch (pushErr) {
+            logger.warn(`[cancelLabOrder] cancel push failed: ${pushErr.message}`);
+        }
 
         logger.info(`Lab order ${id} cancelled by user ${userId}`);
         sendResponse(res, 200, updated, 'Lab order cancelled successfully');
@@ -690,8 +718,9 @@ const rescheduleLabOrder = async (req, res, next) => {
 
 // POST /api/labs/booking/:id/admin-cancel (ADMIN ONLY)
 // Unlike cancelLabOrder (user-facing, restricted to the order's own owner), this
-// lets an admin cancel on the customer's behalf and also notifies Redcliffe via
-// updateBooking, which the user-facing cancel path currently does not do.
+// lets an admin cancel on the customer's behalf, and additionally allows
+// cancelling orders already past PENDING/HOLD_CREATED (still blocked once a
+// sample has actually been collected or the report generated).
 const adminCancelLabOrder = async (req, res, next) => {
     try {
         const { id } = req.params;

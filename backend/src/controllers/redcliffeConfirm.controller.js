@@ -35,16 +35,41 @@ exports.confirmBooking = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Temporary booking expired. The 30-min window for payment closed.' });
         }
 
-        // 3. Mark as Payment Pending & attempt Redcliffe API call
+        // 3. Determine real paid status server-side — never trust the client's
+        // `isPaid` flag. COD/pay-later orders use the literal razorpayOrderId
+        // 'COD' and are allowed through unpaid (that's what COD means); any
+        // other order must have an actual SUCCESS Payment row for that
+        // razorpayOrderId, linked to this exact labOrderId, before Redcliffe
+        // is told to proceed.
+        const isCOD = razorpayOrderId === 'COD';
+        let verifiedPaid = isCOD;
+
+        if (!isCOD) {
+            if (!razorpayOrderId) {
+                return res.status(400).json({ success: false, message: 'razorpayOrderId is required' });
+            }
+            const payment = await prisma.payment.findUnique({
+                where: { razorpayOrderId },
+                select: { status: true, labOrderId: true }
+            });
+            verifiedPaid = !!payment && payment.status === 'SUCCESS' && payment.labOrderId === labOrderId;
+        }
+
+        if (!verifiedPaid) {
+            logger.warn(`[ConfirmController] Refusing to confirm ${labOrderId} with Redcliffe — no verified SUCCESS payment for order ${razorpayOrderId} (client claimed isPaid=${isPaid}).`);
+            return res.status(402).json({ success: false, message: 'Payment not verified. Cannot confirm booking.' });
+        }
+
+        // 4. Mark as Payment Pending & attempt Redcliffe API call
         await prisma.labOrder.update({
             where: { id: labOrderId },
             data: {
                 status: 'PAYMENT_PENDING',
-                paymentDetails: { razorpayOrderId, isPaid }
+                paymentDetails: { razorpayOrderId, isPaid: verifiedPaid }
             }
         });
 
-        // 4. Hit Redcliffe to Confirm
+        // 5. Hit Redcliffe to Confirm
         try {
             await redcliffeService.confirmBooking(order.redcliffeBookingId);
             

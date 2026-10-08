@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, ArrowRight, X, MapPin } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { retry } from '@/utils/retry';
 
 const LinkedInIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -49,11 +50,14 @@ export default function TeamPage() {
     const fetchTeam = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
-        const res = await fetch(`${apiUrl}/public/team`);
-        const json = await res.json();
-        if (json.success) {
-          setTeamData(json.data);
-        }
+        const json = await retry(async () => {
+          const res = await fetch(`${apiUrl}/public/team`);
+          if (!res.ok) throw new Error(`Team request failed: ${res.status}`);
+          const body = await res.json();
+          if (!body.success) throw new Error('Team request unsuccessful');
+          return body;
+        });
+        setTeamData(json.data);
       } catch (err) {
         console.error('Failed to fetch team data:', err);
       } finally {

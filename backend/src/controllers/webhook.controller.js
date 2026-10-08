@@ -88,10 +88,55 @@ async function processEvent(event, payload) {
         // ─── payment.failed ──────────────────────────────
         case 'payment.failed': {
             const p = payload.payment.entity;
+            // Never downgrade an already-successful payment (a failed attempt can
+            // be followed by a successful retry on the same Razorpay order).
+            const existing = await prisma.payment.findUnique({
+                where: { razorpayOrderId: p.order_id },
+                select: { status: true, bookingId: true, userId: true },
+            });
+            if (!existing || existing.status === 'SUCCESS') {
+                logger.info(`[Webhook] payment.failed ignored for order ${p.order_id} (${existing ? 'already SUCCESS' : 'unknown order'})`);
+                break;
+            }
             await prisma.payment.updateMany({
                 where: { razorpayOrderId: p.order_id },
                 data: { status: 'FAILED' },
             });
+            // Mirror verifyPayment/cancelPayment: if the app never called them
+            // (closed mid-payment), this webhook is the only signal — without
+            // this the booking stays PAYMENT_PENDING forever.
+            if (existing.bookingId) {
+                const { count } = await prisma.booking.updateMany({
+                    where: { id: existing.bookingId, status: 'PAYMENT_PENDING' },
+                    data: { status: 'PAYMENT_FAILED' },
+                });
+                if (count > 0) {
+                    try {
+                        const { emitToAdmins } = require('../services/socket.service');
+                        emitToAdmins('booking_payment_updated', {
+                            bookingId: existing.bookingId,
+                            paymentStatus: 'FAILED',
+                            bookingStatus: 'PAYMENT_FAILED',
+                        });
+                    } catch (emitErr) {
+                        logger.warn(`[Webhook] emitToAdmins failed: ${emitErr.message}`);
+                    }
+                }
+            }
+            // Tell the customer so they can retry — if the app was closed
+            // mid-payment this webhook is their only signal.
+            if (existing.userId) {
+                try {
+                    const { sendPushToUser } = require('../utils/pushNotification.service');
+                    await sendPushToUser(existing.userId, {
+                        title: 'Payment Failed',
+                        body: 'Your payment did not go through. Please try again to confirm your booking.',
+                        data: { type: 'payment_failed', bookingId: existing.bookingId || '' },
+                    });
+                } catch (pushErr) {
+                    logger.warn(`[Webhook] payment-failed push failed: ${pushErr.message}`);
+                }
+            }
             logger.info(`[Webhook] payment.failed: ${p.id} — ${p.error_description || ''}`);
             break;
         }

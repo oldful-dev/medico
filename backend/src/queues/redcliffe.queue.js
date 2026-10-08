@@ -122,12 +122,62 @@ const webhookWorker = new Worker('redcliffe-webhook-queue', async job => {
     const order = await prisma.labOrder.findUnique({ where: { redcliffeBookingId: String(booking_id) }});
     if (!order) {
         logger.warn(`[Queue] Webhook received for unknown booking: ${booking_id}`);
-        return; 
+        // Persist so finance/ops can reconcile against Redcliffe's invoice —
+        // a booking we never recorded is still a test Redcliffe may bill us for.
+        try {
+            await prisma.auditLog.create({
+                data: {
+                    action: 'REDCLIFFE_WEBHOOK_UNMATCHED',
+                    entity: 'RedcliffeBooking',
+                    entityId: String(booking_id),
+                    newValue: payload,
+                },
+            });
+        } catch (auditErr) {
+            logger.error(`[Queue] Failed to persist unmatched webhook for ${booking_id}: ${auditErr.message}`);
+        }
+        return;
     }
 
     if (order.processedEvents.includes(uniqueEventId)) {
         logger.info(`[Queue] Idempotent trigger bypassed: ${uniqueEventId} already processed.`);
         return;
+    }
+
+    const FULFILLMENT_EVENTS = ['pickup', 'samplesync', 'consolidatereport'];
+
+    // Raise a persistent finance/ops alert whenever Redcliffe fulfils an order we
+    // consider cancelled or unpaid — those are tests Redcliffe will bill Ayuxa for
+    // with no matching customer revenue.
+    const flagLeakage = async (reason) => {
+        logger.error(`[Queue] PAYMENT LEAKAGE RISK (${reason}): booking ${booking_id}, order ${order.id}, event ${event_type}`);
+        try {
+            await prisma.auditLog.create({
+                data: {
+                    action: 'REDCLIFFE_FULFILLED_WITHOUT_PAYMENT',
+                    entity: 'LabOrder',
+                    entityId: order.id,
+                    newValue: { reason, event_type, booking_id: String(booking_id), localStatus: order.status },
+                },
+            });
+        } catch (auditErr) {
+            logger.error(`[Queue] Failed to persist leakage alert for ${order.id}: ${auditErr.message}`);
+        }
+    };
+
+    if (FULFILLMENT_EVENTS.includes(event_type)) {
+        if (order.status === 'FAILED') {
+            await flagLeakage('order cancelled/failed locally but Redcliffe is still fulfilling it');
+        } else {
+            const paid = await prisma.payment.findFirst({
+                where: { labOrderId: order.id, status: 'SUCCESS' },
+                select: { id: true },
+            });
+            const isCOD = order.paymentDetails?.razorpayOrderId === 'COD';
+            if (!paid && !isCOD) {
+                await flagLeakage('no successful payment recorded for this order');
+            }
+        }
     }
 
     // Idempotency check: If already in a terminal state or past this event

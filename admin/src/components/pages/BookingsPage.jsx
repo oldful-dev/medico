@@ -6,7 +6,7 @@ import { formatDate, formatDateTime, formatCurrency, showToast } from "@/lib/hoo
 import { getSocket } from "@/lib/socket";
 import PaymentsPanel, { PaymentsSummaryWarning } from "@/components/common/PaymentsPanel";
 
-const statusColors = { PENDING: 'badge-warning', CONFIRMED: 'badge-info', ASSIGNED: 'badge-info', IN_PROGRESS: 'badge-purple', COMPLETED: 'badge-success', CANCELLED: 'badge-default', SLA_BREACH: 'badge-danger', PAYMENT_FAILED: 'badge-danger' };
+const statusColors = { PENDING: 'badge-warning', PAYMENT_PENDING: 'badge-warning', CONFIRMED: 'badge-info', ASSIGNED: 'badge-info', IN_PROGRESS: 'badge-purple', COMPLETED: 'badge-success', CANCELLED: 'badge-default', SLA_BREACH: 'badge-danger', PAYMENT_FAILED: 'badge-danger' };
 const paymentStatusColors = { PENDING: 'badge-warning', INITIATED: 'badge-info', SUCCESS: 'badge-success', FAILED: 'badge-danger', REFUNDED: 'badge-secondary', REFUND_INITIATED: 'badge-purple', PAYMENT_FAILED: 'badge-danger' };
 
 const EVENT_TYPES = [
@@ -621,7 +621,16 @@ export default function BookingsPage() {
                                 {/* Dynamic Booking Form Data Json Details (Rendered if formDataJson exists) */}
                                 {selected.formDataJson && typeof selected.formDataJson === 'object' && Object.keys(selected.formDataJson).length > 0 && (() => {
                                     const fd = selected.formDataJson;
+                                    // Answers are keyed by machine-generated field ids (e.g. field_0);
+                                    // the human labels live on the service's form schema.
+                                    const schema = selected.service?.formFieldsJson;
+                                    const schemaFields = Array.isArray(schema?.sections)
+                                        ? schema.sections.flatMap(s => s?.fields || [])
+                                        : (Array.isArray(schema?.fields) ? schema.fields : []);
+                                    const labelById = {};
+                                    schemaFields.forEach(f => { if (f?.id && f?.label) labelById[f.id] = f.label; });
                                     const formatKey = (k) => {
+                                        if (labelById[k]) return labelById[k];
                                         // Convert camelCase or snake_case to human readable Title Case
                                         const result = k.replace(/([A-Z])/g, " $1").replace(/[_-]/g, " ");
                                         return result.charAt(0).toUpperCase() + result.slice(1);
@@ -644,7 +653,8 @@ export default function BookingsPage() {
                                                     if (['serviceId', 'id', 'price', 'address', 'scheduleTime', 'time', 'providerType'].includes(key)) return null;
                                                     // Make description/special fields full width
                                                     // Detect if value is an attachment URL or list of URLs
-                                                    const isAttachment = key.toLowerCase().includes('attachment') || key.toLowerCase().includes('prescription') || key.toLowerCase().includes('file');
+                                                    const keyLabel = `${key} ${labelById[key] || ''}`.toLowerCase();
+                                                    const isAttachment = keyLabel.includes('attachment') || keyLabel.includes('prescription') || keyLabel.includes('file') || keyLabel.includes('document') || keyLabel.includes('upload');
                                                     let parsedAttachments = [];
                                                     if (isAttachment) {
                                                         try {
