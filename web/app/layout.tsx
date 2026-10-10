@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description: "Comprehensive elder care management platform delivering healthcare to your door.",
   icons: {
     icon: [
-      { url: '/onlylogo.png', type: 'image/png', sizes: 'any' },
+      { url: '/android-chrome-192x192.png', type: 'image/png', sizes: '192x192' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
       { url: '/favicon.ico', sizes: '16x16 32x32 48x48' },

@@ -126,7 +126,7 @@ function AuthForm() {
       <div className="mb-10 flex flex-col items-center text-center">
         <div className="w-28 h-28 relative mb-4">
           <Image
-            src="/onlylogo.png"
+            src="/android-chrome-512x512.png"
             alt="Ayuxa Logo"
             fill
             className="object-contain"

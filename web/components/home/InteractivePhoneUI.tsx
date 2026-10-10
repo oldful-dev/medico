@@ -152,7 +152,7 @@ export function InteractivePhoneUI() {
               
               {/* Profile Logo Placeholder */}
               <div className="relative w-12 h-12 bg-white/15 backdrop-blur-md rounded-full border border-white/20 p-2 flex items-center justify-center overflow-hidden">
-                 <Image src="/onlylogo.png" alt="Ayuxa Logo Profile" width={28} height={28} className="object-contain" />
+                 <Image src="/android-chrome-192x192.png" alt="Ayuxa Logo Profile" width={28} height={28} className="object-contain" />
               </div>
            </div>
         </motion.div>

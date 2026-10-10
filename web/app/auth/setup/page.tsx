@@ -178,7 +178,7 @@ function ProfileSetupForm() {
       <div className="bg-gradient-to-r from-[var(--color-primary-deep)] to-emerald-800 p-8 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-            <Image src="/PNG TRANS.png" alt="Logo" width={48} height={48} className="object-contain" />
+            <Image src="/logo-nav.webp" alt="Logo" width={48} height={48} className="object-contain" />
           </div>
           <div className="text-white">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70">Let&apos;s Create your</p>

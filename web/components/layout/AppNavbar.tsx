@@ -54,7 +54,7 @@ export function AppNavbar() {
         {/* Logo */}
         <Link href="/app/dashboard" className="flex items-center shrink-0 group">
           <div className={`relative transition-all duration-300 ${isScrolled ? 'h-10 w-28' : 'h-14 w-36'}`}>
-            <Image src="/PNG TRANS.png" alt="Ayuxa" fill className="object-contain" priority />
+            <Image src="/logo-nav.webp" alt="Ayuxa" fill className="object-contain" priority />
           </div>
         </Link>
 

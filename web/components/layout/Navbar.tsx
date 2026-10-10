@@ -47,7 +47,7 @@ export function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center group">
           <div className={`relative transition-all duration-300 ${isScrolled ? 'h-10 w-28' : 'h-14 w-36'}`}>
-            <Image src="/PNG TRANS.png" alt="Ayuxa Logo" fill className="object-contain" priority />
+            <Image src="/logo-nav.webp" alt="Ayuxa Logo" fill className="object-contain" priority />
           </div>
         </Link>
 
