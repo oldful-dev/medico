@@ -11,12 +11,16 @@ router.get('/my-benefits',          authenticate, ctrl.getMyBenefits);
 router.get('/me/memberships',       authenticate, ctrl.getMemberships);
 router.get('/me/upgrade-history',   authenticate, ctrl.getUpgradeHistory);
 router.post('/initiate',            authenticate, ctrl.initiateUserSubscription);
-router.post('/verify',              authenticate, ctrl.verifyUserSubscription);
+// Retired: these three endpoints changed subscription state without verifying a payment (or, for
+// execute-transition, subscription ownership). No client calls them; activation goes through
+// /initiate + the Razorpay-verified payment pipeline, and upgrades through /:id/upgrade.
+const retired = (req, res) => res.status(410).json({ success: false, message: 'This endpoint has been retired.' });
+router.post('/verify',              authenticate, retired);
 
 // Per-subscription actions
 router.post('/:id/calculate-adjustment',  authenticate, ctrl.calculateAdjustment);
-router.post('/:id/execute-transition',    authenticate, ctrl.executeTransition);
-router.post('/:id/renew',                 authenticate, ctrl.executeRenew);
+router.post('/:id/execute-transition',    authenticate, retired);
+router.post('/:id/renew',                 authenticate, retired);
 router.get( '/:id/available-upgrades',   authenticate, ctrl.getAvailableUpgrades);
 router.post('/:id/calculate-upgrade',    authenticate, ctrl.calculateUpgrade);
 router.post('/:id/upgrade',              authenticate, ctrl.executeUpgrade);

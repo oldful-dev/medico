@@ -33,66 +33,46 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                 throw new Error(`Payment record not found for Razorpay order ID ${orderId}`);
             }
 
-            // B. Concurrency check: If already SUCCESS and all promotions are complete, return early
-            let promotionsCompleted = true;
-            if (paymentRecord.status !== 'SUCCESS') {
-                promotionsCompleted = false;
-            }
-            if (paymentRecord.booking && paymentRecord.booking.status !== 'CONFIRMED') {
-                promotionsCompleted = false;
-            }
-            if (paymentRecord.labOrder && paymentRecord.labOrder.status !== 'CONFIRMED') {
-                promotionsCompleted = false;
-            }
-            // Require an actual Delhivery shipment, not just status: 'PAID' — the
-            // client-verify call and the Razorpay webhook both call this function,
-            // and status flips to PAID inside the same transaction that first
-            // promotion runs. If the retry lands before that first call's
-            // setImmediate fulfillment has actually run/completed, checking
-            // status alone would treat fulfillment as "already done" and skip
-            // it forever with no error ever recorded.
-            if (paymentRecord.productOrderId && paymentRecord.productOrder &&
-                (paymentRecord.productOrder.status !== 'PAID' || !paymentRecord.productOrder.shiprocketOrderId)) {
-                promotionsCompleted = false;
-            }
-            if (!paymentRecord.invoice) {
-                promotionsCompleted = false;
-            }
-
-            if (promotionsCompleted) {
-                logger.info(`[PaymentService] Order ${orderId} already fully promoted and marked SUCCESS. Skipping promotion.`);
+            // B. Terminal-state guard: a refunded (or refund-in-flight) payment must never be
+            // pulled back to SUCCESS by a late or duplicate capture event.
+            if (paymentRecord.status === 'REFUND_INITIATED' || paymentRecord.status === 'REFUNDED') {
+                logger.warn(`[PaymentService] Ignoring capture for order ${orderId}: payment is ${paymentRecord.status}.`);
                 return { payment: paymentRecord, invoice: paymentRecord.invoice, skipped: true };
             }
 
-            // C. Update payment record inside the transaction (if not already SUCCESS)
-            let updatedPayment = paymentRecord;
-            if (paymentRecord.status !== 'SUCCESS') {
-                updatedPayment = await tx.payment.update({
-                    where: { id: paymentRecord.id },
-                    data: {
-                        status: 'SUCCESS',
-                        razorpayPaymentId: paymentId,
-                        paymentMethod: paymentMethod || 'CARD',
-                        ...(signature && { razorpaySignature: signature })
-                    },
-                    include: {
-                        user: true,
-                        booking: { include: { service: true } },
-                        labOrder: true,
-                        productOrder: { include: { product: true } },
-                    }
-                });
-            } else {
-                updatedPayment = await tx.payment.findUnique({
-                    where: { id: paymentRecord.id },
-                    include: {
-                        user: true,
-                        booking: { include: { service: true } },
-                        labOrder: true,
-                        productOrder: { include: { product: true } },
-                    }
-                });
+            // C. Claim the INITIATED/FAILED -> SUCCESS transition with a compare-and-set. Under READ COMMITTED
+            // a concurrent caller blocks on this row until the winner commits, re-evaluates the WHERE, and
+            // gets count 0 - so exactly one caller runs the promotions below. Every caller after the first
+            // (duplicate webhook, client verify racing the webhook, a replay hours later) only reads.
+            const claim = await tx.payment.updateMany({
+                where: { id: paymentRecord.id, status: { in: ['INITIATED', 'PENDING', 'FAILED'] } },
+                data: {
+                    status: 'SUCCESS',
+                    razorpayPaymentId: paymentId,
+                    paymentMethod: paymentMethod || 'CARD',
+                    ...(signature && { razorpaySignature: signature })
+                },
+            });
+            const includeAll = {
+                user: true,
+                booking: { include: { service: true } },
+                labOrder: true,
+                productOrder: { include: { product: true } },
+                invoice: true,
+            };
+            if (claim.count === 0) {
+                // Lost the race or replay: report the committed state, change nothing.
+                const current = await tx.payment.findUnique({ where: { id: paymentRecord.id }, include: includeAll });
+                const needsShipment = current.productOrderId && current.productOrder && current.status === 'SUCCESS' &&
+                    current.invoice && !current.productOrder.shiprocketOrderId;
+                if (needsShipment) {
+                    // keep the existing fulfilment-retry behaviour for product orders
+                    return { payment: current, invoice: current.invoice, skipped: false, createdInvoice: false };
+                }
+                logger.info(`[PaymentService] Order ${orderId} already processed (payment ${current.status}). Skipping promotion.`);
+                return { payment: current, invoice: current.invoice, skipped: true };
             }
+            const updatedPayment = await tx.payment.findUnique({ where: { id: paymentRecord.id }, include: includeAll });
 
             // C2. Coupon redemption — recorded ONLY here, on a confirmed payment.
             // Idempotent on paymentId, so a retried verification won't double-count.
@@ -309,8 +289,8 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                     updatedFormData.gstOnFeeWaived = waiveGst;
                 }
 
-                await tx.booking.update({
-                    where: { id: paymentRecord.booking.id },
+                const bookingPromoted = await tx.booking.updateMany({
+                    where: { id: paymentRecord.booking.id, status: { in: ['PENDING', 'PAYMENT_PENDING', 'PAYMENT_FAILED'] } },
                     data: {
                         status: 'CONFIRMED',
                         paymentStatus: 'SUCCESS',
@@ -318,20 +298,27 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                         formDataJson: updatedFormData,
                     }
                 });
+                if (bookingPromoted.count === 0) {
+                    logger.warn(`[PaymentService] Booking ${paymentRecord.booking.id} is ${paymentRecord.booking.status}, not awaiting payment: payment recorded, booking left unchanged (needs review/refund).`);
+                    await tx.booking.update({ where: { id: paymentRecord.booking.id }, data: { paymentStatus: 'SUCCESS' } });
+                }
             }
 
             // F. Lab Order Promotion
             if (paymentRecord.labOrder) {
-                await tx.labOrder.update({
-                    where: { id: paymentRecord.labOrder.id },
+                const labPromoted = await tx.labOrder.updateMany({
+                    where: { id: paymentRecord.labOrder.id, status: { in: ['PENDING', 'HOLD_CREATED', 'PAYMENT_PENDING'] } },
                     data: { status: 'CONFIRMED' }
                 });
+                if (labPromoted.count === 0) {
+                    logger.warn(`[PaymentService] Lab order ${paymentRecord.labOrder.id} is ${paymentRecord.labOrder.status}, not awaiting payment: payment recorded, order left unchanged (needs review/refund).`);
+                }
             }
 
             // G. Product Order Promotion
             if (paymentRecord.productOrderId) {
-                await tx.productOrder.update({
-                    where: { id: paymentRecord.productOrderId },
+                await tx.productOrder.updateMany({
+                    where: { id: paymentRecord.productOrderId, status: 'PENDING' },
                     data: { status: 'PAID' },
                 });
             }

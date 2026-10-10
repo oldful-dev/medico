@@ -46,6 +46,46 @@ async function recordWebhookActivity(order, event_type, realStaffName = null) {
     }
 }
 
+// Forward-only model of how a partner event may change a lab order. Status never moves backwards, an event
+// that arrives after a later stage is still recorded (timeline, tracking link) without changing the status,
+// and only a cancelled/failed order is closed to updates.
+const WEBHOOK_STATUS_RANK = { PENDING: 0, HOLD_CREATED: 0, PAYMENT_PENDING: 1, CONFIRMED: 2, RESCHEDULED: 2, MANUAL_RECOVERY_NEEDED: 2, SAMPLE_COLLECTED: 3, PROCESSING: 4, REPORT_GENERATED: 5 };
+const WEBHOOK_EVENT_TARGET = { pickup: 'SAMPLE_COLLECTED', samplesync: 'PROCESSING', consolidatereport: 'REPORT_GENERATED' };
+
+function planWebhookEvent(order, event_type, data, trackingLink) {
+    const rank = WEBHOOK_STATUS_RANK[order.status] ?? 0;
+    switch (event_type) {
+        case 'phleboassigned':
+            return {
+                status: order.status,
+                updates: trackingLink && trackingLink !== order.trackingLink ? { trackingLink } : {},
+                where: { trackingLink: order.trackingLink },
+                activity: true,
+                sendReport: false,
+            };
+        case 'pickup':
+        case 'samplesync':
+        case 'consolidatereport': {
+            const target = WEBHOOK_EVENT_TARGET[event_type];
+            const advance = rank < WEBHOOK_STATUS_RANK[target];
+            const updates = {};
+            if (event_type === 'consolidatereport' && !order.reportUrl && data && data.report_link) updates.reportUrl = data.report_link;
+            return {
+                status: advance ? target : order.status,
+                updates,
+                where: {},
+                activity: event_type !== 'consolidatereport',
+                sendReport: event_type === 'consolidatereport' && order.status !== 'REPORT_GENERATED',
+            };
+        }
+        case 'cancelled':
+            if (order.status === 'REPORT_GENERATED') return null;
+            return { status: 'FAILED', updates: {}, where: {}, activity: true, sendReport: false };
+        default:
+            return null;
+    }
+}
+
 // Queue Definitions
 const redcliffeConfirmQueue = new Queue('redcliffe-confirm-queue', { connection });
 const redcliffeWebhookQueue = new Queue('redcliffe-webhook-queue', { connection });
@@ -180,94 +220,67 @@ const webhookWorker = new Worker('redcliffe-webhook-queue', async job => {
         }
     }
 
-    // Idempotency check: If already in a terminal state or past this event
-    if (order.status === 'FAILED' || order.status === 'REPORT_GENERATED') {
-        logger.info(`[Queue] Skipping webhook for ${booking_id}, terminal state already reached.`);
-        return;
-    }
-
-    let nextStatus = order.status;
-    let updates = {};
-    let applied = false;
-    // Set only for phleboassigned below — the webhook payload itself never
-    // carries a real name, only a status change, so a separate lookup is
-    // needed to show the actual assigned phlebotomist instead of the
-    // generic 'Redcliffe Labs' placeholder.
-    let realStaffName = null;
-
-    switch (event_type) {
-        case 'phleboassigned':
-            if (order.status === 'CONFIRMED') {
-                updates.trackingLink = data.tracking_link || order.trackingLink;
-                applied = true;
-                const phleboInfo = await redcliffeService.getPhleboTracking(booking_id);
-                if (phleboInfo) {
-                    realStaffName = phleboInfo.phlebo__user__fullname || null;
-                    if (phleboInfo.tracking_link) updates.trackingLink = phleboInfo.tracking_link;
-                }
-            }
-            break;
-
-        case 'pickup':
-            if (['PENDING', 'CONFIRMED'].includes(order.status)) {
-                nextStatus = 'SAMPLE_COLLECTED';
-                applied = true;
-            }
-            break;
-
-        case 'samplesync':
-            if (['PENDING', 'CONFIRMED', 'SAMPLE_COLLECTED'].includes(order.status)) {
-                nextStatus = 'PROCESSING';
-                applied = true;
-            }
-            break;
-
-        case 'consolidatereport':
-            if (order.status !== 'REPORT_GENERATED') {
-                nextStatus = 'REPORT_GENERATED';
-                updates.reportUrl = data.report_link;
-                applied = true;
-
-                // Emitting a notification job to email/whatsapp the patient
-                await notificationQueue.add('send-lab-report', {
-                    userId: order.userId,
-                    reportUrl: data.report_link,
-                    patientName: order.patient?.name
-                }, { attempts: 3, backoff: { type: 'exponential', delay: 2000 }}); // Retry explicitly set here
-            }
-            break;
-
-        case 'cancelled':
-            if (order.status !== 'FAILED') {
-                nextStatus = 'FAILED';
-                applied = true;
-                // Trigger operational review or refund
-            }
-            break;
-
-        default:
-            logger.info(`[Queue] Unhandled webhook event_type: ${event_type}`);
-            return;
-    }
-
-    // Apply updates
-    await prisma.labOrder.update({
-        where: { id: order.id },
-        data: {
-            status: nextStatus,
-            ...updates,
-            processedEvents: { push: uniqueEventId }
+    // ── Apply the event: state-aware, forward-only, and safe under concurrent jobs ──
+    // The job reads the order, decides, then writes. With worker concurrency 10 and no
+    // per-booking ordering, two events for one booking can interleave, so the write is a
+    // compare-and-set on the state that was read (re-read and re-plan on conflict), the status
+    // only ever moves forward, and an event is recorded as processed only together with its effect.
+    let current = order;
+    for (let attempt = 0; attempt < 4; attempt++) {
+        if (attempt > 0) {
+            current = await prisma.labOrder.findUnique({ where: { redcliffeBookingId: String(booking_id) } });
+            if (!current) return;
         }
-    });
 
-    // Surface the change to the customer (Live Updates timeline + real-time
-    // socket push) — previously these 4 events only flipped LabOrder.status
-    // silently, invisible outside a REST refetch.
-    if (applied) {
-        await recordWebhookActivity(order, event_type, realStaffName);
+        if (current.status === 'FAILED') {
+            logger.info(`[Queue] Skipping webhook for ${booking_id}, order already cancelled/failed.`);
+            return;
+        }
+
+        // A reassignment sends a second 'phleboassigned' with a different tracking link, so that
+        // event's identity includes the link; every other event is unique per booking and type.
+        let phleboInfo = null;
+        let trackingLink = null;
+        if (event_type === 'phleboassigned') {
+            phleboInfo = await redcliffeService.getPhleboTracking(booking_id);
+            trackingLink = (phleboInfo && phleboInfo.tracking_link) || (data && data.tracking_link) || null;
+        }
+        const eventId = event_type === 'phleboassigned' ? `${uniqueEventId}_${trackingLink || 'none'}` : uniqueEventId;
+        if (current.processedEvents.includes(eventId)) {
+            logger.info(`[Queue] Idempotent trigger bypassed: ${eventId} already processed.`);
+            return;
+        }
+
+        const plan = planWebhookEvent(current, event_type, data, trackingLink);
+        if (!plan) {
+            logger.info(`[Queue] Ignoring webhook event ${event_type} for ${booking_id} in state ${current.status}`);
+            return;
+        }
+
+        // The report notification is de-duplicated by job id, so it is safe to enqueue before the
+        // write: a retried or concurrent job cannot send a second one.
+        if (plan.sendReport) {
+            await notificationQueue.add('send-lab-report', {
+                userId: current.userId,
+                reportUrl: data.report_link,
+                patientName: current.patient?.name
+            }, { jobId: `lab-report-${current.id}`, attempts: 3, backoff: { type: 'exponential', delay: 2000 } });
+        }
+
+        const result = await prisma.labOrder.updateMany({
+            where: { id: current.id, status: current.status, NOT: { processedEvents: { has: eventId } }, ...plan.where },
+            data: { status: plan.status, ...plan.updates, processedEvents: { push: eventId } }
+        });
+        if (result.count === 1) {
+            if (plan.activity) {
+                await recordWebhookActivity(current, event_type, phleboInfo ? (phleboInfo.phlebo__user__fullname || null) : null);
+            }
+            logger.info({ job: 'webhook-handler', event: event_type, booking_id, newStatus: plan.status });
+            return;
+        }
+        // Someone else changed this order between our read and write: re-read and re-plan.
     }
-
-    logger.info({ job: 'webhook-handler', event: event_type, booking_id, newStatus: nextStatus });
+    throw new Error(`[Queue] Webhook ${event_type} for ${booking_id} lost the write race 4 times; will be retried`);
 
 }, { connection, concurrency: 10 });
 

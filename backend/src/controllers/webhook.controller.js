@@ -98,10 +98,16 @@ async function processEvent(event, payload) {
                 logger.info(`[Webhook] payment.failed ignored for order ${p.order_id} (${existing ? 'already SUCCESS' : 'unknown order'})`);
                 break;
             }
-            await prisma.payment.updateMany({
-                where: { razorpayOrderId: p.order_id },
+            // compare-and-set: only an unresolved payment may become FAILED (a capture that commits
+            // between the read above and this write must win)
+            const failedClaim = await prisma.payment.updateMany({
+                where: { razorpayOrderId: p.order_id, status: { in: ['INITIATED', 'PENDING'] } },
                 data: { status: 'FAILED' },
             });
+            if (failedClaim.count === 0) {
+                logger.info(`[Webhook] payment.failed ignored for order ${p.order_id}: payment already resolved`);
+                break;
+            }
             // Mirror verifyPayment/cancelPayment: if the app never called them
             // (closed mid-payment), this webhook is the only signal — without
             // this the booking stays PAYMENT_PENDING forever.
