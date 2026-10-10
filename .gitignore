@@ -148,3 +148,12 @@ mobile/GOOGLE_AUTH_FIX.md
 redcliffe-api-tests
 
 *.md
+# Local-only notes: the whole docs/ folder stays out of Git (repository is public)
+/docs/
+
+# Root README is the only markdown allowed through the *.md rule above
+!/README.md
+
+# Developer handover package: never commit
+/handover/
+/handover*.zip
