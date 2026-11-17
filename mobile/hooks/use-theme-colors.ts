@@ -74,7 +74,7 @@ const LIGHT_THEME: ThemeColors = {
 const DARK_THEME: ThemeColors = {
   primary: '#34C759',        // Keep primary green, it's readable on dark
   primaryDark: '#27AE60',
-  primaryDeep: '#1E8449',
+  primaryDeep: '#4FD485',
   primaryText: '#4FD485',
 
   accent: Colors.accent,

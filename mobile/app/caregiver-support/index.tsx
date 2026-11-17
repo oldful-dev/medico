@@ -17,6 +17,7 @@ import { familyMemberService, FamilyMember } from '@/services/api/familyMemberSe
 import { useUser } from '@/context/UserContext';
 import { useAddress } from '@/context/AddressContext';
 import { Spacing } from '@/constants/theme';
+import { sanitizeNameInput, isValidPersonName } from '@/utils/validation';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
@@ -74,7 +75,7 @@ export default function BookCaregiverSupportScreen() {
 
     const handleAddFamilyMember = async () => {
         if (!profile?.id) return;
-        if (!newMemberName.trim()) {
+        if (!isValidPersonName(newMemberName)) {
             triggerAlert(t('family_member_form.required_title'), t('family_member_form.name_required_msg'));
             return;
         }
@@ -407,7 +408,7 @@ export default function BookCaregiverSupportScreen() {
                                         style={dynamicStyles.formInputInline}
                                         placeholder={t('family_member_form.enter_name_placeholder')}
                                         value={newMemberName}
-                                        onChangeText={setNewMemberName}
+                                        onChangeText={(txt) => setNewMemberName(sanitizeNameInput(txt))}
                                     />
 
                                     <Text style={dynamicStyles.formLabel}>{t('family_member_form.relation')}</Text>
@@ -617,7 +618,7 @@ export default function BookCaregiverSupportScreen() {
                         <TouchableOpacity
                             style={[dynamicStyles.confirmButton, (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 }]}
                             activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
-                            disabled={!isFormValid || isBooking || isLoadingInit}
+                            disabled={isBooking || isLoadingInit}
                             onPress={handleBookService}
                         >
                             {isBooking ? (
@@ -1091,7 +1092,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderWidth: 1,
         borderColor: isDarkMode ? '#3A3A3A' : '#CCC',
         borderRadius: 12,
-        paddingHorizontal: 10,
+        paddingHorizontal: 12,
         paddingVertical: 4,
         backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
@@ -1100,6 +1101,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         backgroundColor: isDarkMode ? 'rgba(2,116,63,0.15)' : 'rgba(2,116,63,0.06)',
     },
     relationChipText: {
+        paddingRight: 2, // avoids the last glyph being clipped on Android
         fontSize: 11,
         color: isDarkMode ? '#CCCCCC' : '#555',
     },

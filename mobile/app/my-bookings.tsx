@@ -416,10 +416,16 @@ export default function MyBookingsScreen() {
     // ─── Booking Card ────────────────────────────────────────────────────────
     const renderCard = (booking: Booking) => {
         const meta   = CATEGORY_META[booking.category] ?? CATEGORY_META.concierge;
-        const status = STATUS_META[booking.status];
+        // A booking whose payment failed must not also read "Slot Reserved" / "Pending":
+        // show one consistent state instead of two contradictory badges.
+        const paymentFailedUnconfirmed = booking.paymentStatus === 'failed'
+            && ['hold_created', 'payment_pending', 'pending'].includes(booking.status);
+        const status = paymentFailedUnconfirmed
+            ? { label: 'Payment Failed', color: '#EF4444' }
+            : STATUS_META[booking.status];
         const isUpcoming = isItemUpcoming(booking) && (
-            booking.status === 'confirmed' || booking.status === 'pending'
-            || booking.status === 'hold_created' || booking.status === 'payment_pending'
+            !paymentFailedUnconfirmed && (booking.status === 'confirmed' || booking.status === 'pending'
+            || booking.status === 'hold_created' || booking.status === 'payment_pending')
         );
         const isRescheduled = booking.status === 'rescheduled';
         const showDate = !!booking.scheduledDate;

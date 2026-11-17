@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import { Colors, Fonts, FontSize, Radius, Spacing, Shadow } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -28,6 +29,7 @@ export default function ImageUploadBox({
     onImagesChange,
     maxImages = 5,
 }: ImageUploadBoxProps) {
+    const themeColors = useThemeColors();
     const { t } = useTranslation();
     const resolvedTitle = title ?? t('image_upload.upload_photos', 'Upload Photos');
     const resolvedSubtitle = subtitle ?? t('image_upload.file_hint', 'JPG, PNG up to 10MB');
@@ -61,6 +63,10 @@ export default function ImageUploadBox({
             });
 
             if (!result.canceled && result.assets && result.assets.length > 0) {
+                if ((result.assets[0].fileSize ?? 0) > 10 * 1024 * 1024) {
+                    Alert.alert(t('common.error', 'Error'), 'File too large. Maximum allowed size is 10MB. Please choose a smaller file.');
+                    return;
+                }
                 const uri = result.assets[0].uri;
                 setImages(prev => {
                     const next = [...prev, uri].slice(0, maxImages);
@@ -85,7 +91,11 @@ export default function ImageUploadBox({
             });
 
             if (!result.canceled && result.assets && result.assets.length > 0) {
-                const newUris = result.assets.map((asset: ImagePicker.ImagePickerAsset) => asset.uri);
+                const okAssets = result.assets.filter((asset: ImagePicker.ImagePickerAsset) => (asset.fileSize ?? 0) <= 10 * 1024 * 1024);
+                if (okAssets.length < result.assets.length) {
+                    Alert.alert(t('common.error', 'Error'), 'File too large. Maximum allowed size is 10MB. Please choose a smaller file.');
+                }
+                const newUris = okAssets.map((asset: ImagePicker.ImagePickerAsset) => asset.uri);
                 setImages(prev => {
                     const next = [...prev, ...newUris].slice(0, maxImages);
                     notifyParent(next);
@@ -122,7 +132,7 @@ export default function ImageUploadBox({
     return (
         <View style={styles.container}>
             <TouchableOpacity 
-                style={styles.uploadDashedBox} 
+                style={[styles.uploadDashedBox, { backgroundColor: themeColors.bgCard }]} 
                 onPress={handleAddImage} 
                 activeOpacity={0.7}
             >
@@ -130,7 +140,7 @@ export default function ImageUploadBox({
                 <Text style={styles.uploadTitle}>{resolvedTitle}</Text>
                 <Text style={styles.uploadSubtitle}>{resolvedSubtitle}</Text>
 
-                <View style={styles.uploadButton}>
+                <View style={[styles.uploadButton, { backgroundColor: themeColors.bgCard }]}>
                     <Text style={styles.uploadButtonText}>{t('image_upload.select_image', 'SELECT IMAGE').toUpperCase()}</Text>
                 </View>
             </TouchableOpacity>

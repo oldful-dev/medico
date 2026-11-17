@@ -526,7 +526,7 @@ export default function MedicalTourismScreen() {
                 (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 },
               ]}
               activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
-              disabled={!isFormValid || isBooking || isLoadingInit}
+              disabled={isBooking || isLoadingInit}
               onPress={handleSubmitEnquiry}
             >
               {isBooking ? (

@@ -34,6 +34,7 @@ export interface UserProfile {
     smsEnabled?: boolean;
     whatsappEnabled?: boolean;
     emailMarketingEnabled?: boolean;
+    emailNotificationsEnabled?: boolean;
 
     addresses?: Address[];
     emergencyContacts?: EmergencyContact[];

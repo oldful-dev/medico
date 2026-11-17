@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { isValidPersonName, isValidMedicalText } = require('../utils/inputValidation');
 const { sendResponse } = require('../utils/helpers');
 const { logger } = require('../config/logger');
 
@@ -31,6 +32,12 @@ const addFamilyMember = async (req, res, next) => {
 
         if (!name || !relation) {
             return sendResponse(res, 400, null, 'Name and relation are required');
+        }
+        if (!isValidPersonName(name)) {
+            return sendResponse(res, 400, null, 'Please enter a valid name using letters only (3 to 60 characters)');
+        }
+        if (![allergies, chronicConditions, emergencyNotes].every(isValidMedicalText)) {
+            return sendResponse(res, 400, null, 'Allergies, conditions and notes must be text, not just numbers');
         }
 
         const member = await prisma.familyMember.create({

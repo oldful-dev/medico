@@ -14,6 +14,7 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
+import { sanitizeNameInput, isValidPersonName } from '@/utils/validation';
 
 const GENDER_OPTIONS = ['MALE', 'FEMALE', 'OTHER'];
 
@@ -69,9 +70,9 @@ export default function EditProfileScreen() {
     });
     const [preferredLanguage, setPreferredLanguage] = useState(profile?.preferredLanguage || 'en');
 
-    const handleDobChange = (_: any, selectedDate?: Date) => {
+    const handleDobChange = (event: any, selectedDate?: Date) => {
         setShowDatePicker(false);
-        if (selectedDate) {
+        if (event?.type !== 'dismissed' && selectedDate) {
             setDobDate(selectedDate);
             setDateOfBirth(formatLocalDateToYYYYMMDD(selectedDate));
         }
@@ -82,6 +83,10 @@ export default function EditProfileScreen() {
     const handleSave = async () => {
         if (!name.trim()) {
             triggerAlert(t('account.required'), t('edit_profile.name_empty'));
+            return;
+        }
+        if (!isValidPersonName(name)) {
+            triggerAlert(t('account.required'), 'Please enter a valid name using letters only (3 to 60 characters).');
             return;
         }
         setSaving(true);
@@ -128,9 +133,9 @@ export default function EditProfileScreen() {
             <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
                 <Text style={styles.label}>{t('edit_profile.full_name')} *</Text>
-                <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={t('edit_profile.placeholder_name')} placeholderTextColor={colors.textMuted} />
+                <TextInput style={styles.input} value={name} onChangeText={(txt) => setName(sanitizeNameInput(txt))} placeholder={t('edit_profile.placeholder_name')} placeholderTextColor={colors.textMuted} />
 
-                <Text style={styles.label}>{t('edit_profile.email')}</Text>
+                <Text style={styles.label}>{t('edit_profile.email')} (Read Only)</Text>
                 <TextInput style={[styles.input, styles.inputDisabled]} value={email} editable={false} />
 
                 <Text style={styles.label}>{t('edit_profile.phone_read_only')}</Text>

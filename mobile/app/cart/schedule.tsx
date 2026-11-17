@@ -24,6 +24,7 @@ import { useThemeColors } from "@/hooks/use-theme-colors";
 import { useTheme } from "@/context/ThemeContext";
 import { CustomAlertModal } from "@/components/common/CustomAlertModal";
 import { useTranslation } from "react-i18next";
+import { isValidPincode } from '@/utils/validation';
 
 const PRIMARY_GREEN = "#02743F";
 const TEXT_DARK = "#2F2F2F";
@@ -293,7 +294,7 @@ export default function CartScheduleScreen() {
       }
       setStep(2);
     } else if (step === 2) {
-      if (!selectedAddress.trim() || pincode.length !== 6) {
+      if (!selectedAddress.trim() || !isValidPincode(pincode)) {
         triggerAlert(t("common.required"), t("cart_schedule.required_address_pincode"));
         return;
       }

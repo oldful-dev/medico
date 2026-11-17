@@ -30,6 +30,7 @@ import { LocationPickerModal } from "@/components/LocationPickerModal";
 import { CustomAlertModal } from "@/components/common/CustomAlertModal";
 import { useTranslation } from "react-i18next";
 import { AddressPickerSection, type AddressData } from "@/components/AddressPickerSection";
+import { isValidPincode } from '@/utils/validation';
 
 const PRIMARY_GREEN = "#02743F";
 const TEXT_DARK = "#2F2F2F";
@@ -361,7 +362,7 @@ export default function BloodTestScheduleScreen() {
         );
         return;
       }
-      if (pincode.length !== 6) {
+      if (!isValidPincode(pincode)) {
         triggerAlert(
           t("blood_test_schedule.required_title"),
           t("blood_test_schedule.enter_valid_pincode_alert"),

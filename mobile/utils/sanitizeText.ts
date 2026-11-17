@@ -48,6 +48,9 @@ export function cleanNotificationText(text: string | null | undefined): string {
             'CAREGIVER_OTP', 'SOS_PARTNER', 'SHIFT_CANCELLED_PARTNER', 'SOS_ADMIN',
             'ADMIN_LOGIN_OTP', 'PLAN_CANCELLED_ADMIN', 'ADMIN_NEW_ORDER', 'IMPORTANT_UPDATE',
             'SOS_RESOLVED_CLIENT', 'SOS_RESOLVED_FAMILY',
+            // WhatsApp (WABA) template keys — see backend/src/services/whatsapp/templates.js
+            'BOOKING_CONFIRMED', 'ORDER_CANCELLED', 'PLAN_EXPIRY_REMINDER', 'WELCOME_FLOW_V2',
+            'PRESCRIPTION_RECEIVED', 'SOS_ALERT_CLIENT', 'SOS_ALERT_FAMILY', 'HEALTH_REPORT_V2',
         ];
         if (knownTemplates.includes(templateKey)) {
             let params: string[] = [];
@@ -116,6 +119,21 @@ export function cleanNotificationText(text: string | null | undefined): string {
                     return `New order received — please check the admin portal.`;
                 case 'IMPORTANT_UPDATE':
                     return `Dear ${getVar(0) || 'there'}, we have an important update for you. Please check the Ayuxa app for details.`;
+                case 'BOOKING_CONFIRMED':
+                    return `Dear ${getVar(0) || 'there'}, your booking ${getVar(1) ? getVar(1) + ' ' : ''}is confirmed.`;
+                case 'ORDER_CANCELLED':
+                    return `Dear ${getVar(0) || 'there'}, your order ${getVar(1) ? getVar(1) + ' ' : ''}has been cancelled. Any eligible refund will be processed shortly.`;
+                case 'PLAN_EXPIRY_REMINDER':
+                    return `Dear ${getVar(0) || 'there'}, your care plan is expiring soon. Renew it in the Ayuxa app.`;
+                case 'WELCOME_FLOW_V2':
+                    return `Dear ${getVar(0) || 'there'}, welcome to Ayuxa! Explore our health services in the app.`;
+                case 'PRESCRIPTION_RECEIVED':
+                    return `Dear ${getVar(0) || 'there'}, your prescription has been received.`;
+                case 'HEALTH_REPORT_V2':
+                    return `Dear ${getVar(0) || 'there'}, your health report is ready. View it in the Ayuxa app.`;
+                case 'SOS_ALERT_CLIENT':
+                case 'SOS_ALERT_FAMILY':
+                    return `SOS triggered by ${getVar(0) || 'a family member'} — please act immediately.`;
                 case 'SOS_RESOLVED_CLIENT':
                     return `Dear ${getVar(0) || 'there'}, we are writing to confirm that the SOS alert recently triggered via the AYUXA app has been successfully resolved.`;
                 case 'SOS_RESOLVED_FAMILY':
@@ -123,6 +141,12 @@ export function cleanNotificationText(text: string | null | undefined): string {
                 default:
                     break;
             }
+        }
+
+        // Unknown template key, or a raw backend log line ("waba:", "vars:",
+        // "Template:", "{{1}}"): never show the internals to the user.
+        if (/waba:|vars:|params:|templateId:|^\s*template:/i.test(clean)) {
+            return 'You have a new update from Ayuxa.';
         }
     }
 

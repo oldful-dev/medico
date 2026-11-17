@@ -1,5 +1,5 @@
 import React, { useRef, useState, useImperativeHandle, useEffect } from 'react';
-import { View, TextInput, StyleSheet, Platform, Pressable, Text } from 'react-native';
+import { View, TextInput, StyleSheet, Platform, Pressable, Text, Keyboard } from 'react-native';
 import { Colors, Fonts, FontSize, Radius } from '@/constants/theme';
 
 export interface OTPInputRef {
@@ -40,6 +40,14 @@ export default function OTPInput({
         }
     }, [autoFocus, disabled]);
 
+    // Android: pressing Back hides the keyboard but leaves the input "focused",
+    // so a later focus() is a no-op and the keyboard never reopens. Blur the
+    // input whenever the keyboard goes away so the next tap can focus it again.
+    useEffect(() => {
+        const sub = Keyboard.addListener('keyboardDidHide', () => inputRef.current?.blur());
+        return () => sub.remove();
+    }, []);
+
     const handleChangeText = (text: string) => {
         const cleaned = text.replace(/[^0-9]/g, '');
         if (cleaned.length <= length) {
@@ -51,7 +59,10 @@ export default function OTPInput({
         }
     };
 
-    const handlePress = () => { inputRef.current?.focus(); };
+    const handlePress = () => {
+        inputRef.current?.blur();
+        setTimeout(() => inputRef.current?.focus(), 30);
+    };
 
     return (
         <View style={styles.container}>

@@ -234,7 +234,8 @@ export const AddressPickerSection = ({
     }, [onAddressChange, syncToContext, selectActiveAddress, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn]);
 
     // Handle manual pincode change
-    const handlePincodeChange = useCallback((pincode: string) => {
+    const handlePincodeChange = useCallback((raw: string) => {
+        const pincode = raw.replace(/\D/g, '').slice(0, 6);
         setManualPincodeInput(pincode);
         if (selectedAddress) {
             onAddressChange({

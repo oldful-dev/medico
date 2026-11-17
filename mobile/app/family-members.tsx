@@ -11,6 +11,7 @@ import { useUser } from '@/context/UserContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { sanitizeNameInput, isValidPersonName, isValidMedicalText } from '@/utils/validation';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 const RELATIONS = ['Father', 'Mother', 'Spouse', 'Son', 'Daughter', 'Sibling', 'Dependent', 'Other'];
@@ -152,9 +153,9 @@ export default function FamilyMembersScreen() {
         setShowForm(true);
     };
 
-    const handleDateChange = (_: any, date: Date | undefined) => {
+    const handleDateChange = (event: any, date: Date | undefined) => {
         setShowDatePicker(false);
-        if (date) {
+        if (event?.type !== 'dismissed' && date) {
             setDobDate(date);
             const formattedDate = formatLocalDateToYYYYMMDD(date);
             setForm(f => ({ ...f, dateOfBirth: formattedDate }));
@@ -164,6 +165,14 @@ export default function FamilyMembersScreen() {
     const saveMember = async () => {
         if (!form.name.trim() || !form.relation) {
             triggerAlert(t('family_members.alerts.missing_info_title'), t('family_members.alerts.missing_info_msg'));
+            return;
+        }
+        if (!isValidPersonName(form.name)) {
+            triggerAlert(t('family_members.alerts.missing_info_title'), 'Please enter a valid name using letters only (3 to 60 characters).');
+            return;
+        }
+        if (!isValidMedicalText(form.allergies) || !isValidMedicalText(form.chronicConditions) || !isValidMedicalText(form.emergencyNotes)) {
+            triggerAlert(t('family_members.alerts.missing_info_title'), 'Allergies, chronic conditions and emergency notes must be text (for example "Penicillin, Dust"), not just numbers.');
             return;
         }
         setSaving(true);
@@ -322,7 +331,7 @@ export default function FamilyMembersScreen() {
                             placeholder={t('family_members.full_name_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             value={form.name}
-                            onChangeText={v => setForm(f => ({ ...f, name: v }))}
+                            onChangeText={v => setForm(f => ({ ...f, name: sanitizeNameInput(v) }))}
                         />
                         <TouchableOpacity
                             style={[styles.input, { justifyContent: 'center' }]}

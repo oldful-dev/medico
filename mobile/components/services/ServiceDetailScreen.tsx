@@ -244,7 +244,7 @@ export default function ServiceDetailScreen({
                     <TouchableOpacity
                         style={[dynamicStyles.bookButton, (isLoading || disabled) && { opacity: 0.65 }]}
                         activeOpacity={isLoading || disabled ? 0.65 : 0.85}
-                        disabled={isLoading || disabled}
+                        disabled={isLoading}
                         onPress={onBook}
                     >
                         {isLoading ? (

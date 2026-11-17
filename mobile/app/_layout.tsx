@@ -11,6 +11,8 @@ import JailMonkey from 'jail-monkey';
 import { usePreventScreenCapture } from 'expo-screen-capture';
 import { useTranslation } from 'react-i18next';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
+import { GlobalAlertHost } from '@/components/common/GlobalAlertHost';
+import { showGlobalAlert } from '@/utils/globalAlert';
 import { appMessageService, AppMessage } from '@/services/api/appMessageService';
 import { notificationService } from '@/services/device/notificationService';
 import 'react-native-reanimated';
@@ -31,9 +33,11 @@ import { ToastProvider } from '@/context/ToastContext';
 const RN = require('react-native');
 const OriginalText = RN.Text;
 
-// Completely disable all pop-up alert dialogs across the application
+// The native OS alert dialog is disabled app-wide. Legacy Alert.alert(...) calls are
+// re-routed to the in-app CustomAlertModal (rendered by <GlobalAlertHost />) so that
+// errors and confirmations are no longer silently swallowed.
 if (RN.Alert) {
-  RN.Alert.alert = () => {};
+  RN.Alert.alert = (title?: string, message?: string, buttons?: any[]) => showGlobalAlert(title, message, buttons);
 }
 
 if (OriginalText) {
@@ -340,6 +344,7 @@ function RootLayoutContent() {
         secondaryButtonText={t('common.dismiss', 'Dismiss')}
         onSecondaryPress={dismissAppMessage}
       />
+      <GlobalAlertHost />
     </NavigationThemeProvider>
   );
 }

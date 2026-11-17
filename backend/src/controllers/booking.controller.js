@@ -390,6 +390,13 @@ const createBooking = async (req, res, next) => {
         if (!isBloodTest && service.paymentMode === 'PAID' && resolvedVendorFee > 0) {
             const bookingFloor = await computeStandardRateFloor(service, resolvedVendorFee);
             if (clientAmount < bookingFloor * 0.95) {
+                // Diagnostic: lets support see exactly which service/option/amount tripped
+                // the floor (the user only sees "Invalid booking amount").
+                logger.warn('[BOOKING_FLOOR_REJECT] ' + JSON.stringify({
+                    slug: service.slug, paymentMode: service.paymentMode, basePrice: service.basePrice,
+                    selectedOption: selectedOptionForFloor || null, resolvedVendorFee,
+                    clientAmount, floor: Math.round(bookingFloor * 100) / 100, paymentMethod: paymentMethod || null,
+                }));
                 return res.status(400).json({
                     success: false,
                     message: `Invalid booking amount. Minimum: ₹${Math.round(bookingFloor * 0.95)}. Please refresh and try again.`

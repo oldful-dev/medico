@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '@/services/api/apiClient';
+import { useAuth } from '@/context/AuthContext';
 
 const CART_STORAGE_KEY = '@ayuxacare_cart_items';
 
@@ -83,6 +84,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
         };
         loadCart();
     }, []);
+
+    // The cart is stored on the device, not per account. Once the user is signed
+    // out (logout, or account deletion which also logs out) it must not survive,
+    // otherwise the next account on this phone — e.g. the same number re-registered —
+    // inherits the previous cart.
+    const { isAuthenticated, isLoading: authLoading } = useAuth();
+    useEffect(() => {
+        if (isInitialized && !authLoading && !isAuthenticated) {
+            setItems(prev => (prev.length ? [] : prev));
+            setSelectedItemIds(prev => (prev.length ? [] : prev));
+        }
+    }, [isAuthenticated, authLoading, isInitialized]);
 
     // Persist cart to storage on change
     useEffect(() => {

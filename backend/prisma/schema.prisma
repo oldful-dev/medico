@@ -75,6 +75,7 @@ model User {
   deletedAt             DateTime?
   fcmDeviceToken        String?
   emailMarketingEnabled Boolean                      @default(false)
+  emailNotificationsEnabled Boolean                  @default(true) // transactional email; emailMarketingEnabled = promotional offers
   pushEnabled           Boolean                      @default(true)
   smsEnabled            Boolean                      @default(true)
   whatsappEnabled       Boolean                      @default(true)

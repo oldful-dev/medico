@@ -23,6 +23,8 @@ import { BannerSlider } from '@/components/BannerSlider';
 import { bannerService, Banner } from '@/services/api/bannerService';
 import { meetupService } from '@/services/api/meetupService';
 import { GlobalLocationSheet } from '@/components/GlobalLocationSheet';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
+import { apiClient } from '@/services/api/apiClient';
 import { serviceCatalogService, ServiceCategoryItem } from '@/services/api/serviceCatalogService';
 
 const logoSmall = require('@/assets/images/onlylogo.png');
@@ -720,6 +722,24 @@ export default function HomeScreen() {
   const [homeConfig, setHomeConfig] = useState<HomeConfig>(() => sduiService.getHomeConfig());
   const [banners, setBanners] = useState<Banner[]>([]);
   const [currentLocationStr, setCurrentLocationStr] = useState('Loading...');
+  // Notify Me (coming-soon banner). Native Alert.alert is muted app-wide, so
+  // feedback has to go through CustomAlertModal.
+  const [notifyAlert, setNotifyAlert] = useState<{ visible: boolean; title: string; message: string }>({ visible: false, title: '', message: '' });
+  const [notifyBusy, setNotifyBusy] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  // Unread badge on the bell — refreshed whenever the home screen regains focus.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      apiClient.get<any>('/notifications/my?limit=50')
+        .then((res) => {
+          if (cancelled || !res.success || !Array.isArray(res.data)) return;
+          setUnreadCount(res.data.filter((n: any) => n && n.isRead === false).length);
+        })
+        .catch(() => { /* badge is best-effort */ });
+      return () => { cancelled = true; };
+    }, []),
+  );
   const [isCitySupported, setIsCitySupported] = useState(true);
   const [globalLocationSheetVisible, setGlobalLocationSheetVisible] = useState(false);
   const [featuredMeetup, setFeaturedMeetup] = useState<any>(null);
@@ -1072,6 +1092,11 @@ export default function HomeScreen() {
             {/* Notification Bell */}
             <TouchableOpacity onPress={() => router.push('/notifications')}>
               <Ionicons name="notifications" size={22} color={colors.primary} />
+              {unreadCount > 0 && (
+                <View style={{ position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#EF4444', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 }}>
+                  <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -1091,12 +1116,41 @@ export default function HomeScreen() {
             </View>
             <TouchableOpacity
               style={s.notifyMeButton}
-              onPress={() => Alert.alert(t('home.notify_success_title'), t('home.notify_success_desc', { city: currentLocationStr === 'Loading...' ? t('home.location_loading') : currentLocationStr }))}
+              disabled={notifyBusy}
+              onPress={async () => {
+                const cityLabel = currentLocationStr === 'Loading...' ? t('home.location_loading') : currentLocationStr;
+                if (!profile?.email) {
+                  setNotifyAlert({ visible: true, title: t('common.error'), message: 'Please add your email address in Profile so we can notify you when Ayuxa launches in your area.' });
+                  return;
+                }
+                try {
+                  setNotifyBusy(true);
+                  await apiClient.post('/waitlist', {
+                    name: profile.name || 'Ayuxa user',
+                    email: profile.email,
+                    city: currentLocationStr === 'Loading...' ? undefined : currentLocationStr,
+                    source: 'home_coming_soon',
+                  });
+                  setNotifyAlert({ visible: true, title: t('home.notify_success_title'), message: t('home.notify_success_desc', { city: cityLabel }) });
+                } catch {
+                  setNotifyAlert({ visible: true, title: t('common.error'), message: 'We could not register your request. Please try again.' });
+                } finally {
+                  setNotifyBusy(false);
+                }
+              }}
             >
               <Text style={s.notifyMeText}>{t('home.notify_me')}</Text>
             </TouchableOpacity>
           </View>
         )}
+
+        <CustomAlertModal
+          visible={notifyAlert.visible}
+          title={notifyAlert.title}
+          message={notifyAlert.message}
+          iconName="notifications-outline"
+          onClose={() => setNotifyAlert(prev => ({ ...prev, visible: false }))}
+        />
 
         {/* Enhanced Green Greeting Card */}
         <LinearGradient

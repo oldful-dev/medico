@@ -126,7 +126,9 @@ export default function TripTravelsScreen() {
             }
         } catch (error) {
             console.error('Trip booking error:', error);
-            triggerAlert(t('common.error'), t('common.generic_error'));
+            // Show the server's actual reason when there is one instead of a bare "Something went wrong".
+            const reason = (error as any)?.message;
+            triggerAlert(t('common.error'), reason && reason !== 'Network Error' ? reason : t('common.generic_error'));
         } finally {
             setIsBooking(false);
         }

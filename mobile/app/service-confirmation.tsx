@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator, Animated, Linking } from 'react-native';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -336,6 +336,7 @@ export default function ServiceConfirmationScreen() {
         ? new Date(booking.scheduledDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
         : t('service_confirmation.date_pending');
     const attachments = booking ? getAttachments(booking) : [];
+    const isCancelled = booking?.status === 'CANCELLED';
 
     const serviceDetailRows = [
         { icon: 'construct-outline' as const, label: t('service_confirmation.service'), value: dispName },
@@ -356,7 +357,7 @@ export default function ServiceConfirmationScreen() {
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: '#FAF7ED', marginLeft: 12, letterSpacing: -0.3 }}>
-                    {loading ? t('common.loading') : t('service_confirmation.booking_confirmed')}
+                    {loading ? t('common.loading') : isCancelled ? t('service_confirmation.cancelled') : t('service_confirmation.booking_confirmed')}
                 </Text>
             </View>
 
@@ -367,13 +368,13 @@ export default function ServiceConfirmationScreen() {
                     {/* Success icon + title */}
                     <View style={{ alignItems: 'center', marginBottom: 24 }}>
                         <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center', marginBottom: 16, shadowColor: PRIMARY, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 }}>
-                            <Ionicons name="checkmark" size={38} color="#FFFFFF" />
+                            <Ionicons name={isCancelled ? 'close' : 'checkmark'} size={38} color="#FFFFFF" />
                         </View>
                         <Text style={{ fontSize: 22, fontWeight: '700', color: textHigh, marginBottom: 6, letterSpacing: -0.3 }}>
-                            {loading ? t('service_confirmation.please_wait') : t('service_confirmation.booking_received')}
+                            {loading ? t('service_confirmation.please_wait') : isCancelled ? t('service_confirmation.cancelled') : t('service_confirmation.booking_received')}
                         </Text>
                         <Text style={{ fontSize: 14, color: textMid, textAlign: 'center', lineHeight: 20 }}>
-                            {loading ? t('service_confirmation.fetching_details') : t('service_confirmation.service_submitted')}
+                            {loading ? t('service_confirmation.fetching_details') : isCancelled ? t('service_confirmation.cancelled_msg') : t('service_confirmation.service_submitted')}
                         </Text>
                     </View>
 
@@ -433,9 +434,20 @@ export default function ServiceConfirmationScreen() {
 
                 {/* Footer buttons — inside scroll flow via paddingBottom, not absolute */}
                 <View style={{ backgroundColor: bg, paddingHorizontal: 20, paddingTop: 14, paddingBottom: insets.bottom + 12, borderTopWidth: 1, borderTopColor: cardBorder, gap: 10 }}>
-                    <TouchableOpacity style={{ backgroundColor: PRIMARY, paddingVertical: 15, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.85}>
+                    {/* Hidden for cancelled bookings — there is nothing left to track */}
+                    {!isCancelled && (
+                    <TouchableOpacity
+                        style={{ backgroundColor: PRIMARY, paddingVertical: 15, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}
+                        activeOpacity={0.85}
+                        onPress={() => {
+                            const id = booking?.id || params.bookingId;
+                            if (!id) return;
+                            router.push({ pathname: '/booking-details', params: { bookingId: String(id), type: 'service' } } as any);
+                        }}
+                    >
                         <Text style={{ color: '#FAF7ED', fontSize: 15, fontWeight: '700' }}>{getTrackLabel(dispName)}</Text>
                     </TouchableOpacity>
+                    )}
 
                     <View style={{ flexDirection: 'row', gap: 10 }}>
                         {booking && !['CANCELLED', 'COMPLETED'].includes(booking.status) && (
@@ -449,6 +461,10 @@ export default function ServiceConfirmationScreen() {
                         <TouchableOpacity
                             style={{ flex: 1, paddingVertical: 13, borderRadius: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6, backgroundColor: greenBg, borderWidth: 1, borderColor: greenBorder }}
                             activeOpacity={0.85}
+                            onPress={() => {
+                                Linking.openURL('tel:08047280789').catch(() =>
+                                    triggerAlert(t('common.error'), 'Unable to open the phone dialer. Please call 080-4728-0789.'));
+                            }}
                         >
                             <Ionicons name="call-outline" size={16} color={PRIMARY} />
                             <Text style={{ fontSize: 14, fontWeight: '600', color: PRIMARY }}>{t('service_confirmation.call_support')}</Text>

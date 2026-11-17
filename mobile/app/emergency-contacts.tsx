@@ -11,6 +11,7 @@ import { userService } from '@/services/api/userService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { sanitizeNameInput, sanitizePhoneInput, isValidPersonName, isValidIndianMobile } from '@/utils/validation';
 
 interface EmergencyContact {
     id?: string;
@@ -81,6 +82,19 @@ export default function EmergencyContactsScreen() {
     const addContact = async () => {
         if (!newName.trim() || !newPhone.trim() || !newRelationship) {
             triggerAlert(t('emergency_contacts.alerts.missing_info_title'), t('emergency_contacts.alerts.missing_info_msg'));
+            return;
+        }
+        if (!isValidPersonName(newName)) {
+            triggerAlert(t('emergency_contacts.alerts.missing_info_title'), 'Please enter a valid name using letters only (at least 3 characters).');
+            return;
+        }
+        if (!isValidIndianMobile(newPhone)) {
+            triggerAlert(t('emergency_contacts.alerts.missing_info_title'), 'Please enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.');
+            return;
+        }
+        const ownDigits = String((profile as any)?.phone || '').replace(/\D/g, '').slice(-10);
+        if (ownDigits && ownDigits === newPhone) {
+            triggerAlert(t('emergency_contacts.alerts.missing_info_title'), 'You cannot add your own number as an emergency contact.');
             return;
         }
         if (!profile?.id) return;
@@ -227,8 +241,8 @@ export default function EmergencyContactsScreen() {
                 {showAddForm && (
                     <View style={styles.addForm}>
                         <Text style={styles.formTitle}>{t('emergency_contacts.add_title')}</Text>
-                        <TextInput style={styles.input} placeholder={t('emergency_contacts.full_name_placeholder')} placeholderTextColor={colors.textMuted} value={newName} onChangeText={setNewName} />
-                        <TextInput style={styles.input} placeholder={t('emergency_contacts.phone_placeholder')} placeholderTextColor={colors.textMuted} keyboardType="phone-pad" value={newPhone} onChangeText={setNewPhone} />
+                        <TextInput style={styles.input} placeholder={t('emergency_contacts.full_name_placeholder')} placeholderTextColor={colors.textMuted} value={newName} onChangeText={(txt) => setNewName(sanitizeNameInput(txt))} />
+                        <TextInput style={styles.input} placeholder={t('emergency_contacts.phone_placeholder')} placeholderTextColor={colors.textMuted} keyboardType="phone-pad" value={newPhone} onChangeText={(txt) => setNewPhone(sanitizePhoneInput(txt))} />
 
                         <Text style={styles.relLabel}>{t('emergency_contacts.relationship_label')}</Text>
                         <View style={styles.relRow}>

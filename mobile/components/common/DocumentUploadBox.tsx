@@ -2,6 +2,7 @@ import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -28,6 +29,7 @@ export default function DocumentUploadBox({
     maxFiles = 1,
     allowedTypes = 'application/pdf',
 }: DocumentUploadBoxProps) {
+    const themeColors = useThemeColors();
     const { t } = useTranslation();
     const resolvedTitle = title ?? t('image_upload.upload_photos', 'Upload Document');
     const resolvedSubtitle = subtitle ?? t('service_detail.document_upload_subtitle', 'PDF up to 10MB');
@@ -59,6 +61,10 @@ export default function DocumentUploadBox({
 
             if (!result.canceled && result.assets && result.assets.length > 0) {
                 const asset = result.assets[0];
+                if (typeof asset.size === 'number' && asset.size > 10 * 1024 * 1024) {
+                    Alert.alert(t('common.error', 'Error'), 'File too large. Maximum allowed size is 10MB. Please choose a smaller file.');
+                    return;
+                }
                 setFiles(prev => {
                     const next = [...prev, { uri: asset.uri, name: asset.name || 'document.pdf' }].slice(0, maxFiles);
                     notifyParent(next);
@@ -83,7 +89,7 @@ export default function DocumentUploadBox({
     return (
         <View style={styles.container}>
             <TouchableOpacity 
-                style={styles.uploadDashedBox} 
+                style={[styles.uploadDashedBox, { backgroundColor: themeColors.bgCard }]} 
                 onPress={handlePick} 
                 activeOpacity={0.7}
             >
@@ -91,7 +97,7 @@ export default function DocumentUploadBox({
                 <Text style={styles.uploadTitle}>{resolvedTitle}</Text>
                 <Text style={styles.uploadSubtitle}>{resolvedSubtitle}</Text>
 
-                <View style={styles.uploadButton}>
+                <View style={[styles.uploadButton, { backgroundColor: themeColors.bgCard }]}>
                     <Text style={styles.uploadButtonText}>{t('image_upload.select_image', 'SELECT DOCUMENT').toUpperCase()}</Text>
                 </View>
             </TouchableOpacity>
@@ -99,7 +105,7 @@ export default function DocumentUploadBox({
             {files.length > 0 && (
                 <View style={styles.fileListContainer}>
                     {files.map((file, index) => (
-                        <View key={index} style={styles.fileRow}>
+                        <View key={index} style={[styles.fileRow, { backgroundColor: themeColors.bgCard }]}>
                             <Ionicons name="document-text-outline" size={18} color={Colors.primary} />
                             <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
                             <TouchableOpacity 

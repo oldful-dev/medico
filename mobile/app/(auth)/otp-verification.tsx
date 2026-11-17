@@ -253,5 +253,6 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontWeight: '400',
         fontSize: 14,
         letterSpacing: -0.24,
+        marginLeft: 8, // keep the countdown from touching "Didn't receive the code?"
     },
 });

@@ -15,6 +15,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { authService, ApiError } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { sanitizePhoneInput, isValidIndianMobile } from '@/utils/validation';
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '351969749690-lgbb5emsvvjsmtegnf44vvebd7lcna1k.apps.googleusercontent.com';
 
@@ -81,7 +82,7 @@ export default function LoginScreen() {
 
     // ─── Handlers ───
     const handleRequestOTP = useCallback(async () => {
-        if (phoneNumber.length < 10) return;
+        if (!isValidIndianMobile(phoneNumber)) return;
 
         setIsLoading(true);
         try {
@@ -269,21 +270,25 @@ export default function LoginScreen() {
                             placeholder={t('auth.phone_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             keyboardType="phone-pad"
-                            maxLength={10}
                             value={phoneNumber}
-                            onChangeText={setPhoneNumber}
+                            onChangeText={(txt) => setPhoneNumber(sanitizePhoneInput(txt))}
                         />
                     </View>
+                    {phoneNumber.length === 10 && !isValidIndianMobile(phoneNumber) && (
+                        <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 6 }}>
+                            Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9
+                        </Text>
+                    )}
 
                     {/* ─── Request OTP Button ─── */}
                     <TouchableOpacity
                         style={[
                             styles.requestOtpButton,
-                            (phoneNumber.length < 10 || isLoading) && styles.requestOtpButtonDisabled,
+                            (!isValidIndianMobile(phoneNumber) || isLoading) && styles.requestOtpButtonDisabled,
                         ]}
                         activeOpacity={0.8}
                         onPress={handleRequestOTP}
-                        disabled={phoneNumber.length < 10 || isLoading}
+                        disabled={!isValidIndianMobile(phoneNumber) || isLoading}
                     >
                         <Text style={styles.requestOtpButtonText}>
                             {isLoading && !otpSent ? 'Requesting...' : otpSent ? t('auth.resend_otp') : t('auth.send_otp')}

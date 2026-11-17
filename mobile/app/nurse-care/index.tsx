@@ -1060,7 +1060,7 @@ export default function BookNursingCareScreen() {
               activeOpacity={
                 isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5
               }
-              disabled={!isFormValid || isBooking || isLoadingInit}
+              disabled={isBooking || isLoadingInit}
               onPress={handleBookService}
             >
               {isBooking ? (

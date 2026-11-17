@@ -212,7 +212,7 @@ export default function DynamicServiceScreen() {
           continue;
         } else {
           const val = formAnswers[field.id];
-          const isEmpty = val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
+          const isEmpty = val === undefined || val === null || val === '' || val === false || (Array.isArray(val) && val.length === 0);
           if (isEmpty) return false;
         }
       }
@@ -222,7 +222,7 @@ export default function DynamicServiceScreen() {
     for (const field of dynamicFields) {
       if (!field.required || field.type === 'info_banner') continue;
       const val = formAnswers[field.id];
-      const isEmpty = val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
+      const isEmpty = val === undefined || val === null || val === '' || val === false || (Array.isArray(val) && val.length === 0);
       if (isEmpty) return false;
     }
 
@@ -258,7 +258,7 @@ export default function DynamicServiceScreen() {
         } else {
           if (field.required) {
             const val = formAnswers[field.id];
-            const isEmpty = val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
+            const isEmpty = val === undefined || val === null || val === '' || val === false || (Array.isArray(val) && val.length === 0);
             if (isEmpty) {
               errs.push(`${field.label} is required.`);
             }
@@ -269,7 +269,7 @@ export default function DynamicServiceScreen() {
       for (const field of dynamicFields) {
         if (field.required && field.type !== 'info_banner') {
           const val = formAnswers[field.id];
-          const isEmpty = val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
+          const isEmpty = val === undefined || val === null || val === '' || val === false || (Array.isArray(val) && val.length === 0);
           if (isEmpty) {
             errs.push(`${field.label} is required.`);
           }

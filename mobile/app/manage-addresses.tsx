@@ -13,6 +13,7 @@ import { LocationPickerModal } from '@/components/LocationPickerModal';
 import { useTranslation } from 'react-i18next';
 import * as Location from 'expo-location';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
+import { isValidPincode } from '@/utils/validation';
 
 const LABEL_OPTIONS = ['Home', 'Office', 'Parents Home', 'Other'];
 
@@ -242,6 +243,10 @@ export default function ManageAddressesScreen() {
     const saveAddress = async () => {
         if (!newLabel.trim() || !newLine1.trim() || !newCity.trim() || !newState.trim() || !newPincode.trim()) {
             triggerAlert(t('manage_addresses.alerts.missing_info_title'), t('manage_addresses.alerts.missing_info_msg'));
+            return;
+        }
+        if (!isValidPincode(newPincode.trim())) {
+            triggerAlert(t('manage_addresses.alerts.missing_info_title'), 'Please enter a valid 6-digit pincode (it cannot start with 0).');
             return;
         }
         if (!profile?.id) return;
@@ -534,7 +539,7 @@ export default function ManageAddressesScreen() {
                         <Text style={dynamicStyles.addressText}>
                             {[item.line1, item.line2, item.landmark].filter(Boolean).join(', ')}
                         </Text>
-                        <Text style={dynamicStyles.phoneText}>{item.cityName}, {item.state} — {item.pincode}</Text>
+                        <Text style={dynamicStyles.phoneText}>{[item.cityName, item.state].filter(Boolean).join(', ')}{item.pincode ? ` — ${item.pincode}` : ''}</Text>
 
                         <View style={styles.cardActions}>
                             {!item.isDefault && (
@@ -635,7 +640,7 @@ export default function ManageAddressesScreen() {
                             keyboardType="numeric"
                             maxLength={6}
                             value={newPincode}
-                            onChangeText={setNewPincode}
+                            onChangeText={(txt) => setNewPincode(txt.replace(/\D/g, '').slice(0, 6))}
                         />
 
                         <Text style={dynamicStyles.fieldLabel}>{t('manage_addresses.landmark_label')}</Text>

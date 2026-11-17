@@ -24,6 +24,7 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { planService, Plan, BillingCycle } from '@/services/api/planService';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
+import { isValidPincode } from '@/utils/validation';
 
 // ─── Payment Flow States (for debugging & recovery) ──────
 type PaymentFlowState = 'idle' | 'creating_booking' | 'initiating_order' | 'checkout_opened' | 'verifying' | 'success' | 'failed' | 'cancelled';
@@ -821,7 +822,7 @@ export default function CheckoutScreen() {
                 triggerAlert(t('checkout.address_required'), t('checkout.address_required_msg'));
                 return;
             }
-            if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
+            if (!selectedAddress.pincode || !isValidPincode(selectedAddress.pincode)) {
                 triggerAlert(t('checkout.pincode_required'), t('checkout.pincode_required_msg'));
                 return;
             }
@@ -1289,13 +1290,13 @@ export default function CheckoutScreen() {
         if (isBloodTest) {
             if (!selectedDate || !selectedTime) return false;
             if (!selectedAddress?.line1) return false;
-            if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) return false;
+            if (!selectedAddress.pincode || !isValidPincode(selectedAddress.pincode)) return false;
             if (serviceabilityStatus !== 'serviceable') return false;
             if (!phoneNumber?.trim() || phoneNumber.length < 10) return false;
         }
         if (isWellness) {
             if (!selectedAddress?.line1) return false;
-            if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) return false;
+            if (!selectedAddress.pincode || !isValidPincode(selectedAddress.pincode)) return false;
         }
         return true;
     }, [isBloodTest, isWellness, selectedDate, selectedTime, selectedAddress, serviceabilityStatus, phoneNumber]);
@@ -1320,7 +1321,7 @@ export default function CheckoutScreen() {
                 triggerAlert(t('checkout.address_required'), t('checkout.address_required_msg2'));
                 return;
             }
-            if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
+            if (!selectedAddress.pincode || !isValidPincode(selectedAddress.pincode)) {
                 triggerAlert(t('checkout.pincode_required'), t('checkout.pincode_required_msg'));
                 return;
             }

@@ -876,7 +876,14 @@ const getMemberships = async (req, res, next) => {
                 const lastSub = await prisma.subscription.findFirst({
                     where: {
                         userId,
-                        plan: { planType: cat }
+                        plan: { planType: cat },
+                        // Only subscriptions that were really purchased and have since
+                        // ended. PENDING / PAYMENT_PENDING / PAYMENT_FAILED rows come
+                        // from aborted checkouts and must never show as "Expired".
+                        OR: [
+                            { status: { in: ['EXPIRED', 'CANCELLED'] } },
+                            { status: { in: ['ACTIVE', 'EXPIRING'] }, expiryDate: { lt: new Date() } },
+                        ],
                     },
                     include: {
                         plan: {

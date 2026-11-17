@@ -193,6 +193,9 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
         alignItems: 'center',
+        // Keep the label clear of the thumb (it sits over the left edge at rest)
+        paddingLeft: THUMB_WIDTH + PADDING * 2,
+        paddingRight: PADDING * 2,
     },
     label: {
         fontFamily: Fonts.bold,

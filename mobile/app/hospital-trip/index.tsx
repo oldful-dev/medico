@@ -626,7 +626,7 @@ export default function HospitalTripScreen() {
                 (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 },
               ]}
               activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
-              disabled={!isFormValid || isBooking || isLoadingInit}
+              disabled={isBooking || isLoadingInit}
               onPress={handleBookService}
             >
               {isLoadingInit ? (
@@ -1093,9 +1093,11 @@ const makeStyles = (isDarkMode: boolean) =>
       marginTop: 2,
     },
     uncheckedCircle: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
+      // Same square shape as checkedBoxBig so the control does not change
+      // from a "radio" to a "checkbox" when tapped.
+      width: 24,
+      height: 24,
+      borderRadius: 6,
       borderWidth: 1,
       borderColor: "#A0A0A0",
       marginRight: 10,

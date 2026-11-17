@@ -247,7 +247,7 @@ export default function PlanDetailsScreen() {
                     <Text style={styles.pricingLabel}>Total Amount</Text>
                     <View style={styles.priceRow}>
                         <Text style={styles.priceValue}>₹{price.toLocaleString('en-IN')}</Text>
-                        <Text style={styles.priceSuffix}> / {t(cycleInfo.suffixKey)}</Text>
+                        <Text style={styles.priceSuffix}> {t(cycleInfo.suffixKey)}</Text>
                     </View>
                     <Text style={styles.priceSubtext}>{t(cycleInfo.daysKey)} validity</Text>
                 </View>

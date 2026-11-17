@@ -83,7 +83,7 @@ export function GlobalLocationSheet({ visible, onClose }: GlobalLocationSheetPro
                                     {t('global_location.current_active', { defaultValue: 'Currently using' })}
                                     {activeAddressSource === 'temporary-gps' ? ` (${t('global_location.temporary', { defaultValue: 'temporary' })})` : ''}
                                 </Text>
-                                <Text style={styles.activeBannerText} numberOfLines={1}>{activeAddress.line1}</Text>
+                                <Text style={styles.activeBannerText} numberOfLines={1}>{[activeAddress.line1, activeAddress.line2, activeAddress.cityName].map(p => (p || '').trim()).filter(Boolean).join(', ')}</Text>
                             </View>
                         </View>
                     )}

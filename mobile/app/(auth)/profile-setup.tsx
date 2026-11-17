@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { sanitizeNameInput, sanitizePhoneInput, isValidPersonName, isValidIndianMobile, validators } from '@/utils/validation';
 import { FormInput } from '@/components/common';
 import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { userService, cityService, ApiError, authService } from '@/services/api';
@@ -169,7 +170,7 @@ export default function ProfileSetupScreen() {
     }, [contextCityId]);
 
     const handleReqOTP = async () => {
-        if (phoneInput.length !== 10) {
+        if (!isValidIndianMobile(phoneInput)) {
             triggerAlert(t('profile_setup.invalid_phone_title'), t('profile_setup.invalid_phone_msg'));
             return;
         }
@@ -258,8 +259,16 @@ export default function ProfileSetupScreen() {
     };
 
     const handleSaveAndContinue = async () => {
-        if (!name || name.trim().length < 3) {
+        if (!name || !isValidPersonName(name)) {
             triggerAlert(t('profile_setup.name_required_title'), t('profile_setup.name_required_msg'));
+            return;
+        }
+        if (email.trim() && !validators.email(email.trim())) {
+            triggerAlert(t('common.error'), 'Please enter a valid email address (for example name@example.com).');
+            return;
+        }
+        if (emergencyNumber && !isValidIndianMobile(emergencyNumber)) {
+            triggerAlert(t('common.error'), 'Please enter a valid 10-digit emergency mobile number.');
             return;
         }
         if (!isPhoneVerified) {
@@ -407,7 +416,7 @@ export default function ProfileSetupScreen() {
                         placeholder={t('profile_setup.name_placeholder')}
                         style={styles.nameInput}
                         value={name}
-                        onChangeText={setName}
+                        onChangeText={(txt) => setName(sanitizeNameInput(txt))}
                     />
                     <TouchableOpacity style={styles.profilePhotoContainer} onPress={handlePickImage} activeOpacity={0.7}>
                         {profileImageUri ? (
@@ -476,10 +485,12 @@ export default function ProfileSetupScreen() {
                         display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                         maximumDate={new Date()}
                         minimumDate={new Date(1920, 0, 1)}
-                        onChange={(_, date) => {
+                        onChange={(event, date) => {
                             // Always close picker on both platforms
                             setShowDatePicker(false);
-                            if (date) setDateOfBirth(date);
+                            // A dismissed picker still hands back the default date —
+                            // only store a date the user actually confirmed.
+                            if (event.type === 'set' && date) setDateOfBirth(date);
                         }}
                     />
                 )}
@@ -490,7 +501,7 @@ export default function ProfileSetupScreen() {
                     keyboardType="email-address"
                     style={styles.fullWidthInput}
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(txt) => setEmail(txt.replace(/\s/g, ''))}
                 />
 
                 {/* ─── Row 4: Mobile Number (read-only if verified; editable if not) ─── */}
@@ -502,7 +513,7 @@ export default function ProfileSetupScreen() {
                     maxLength={10}
                     style={styles.fullWidthInput}
                     editable={!isPhoneVerified}
-                    onChangeText={!isPhoneVerified ? setPhoneInput : undefined}
+                    onChangeText={!isPhoneVerified ? (txt: string) => setPhoneInput(sanitizePhoneInput(txt)) : undefined}
                     fontSize={13}
                     suffix={
                         !isPhoneVerified ? (
@@ -563,8 +574,7 @@ export default function ProfileSetupScreen() {
                         style={styles.flexInput}
                         fontSize={12}
                         value={emergencyNumber}
-                        onChangeText={setEmergencyNumber}
-                        maxLength={10}
+                        onChangeText={(txt) => setEmergencyNumber(sanitizePhoneInput(txt))}
                     />
                     <FormInput
                         placeholder={t('profile_setup.unique_id')}
@@ -738,18 +748,23 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         elevation: 0,
         width: 92,
         height: 92,
-        borderRadius: 46,
-        overflow: 'hidden',
-        borderWidth: 3,
-        borderColor: '#66BB6A',
+        // No overflow:hidden here — it would clip the camera badge into a half-moon.
+        // The circle clipping lives on the image / placeholder instead.
     },
     profilePhoto: {
         width: '100%',
         height: '100%',
+        borderRadius: 46,
+        borderWidth: 3,
+        borderColor: '#66BB6A',
     },
     profilePhotoPlaceholder: {
         width: '100%',
         height: '100%',
+        borderRadius: 46,
+        overflow: 'hidden',
+        borderWidth: 3,
+        borderColor: '#66BB6A',
         backgroundColor: '#E8F5E9',
         justifyContent: 'center',
         alignItems: 'center',
@@ -771,9 +786,9 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         right: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: 12,
-        padding: 4,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        borderRadius: 14,
+        padding: 5,
     },
 
     /* ─── Row 2: Flex Inputs ─── */

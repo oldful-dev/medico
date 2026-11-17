@@ -12,6 +12,7 @@ import { userService } from '@/services/api/userService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { isValidMedicalText } from '@/utils/validation';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -65,6 +66,10 @@ export default function EditMedicalCardScreen() {
     const handleSave = async () => {
         if (!profile?.id) {
             triggerAlert(t('edit_medical_card.alerts.error_title'), t('edit_medical_card.alerts.profile_not_loaded'));
+            return;
+        }
+        if (![allergies, otherConditions, medications].every(isValidMedicalText)) {
+            triggerAlert(t('edit_medical_card.alerts.error_title'), 'Allergies, conditions and medication must be text (for example "Penicillin, Dust"), not just numbers.');
             return;
         }
         setSaving(true);

@@ -645,7 +645,7 @@ export default function AccountScreen() {
                 <ToggleRow icon="notifications-outline" iconBg="#E1F5FE" iconColor="#0288D1" title={t('account.push_notifications')} value={!!profile?.pushEnabled} onToggle={v => handleToggle('pushEnabled', v)} colors={colors} />
                 <ToggleRow icon="chatbubble-outline" iconBg="#FFF3E0" iconColor="#EF6C00" title={t('account.sms_alerts')} value={!!profile?.smsEnabled} onToggle={v => handleToggle('smsEnabled', v)} colors={colors} />
                 <ToggleRow icon="logo-whatsapp" iconBg="#E8F5E9" iconColor="#25D366" title={t('account.whatsapp_updates')} value={!!profile?.whatsappEnabled} onToggle={v => handleToggle('whatsappEnabled', v)} colors={colors} />
-                <ToggleRow icon="mail-outline" iconBg="#EDE9FE" iconColor="#7C3AED" title={t('account.email_notifications')} value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
+                <ToggleRow icon="mail-outline" iconBg="#EDE9FE" iconColor="#7C3AED" title={t('account.email_notifications')} value={profile?.emailNotificationsEnabled !== false} onToggle={v => handleToggle('emailNotificationsEnabled', v)} colors={colors} />
                 <ToggleRow icon="megaphone-outline" iconBg="#FFF8E1" iconColor="#FFA000" title={t('account.promotional_offers')} value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
 
                 {/* ═══════════════════════════════════════

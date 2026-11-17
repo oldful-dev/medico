@@ -70,10 +70,15 @@ const sendEmail = async ({ to, subject, html, userId = null, isMarketing = false
         try {
             const user = await prisma.user.findUnique({
                 where: { id: userId },
-                select: { emailMarketingEnabled: true },
+                select: { emailMarketingEnabled: true, emailNotificationsEnabled: true },
             });
             if (isMarketing && user && !user.emailMarketingEnabled) {
                 logger.info(`📧 Skipping marketing email to ${to} (unsubscribed)`);
+                return false;
+            }
+            // "Email Notifications" off: no non-promotional email either.
+            if (!isMarketing && user && user.emailNotificationsEnabled === false) {
+                logger.info(`📧 Skipping email to ${to} (user turned Email Notifications off)`);
                 return false;
             }
         } catch (prefErr) {

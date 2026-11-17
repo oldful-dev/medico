@@ -31,7 +31,6 @@ export function CustomAlertModal({
     onSecondaryPress,
     secondaryDestructive = false,
 }: CustomAlertModalProps) {
-    console.log('[CustomAlertModal] Rendering. visible:', visible, 'title:', title, 'message:', message);
     return (
         <Modal
             visible={visible}

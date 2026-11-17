@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { normalizeIndianMobile, isValidPersonName } = require('../utils/inputValidation');
 const prisma = require('../config/database');
 const { paginate, sendResponse, sendPaginatedResponse, generateUserId } = require('../utils/helpers');
 const { sendWelcomeNotifications } = require('../utils/notifications');
@@ -405,7 +406,7 @@ const updateUser = async (req, res, next) => {
             return res.status(403).json({ success: false, message: 'This account has been deleted. Deleted user records are locked for compliance and cannot be modified.' });
         }
 
-        const { name, email, phone, cityId, gender, dateOfBirth, preferredLanguage, healthTag, status, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled } = req.body;
+        const { name, email, phone, cityId, gender, dateOfBirth, preferredLanguage, healthTag, status, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled, emailNotificationsEnabled } = req.body;
 
         // Strict Rule: Only Super Admin can add, remove, or update a user's mobile number and email address
         if ((email !== undefined || phone !== undefined) && req.user?.role !== 'SUPER_ADMIN') {
@@ -443,6 +444,7 @@ const updateUser = async (req, res, next) => {
         if (smsEnabled !== undefined) data.smsEnabled = smsEnabled;
         if (whatsappEnabled !== undefined) data.whatsappEnabled = whatsappEnabled;
         if (emailMarketingEnabled !== undefined) data.emailMarketingEnabled = emailMarketingEnabled;
+        if (emailNotificationsEnabled !== undefined) data.emailNotificationsEnabled = emailNotificationsEnabled;
 
         const user = await prisma.user.update({
             where: { id: req.params.id },
@@ -516,8 +518,19 @@ const addEmergencyContact = async (req, res, next) => {
         }
 
         const { name, phone, relationship } = req.body;
+        if (!isValidPersonName(name)) {
+            return sendResponse(res, 400, null, 'Please enter a valid name using letters only (3 to 60 characters)');
+        }
+        const normalizedPhone = normalizeIndianMobile(phone);
+        if (!normalizedPhone) {
+            return sendResponse(res, 400, null, 'Please enter a valid 10-digit mobile number');
+        }
+        const self = await prisma.user.findUnique({ where: { id: req.params.id }, select: { phone: true } });
+        if (self && normalizeIndianMobile(self.phone) === normalizedPhone) {
+            return sendResponse(res, 400, null, 'You cannot add your own number as an emergency contact');
+        }
         const contact = await prisma.emergencyContact.create({
-            data: { userId: req.params.id, name, phone, relationship },
+            data: { userId: req.params.id, name: name.trim(), phone: normalizedPhone, relationship },
         });
         sendResponse(res, 201, contact, 'Emergency contact added');
     } catch (error) {
@@ -1013,7 +1026,7 @@ const updateMyProfile = async (req, res, next) => {
             });
         }
 
-        const { name, gender, dateOfBirth, preferredLanguage, profileImageUrl, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled } = req.body;
+        const { name, gender, dateOfBirth, preferredLanguage, profileImageUrl, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled, emailNotificationsEnabled } = req.body;
         const data = {};
         if (name !== undefined) data.name = name;
         if (gender !== undefined) data.gender = gender;
@@ -1024,6 +1037,7 @@ const updateMyProfile = async (req, res, next) => {
         if (smsEnabled !== undefined) data.smsEnabled = smsEnabled;
         if (whatsappEnabled !== undefined) data.whatsappEnabled = whatsappEnabled;
         if (emailMarketingEnabled !== undefined) data.emailMarketingEnabled = emailMarketingEnabled;
+        if (emailNotificationsEnabled !== undefined) data.emailNotificationsEnabled = emailNotificationsEnabled;
 
         const user = await prisma.user.update({
             where: { id: req.user.id },

@@ -38,7 +38,7 @@ export default {
       "navigationBar": {
         "backgroundColor": "#00000000"
       },
-      "predictiveBackGestureEnabled": false,
+      "predictiveBackGestureEnabled": true,
       "permissions": [
         "android.permission.CALL_PHONE",
         "android.permission.CAMERA"

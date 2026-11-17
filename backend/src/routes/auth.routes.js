@@ -6,13 +6,23 @@ const { validate } = require('../middleware/validate');
 const { authenticate, authenticateAdmin } = require('../middleware/auth');
 const { authorize } = require('../middleware/rbac');
 const ctrl = require('../controllers/auth.controller');
+const { normalizeIndianMobile } = require('../utils/inputValidation');
 
 // ─── OTP Rate Limiter (SEC-01) ──────────────────
 // 3 requests per 10 minutes, keyed by phone number (fallback to IP)
 const otpLimiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
-    max: 10, // Increased from 3 to 10
+    max: 5, // per phone number per window
     keyGenerator: (req) => req.body.phoneNumber || req.ip,
+    message: { success: false, message: 'Too many OTP requests. Try again in 10 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// The phone-keyed limiter above is bypassed by cycling numbers, so also cap by IP.
+const otpIpLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 20,
     message: { success: false, message: 'Too many OTP requests. Try again in 10 minutes.' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -45,8 +55,9 @@ router.post('/admin/refresh', ctrl.adminRefreshToken);
 router.get('/admin/me', authenticateAdmin, ctrl.getAdminMe);
 
 // App User Auth
-router.post('/request-otp', otpLimiter, [
-    body('phoneNumber').notEmpty().withMessage('Phone number required'),
+router.post('/request-otp', otpIpLimiter, otpLimiter, [
+    body('phoneNumber').notEmpty().withMessage('Phone number required')
+        .custom((v) => !!normalizeIndianMobile(v)).withMessage('Enter a valid 10-digit mobile number'),
 ], validate, ctrl.requestOTP);
 
 router.post('/verify-otp', [
